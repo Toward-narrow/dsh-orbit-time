@@ -1,0 +1,2359 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8" />
+<title>Orbit Time · 面板预览</title>
+<style>
+  /* Harness dark-theme token values, so the plugin's var() fallbacks resolve
+     exactly as they do in the app. */
+  :root {
+    --dsw-alias-bg-base: #0d0f14;
+    --dsw-alias-bg-layer-1: #161920;
+    --dsw-alias-bg-layer-2: #1d212a;
+    --dsw-alias-bg-overlay: rgba(20, 23, 30, 0.86);
+    --dsw-alias-border-l1: rgba(255, 255, 255, 0.09);
+    --dsw-alias-border-l2: rgba(255, 255, 255, 0.17);
+    --dsw-alias-brand-primary: #4d8dff;
+    --dsw-alias-label-primary: #f2f4f8;
+    --dsw-alias-label-secondary: #b7bfcc;
+    --dsw-alias-state-error-primary: #ff6b6b;
+    --dsw-alias-state-success-primary: #3fd18b;
+    --dsw-alias-state-warn-primary: #f0a83c;
+  }
+  html, body { margin: 0; height: 100%; background: #0d0f14; }
+  body { font-family: "Segoe UI Variable Text", "Segoe UI", "Microsoft YaHei UI", system-ui, sans-serif; }
+  /* The real main panel is roughly this wide next to the sidebar. */
+  .preview-frame { position: relative; width: 940px; height: 940px; margin: 0 auto; }
+  .preview-frame > .ot-root { position: relative; height: 940px; }
+  /* Orbit Time — dashboard styles.
+   Every colour resolves through a --dsw-alias-* theme token when the harness
+   provides one, and falls back to a self-contained palette otherwise, so the
+   panel reads correctly in both light and dark themes. */
+
+.ot-root {
+  --ot-accent: var(--dsw-alias-brand-primary, #4d8dff);
+  --ot-accent-2: #a970ff;
+  --ot-accent-3: #38d6c4;
+  --ot-bg: var(--dsw-alias-bg-base, #0f1116);
+  --ot-layer-1: var(--dsw-alias-bg-layer-1, #171a21);
+  --ot-layer-2: var(--dsw-alias-bg-layer-2, #1e222b);
+  --ot-overlay: var(--dsw-alias-bg-overlay, rgba(22, 25, 33, 0.86));
+  --ot-border: var(--dsw-alias-border-l1, rgba(255, 255, 255, 0.09));
+  --ot-border-strong: var(--dsw-alias-border-l2, rgba(255, 255, 255, 0.16));
+  --ot-text: var(--dsw-alias-label-primary, #f2f4f8);
+  --ot-text-dim: var(--dsw-alias-label-secondary, #b9c0cd);
+  --ot-warn: var(--dsw-alias-state-warn-primary, #f0a83c);
+  --ot-danger: var(--dsw-alias-state-error-primary, #ff6b6b);
+  --ot-success: var(--dsw-alias-state-success-primary, #3fd18b);
+  --ot-idle: var(--dsw-alias-state-idle-primary, #6b7280);
+  --ot-shadow: 0 12px 34px rgba(0, 0, 0, 0.28);
+  --ot-radius: 14px;
+  --ot-radius-sm: 10px;
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  color: var(--ot-text);
+  background: var(--ot-bg);
+  font-family: "Segoe UI Variable Text", "Segoe UI", "Microsoft YaHei UI", system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.ot-root *,
+.ot-root *::before,
+.ot-root *::after {
+  box-sizing: border-box;
+}
+
+.ot-root button {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+.ot-root input,
+.ot-root select,
+.ot-root textarea {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+/* ---------------------------------------------------------------- ambience */
+
+.ot-aurora {
+  position: absolute;
+  inset: -40% -20% auto -20%;
+  height: 70%;
+  pointer-events: none;
+  opacity: 0.5;
+  filter: blur(60px);
+  background:
+    radial-gradient(38% 60% at 18% 30%, color-mix(in srgb, var(--ot-accent) 55%, transparent), transparent 70%),
+    radial-gradient(34% 55% at 62% 20%, color-mix(in srgb, var(--ot-accent-2) 48%, transparent), transparent 72%),
+    radial-gradient(30% 50% at 88% 44%, color-mix(in srgb, var(--ot-accent-3) 40%, transparent), transparent 70%);
+  animation: ot-drift 26s ease-in-out infinite alternate;
+  z-index: 0;
+}
+
+@keyframes ot-drift {
+  0% { transform: translate3d(-3%, -2%, 0) scale(1); }
+  50% { transform: translate3d(3%, 2%, 0) scale(1.08); }
+  100% { transform: translate3d(-2%, 3%, 0) scale(1.03); }
+}
+
+/* ------------------------------------------------------------------ header */
+
+.ot-header {
+  position: relative;
+  z-index: 2;
+  flex: none;
+  padding: 14px 18px 10px;
+  border-bottom: 1px solid var(--ot-border);
+}
+
+.ot-headrow {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.ot-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  background: linear-gradient(96deg, var(--ot-text) 12%, var(--ot-accent) 60%, var(--ot-accent-2) 96%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.ot-subtitle {
+  color: var(--ot-text-dim);
+  font-size: 12px;
+}
+
+.ot-headspace {
+  flex: 1;
+}
+
+.ot-headmeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ot-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
+  padding: 0 9px;
+  border: 1px solid var(--ot-border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ot-layer-2) 72%, transparent);
+  color: var(--ot-text-dim);
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+
+.ot-chip strong {
+  color: var(--ot-text);
+  font-weight: 600;
+}
+
+.ot-chip-owner {
+  border-color: color-mix(in srgb, var(--ot-accent) 42%, transparent);
+  color: color-mix(in srgb, var(--ot-accent) 82%, var(--ot-text));
+}
+
+.ot-chip-live::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ot-success);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--ot-success) 60%, transparent);
+  animation: ot-pulse 2.4s ease-out infinite;
+}
+
+.ot-chip-warn::before {
+  background: var(--ot-warn);
+  animation: none;
+}
+
+/* --------------------------------------------------------- segmented control */
+
+/* Three mutually exclusive choices (完整胶囊 / 最小圆点 / 关闭) read better as one
+   control than as three unrelated buttons, and the sliding highlight makes the
+   current state obvious at a glance. */
+.ot-seg {
+  position: relative;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--ot-border);
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--ot-layer-2) 70%, transparent);
+}
+
+.ot-seg-item {
+  appearance: none;
+  border: 0;
+  border-radius: 8px;
+  padding: 7px 10px;
+  background: transparent;
+  color: var(--ot-text-dim);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.22s cubic-bezier(0.2, 0.9, 0.25, 1),
+    color 0.22s ease,
+    transform 0.22s cubic-bezier(0.2, 0.9, 0.25, 1);
+}
+
+.ot-seg-item:hover:not(:disabled) {
+  color: var(--ot-text);
+  background: color-mix(in srgb, var(--ot-text) 6%, transparent);
+}
+
+.ot-seg-item:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.ot-seg-item.is-active {
+  color: #fff;
+  background: linear-gradient(135deg, var(--ot-accent), var(--ot-accent-2));
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--ot-accent) 35%, transparent);
+}
+
+.ot-seg-item:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.ot-seg-item:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--ot-accent) 60%, transparent);
+  outline-offset: 1px;
+}
+
+@keyframes ot-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ot-success) 55%, transparent); }
+  70% { box-shadow: 0 0 0 7px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+/* -------------------------------------------------------------------- tabs */
+
+.ot-tabs {
+  position: relative;
+  z-index: 2;
+  flex: none;
+  display: flex;
+  gap: 4px;
+  padding: 10px 14px 0;
+}
+
+.ot-tab {
+  position: relative;
+  border: 0;
+  background: transparent;
+  padding: 7px 12px 9px;
+  border-radius: 9px 9px 0 0;
+  color: var(--ot-text-dim);
+  cursor: pointer;
+  transition: color 0.18s ease, background 0.18s ease, transform 0.18s ease;
+}
+
+.ot-tab:hover {
+  color: var(--ot-text);
+  background: color-mix(in srgb, var(--ot-layer-2) 60%, transparent);
+}
+
+.ot-tab:active {
+  transform: translateY(1px);
+}
+
+.ot-tab[data-active="true"] {
+  color: var(--ot-text);
+  font-weight: 600;
+}
+
+.ot-tab[data-active="true"]::after {
+  content: "";
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 1px;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--ot-accent), var(--ot-accent-2));
+  animation: ot-grow 0.32s cubic-bezier(0.2, 0.9, 0.2, 1);
+}
+
+@keyframes ot-grow {
+  from { transform: scaleX(0.2); opacity: 0; }
+  to { transform: scaleX(1); opacity: 1; }
+}
+
+.ot-badge {
+  display: inline-block;
+  min-width: 17px;
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ot-accent) 24%, transparent);
+  color: color-mix(in srgb, var(--ot-accent) 88%, var(--ot-text));
+  font-size: 10.5px;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* ------------------------------------------------------------------- body */
+
+.ot-body {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 14px 16px 22px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ot-border-strong) transparent;
+}
+
+.ot-body::-webkit-scrollbar {
+  width: 9px;
+}
+
+.ot-body::-webkit-scrollbar-thumb {
+  background: var(--ot-border-strong);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.ot-view {
+  animation: ot-fade-up 0.28s cubic-bezier(0.2, 0.85, 0.25, 1);
+}
+
+@keyframes ot-fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* -------------------------------------------------------------- crash card */
+
+/* Shown in place of a surface whose render threw. Deliberately loud: the
+   alternative is a blank window and a console nobody opens. */
+.ot-crash {
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.ot-crash-card {
+  position: relative;
+  z-index: 1;
+  max-width: 560px;
+  padding: 18px;
+  border: 1px solid color-mix(in srgb, var(--ot-danger) 42%, var(--ot-border));
+  border-radius: var(--ot-radius);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--ot-layer-1) 96%, transparent), color-mix(in srgb, var(--ot-danger) 12%, transparent));
+  box-shadow: var(--ot-shadow);
+}
+
+.ot-crash-card h2 {
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.ot-crash-msg {
+  margin: 10px 0 0;
+  padding: 9px 11px;
+  border-radius: 9px;
+  background: color-mix(in srgb, #000 34%, transparent);
+  color: color-mix(in srgb, var(--ot-danger) 80%, var(--ot-text));
+  font-family: Consolas, "Cascadia Mono", monospace;
+  font-size: 11.5px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
+
+.ot-crash-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.ot-crash details {
+  margin-top: 10px;
+  color: var(--ot-text-dim);
+  font-size: 11.5px;
+}
+
+.ot-crash summary {
+  cursor: pointer;
+}
+
+/* ---------------------------------------------------------------- surfaces */
+
+.ot-card {
+  position: relative;
+  border: 1px solid var(--ot-border);
+  border-radius: var(--ot-radius);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--ot-layer-1) 96%, transparent), color-mix(in srgb, var(--ot-layer-2) 80%, transparent));
+  box-shadow: var(--ot-shadow);
+  overflow: hidden;
+}
+
+.ot-card-pad {
+  padding: 14px;
+}
+
+.ot-card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ot-text-dim);
+}
+
+.ot-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: linear-gradient(120deg, var(--ot-accent), var(--ot-accent-2));
+}
+
+.ot-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.ot-grid-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.ot-grid-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+@media (max-width: 720px) {
+  .ot-grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 460px) {
+  .ot-grid-2, .ot-grid-4 { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* -------------------------------------------------------------- stat chips */
+
+.ot-stat {
+  position: relative;
+  padding: 12px 13px;
+  border: 1px solid var(--ot-border);
+  border-radius: var(--ot-radius-sm);
+  background: color-mix(in srgb, var(--ot-layer-1) 88%, transparent);
+  overflow: hidden;
+  transition: transform 0.22s cubic-bezier(0.2, 0.9, 0.25, 1), border-color 0.22s ease;
+}
+
+.ot-stat:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--ot-accent) 34%, var(--ot-border));
+}
+
+.ot-stat::after {
+  content: "";
+  position: absolute;
+  right: -30px;
+  top: -30px;
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--ot-accent) 26%, transparent), transparent 68%);
+  pointer-events: none;
+}
+
+.ot-stat-label {
+  color: var(--ot-text-dim);
+  font-size: 11.5px;
+}
+
+.ot-stat-value {
+  margin-top: 3px;
+  font-size: 21px;
+  font-weight: 660;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.ot-stat-foot {
+  margin-top: 2px;
+  color: var(--ot-text-dim);
+  font-size: 11px;
+}
+
+/* ------------------------------------------------------------------- next */
+
+.ot-next {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 15px 16px;
+}
+
+.ot-next-main {
+  min-width: 0;
+  flex: 1;
+}
+
+.ot-next-time {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ot-next-start {
+  font-size: 24px;
+  font-weight: 680;
+  letter-spacing: -0.02em;
+}
+
+.ot-next-count {
+  color: color-mix(in srgb, var(--ot-accent) 84%, var(--ot-text));
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.ot-next-title {
+  margin-top: 2px;
+  font-size: 14.5px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ot-next-meta {
+  margin-top: 3px;
+  color: var(--ot-text-dim);
+  font-size: 11.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ot-countdown {
+  flex: none;
+  text-align: right;
+}
+
+.ot-countdown-value {
+  font-size: 26px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  background: linear-gradient(120deg, var(--ot-accent), var(--ot-accent-3));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.ot-countdown-label {
+  color: var(--ot-text-dim);
+  font-size: 11px;
+}
+
+.ot-progress {
+  position: relative;
+  height: 3px;
+  margin-top: 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ot-text) 10%, transparent);
+  overflow: hidden;
+}
+
+.ot-progress > i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--ot-accent), var(--ot-accent-2));
+  transition: width 0.6s cubic-bezier(0.25, 0.9, 0.3, 1);
+}
+
+/* ---------------------------------------------------------------- pomodoro */
+
+.ot-pomo {
+  display: grid;
+  grid-template-columns: minmax(0, 220px) minmax(0, 1fr);
+  gap: 18px;
+  align-items: center;
+}
+
+@media (max-width: 620px) {
+  .ot-pomo { grid-template-columns: minmax(0, 1fr); justify-items: center; }
+}
+
+.ot-ring {
+  position: relative;
+  width: 208px;
+  height: 208px;
+  flex: none;
+}
+
+.ot-ring-svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.ot-ring-track {
+  fill: none;
+  stroke: color-mix(in srgb, var(--ot-text) 9%, transparent);
+  stroke-width: 10;
+}
+
+.ot-ring-arc {
+  fill: none;
+  stroke: url(#ot-ring-gradient);
+  stroke-width: 10;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.95s linear;
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--ot-accent) 45%, transparent));
+}
+
+.ot-ring-break .ot-ring-arc {
+  stroke: url(#ot-ring-gradient-break);
+}
+
+.ot-ring-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.ot-ring-time {
+  font-size: 40px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+}
+
+.ot-ring-phase {
+  color: var(--ot-text-dim);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ot-ring-subject {
+  max-width: 150px;
+  color: var(--ot-text-dim);
+  font-size: 11.5px;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ot-ring.running .ot-ring-center::after {
+  content: "";
+  position: absolute;
+  inset: 26px;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--ot-accent) 26%, transparent);
+  animation: ot-breathe 3.6s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes ot-breathe {
+  0%, 100% { transform: scale(0.97); opacity: 0.35; }
+  50% { transform: scale(1.04); opacity: 0.85; }
+}
+
+.ot-pomo-side {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.ot-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ot-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 13px;
+  border: 1px solid var(--ot-border);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--ot-layer-2) 78%, transparent);
+  color: var(--ot-text);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform 0.16s cubic-bezier(0.2, 0.9, 0.25, 1), background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.ot-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--ot-accent) 40%, var(--ot-border));
+  background: color-mix(in srgb, var(--ot-accent) 14%, var(--ot-layer-2));
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--ot-accent) 16%, transparent);
+}
+
+.ot-btn:active:not(:disabled) {
+  transform: translateY(0) scale(0.985);
+}
+
+.ot-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.ot-btn-primary {
+  border-color: transparent;
+  background: linear-gradient(120deg, var(--ot-accent), var(--ot-accent-2));
+  color: #fff;
+  font-weight: 600;
+}
+
+.ot-btn-primary:hover:not(:disabled) {
+  background: linear-gradient(120deg, var(--ot-accent), var(--ot-accent-2));
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--ot-accent) 34%, transparent);
+}
+
+.ot-btn-ghost {
+  border-color: transparent;
+  background: transparent;
+  color: var(--ot-text-dim);
+}
+
+.ot-btn-ghost:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--ot-text) 8%, transparent);
+  color: var(--ot-text);
+  box-shadow: none;
+}
+
+.ot-btn-sm {
+  height: 26px;
+  padding: 0 9px;
+  font-size: 11.5px;
+  border-radius: 7px;
+}
+
+.ot-btn-icon {
+  width: 30px;
+  padding: 0;
+}
+
+.ot-rounds {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ot-round {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 1px solid var(--ot-border-strong);
+  transition: background 0.3s ease, transform 0.3s ease, border-color 0.3s ease;
+}
+
+.ot-round[data-done="true"] {
+  border-color: transparent;
+  background: linear-gradient(120deg, var(--ot-accent), var(--ot-accent-2));
+  transform: scale(1.12);
+}
+
+.ot-round[data-current="true"] {
+  border-color: color-mix(in srgb, var(--ot-accent) 70%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ot-accent) 18%, transparent);
+}
+
+.ot-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ot-field-label {
+  min-width: 92px;
+  color: var(--ot-text-dim);
+  font-size: 12px;
+}
+
+.ot-input {
+  flex: 1;
+  min-width: 0;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--ot-border);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--ot-bg) 60%, transparent);
+  color: var(--ot-text);
+  outline: none;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.ot-input:focus {
+  border-color: color-mix(in srgb, var(--ot-accent) 56%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ot-accent) 15%, transparent);
+}
+
+.ot-input-num {
+  width: 74px;
+  flex: none;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------------------------------------------------------------- timeline */
+
+.ot-daybar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.ot-daylist {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+
+.ot-daylist::-webkit-scrollbar { display: none; }
+
+.ot-daychip {
+  flex: none;
+  min-width: 46px;
+  padding: 6px 8px;
+  border: 1px solid var(--ot-border);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ot-text-dim);
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s cubic-bezier(0.2, 0.9, 0.25, 1);
+}
+
+.ot-daychip:hover {
+  transform: translateY(-1px);
+  color: var(--ot-text);
+  border-color: var(--ot-border-strong);
+}
+
+.ot-daychip[data-active="true"] {
+  border-color: transparent;
+  background: linear-gradient(140deg, color-mix(in srgb, var(--ot-accent) 26%, transparent), color-mix(in srgb, var(--ot-accent-2) 20%, transparent));
+  color: var(--ot-text);
+  font-weight: 600;
+}
+
+.ot-daychip b {
+  display: block;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ot-daychip span {
+  font-size: 10.5px;
+}
+
+.ot-daychip i {
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  margin-top: 3px;
+  border-radius: 50%;
+  background: var(--ot-accent);
+}
+
+.ot-tl {
+  position: relative;
+  padding-left: 14px;
+}
+
+.ot-tl::before {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 6px;
+  bottom: 6px;
+  width: 1px;
+  background: linear-gradient(180deg, transparent, var(--ot-border-strong) 12%, var(--ot-border-strong) 88%, transparent);
+}
+
+.ot-ev {
+  position: relative;
+  display: flex;
+  gap: 11px;
+  margin-bottom: 9px;
+}
+
+.ot-ev-node {
+  position: absolute;
+  left: -14px;
+  top: 15px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 2px solid var(--ot-bg);
+  background: var(--ot-idle);
+  transition: background 0.3s ease, box-shadow 0.3s ease;
+}
+
+.ot-ev[data-phase="current"] .ot-ev-node {
+  background: linear-gradient(120deg, var(--ot-accent), var(--ot-accent-3));
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--ot-accent) 50%, transparent);
+  animation: ot-pulse 2s ease-out infinite;
+}
+
+.ot-ev[data-phase="past"] .ot-ev-node,
+.ot-ev[data-done="true"] .ot-ev-node {
+  background: var(--ot-success);
+}
+
+.ot-ev-time {
+  flex: none;
+  width: 54px;
+  padding-top: 12px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.ot-ev-start {
+  font-size: 13px;
+  font-weight: 620;
+}
+
+.ot-ev-end {
+  color: var(--ot-text-dim);
+  font-size: 10.5px;
+}
+
+.ot-ev-card {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--ot-border);
+  border-radius: var(--ot-radius-sm);
+  background: color-mix(in srgb, var(--ot-layer-1) 86%, transparent);
+  transition: transform 0.22s cubic-bezier(0.2, 0.9, 0.25, 1), border-color 0.22s ease, background 0.22s ease;
+}
+
+.ot-ev-card:hover {
+  transform: translateX(3px);
+  border-color: color-mix(in srgb, var(--ot-accent) 36%, var(--ot-border));
+}
+
+.ot-ev[data-phase="current"] .ot-ev-card {
+  border-color: color-mix(in srgb, var(--ot-accent) 48%, transparent);
+  background: linear-gradient(120deg, color-mix(in srgb, var(--ot-accent) 13%, var(--ot-layer-1)), color-mix(in srgb, var(--ot-layer-1) 92%, transparent));
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--ot-accent) 15%, transparent);
+}
+
+.ot-ev[data-done="true"] .ot-ev-card {
+  opacity: 0.55;
+}
+
+.ot-ev-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ot-ev-title {
+  min-width: 0;
+  flex: 1;
+  font-size: 13.5px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ot-ev[data-done="true"] .ot-ev-title {
+  text-decoration: line-through;
+}
+
+.ot-ev-when {
+  flex: none;
+  color: color-mix(in srgb, var(--ot-accent) 82%, var(--ot-text));
+  font-size: 11.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.ot-ev[data-phase="past"] .ot-ev-when {
+  color: var(--ot-text-dim);
+  font-weight: 500;
+}
+
+.ot-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 5px;
+}
+
+.ot-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 7px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--ot-text) 7%, transparent);
+  color: var(--ot-text-dim);
+  font-size: 11px;
+}
+
+.ot-tag-owner {
+  background: color-mix(in srgb, var(--ot-accent) 16%, transparent);
+  color: color-mix(in srgb, var(--ot-accent) 86%, var(--ot-text));
+}
+
+.ot-tag-warn {
+  background: color-mix(in srgb, var(--ot-warn) 18%, transparent);
+  color: color-mix(in srgb, var(--ot-warn) 86%, var(--ot-text));
+}
+
+/* A row the user typed in themselves, not one a roster produced. */
+.ot-tag-manual {
+  background: color-mix(in srgb, var(--ot-accent-3) 18%, transparent);
+  color: color-mix(in srgb, var(--ot-accent-3) 82%, var(--ot-text));
+}
+
+.ot-chip-manual {
+  background: color-mix(in srgb, var(--ot-accent-3) 18%, transparent);
+  color: color-mix(in srgb, var(--ot-accent-3) 84%, var(--ot-text));
+}
+
+.ot-ev-notes {
+  margin-top: 5px;
+  color: var(--ot-text-dim);
+  font-size: 11.5px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.ot-ev-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 9px;
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+  transition: opacity 0.24s ease, max-height 0.24s ease;
+}
+
+.ot-ev:hover .ot-ev-actions,
+.ot-ev[data-phase="current"] .ot-ev-actions,
+.ot-ev:focus-within .ot-ev-actions {
+  opacity: 1;
+  max-height: 40px;
+}
+
+.ot-empty {
+  padding: 34px 16px;
+  border: 1px dashed var(--ot-border-strong);
+  border-radius: var(--ot-radius);
+  color: var(--ot-text-dim);
+  text-align: center;
+}
+
+.ot-empty b {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--ot-text);
+  font-size: 14px;
+}
+
+/* ----------------------------------------------------------------- calendar */
+
+.ot-cal {
+  margin-bottom: 12px;
+  padding: 12px 13px 11px;
+  border: 1px solid var(--ot-border);
+  border-radius: var(--ot-radius);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--ot-layer-1) 96%, transparent), color-mix(in srgb, var(--ot-layer-2) 80%, transparent));
+  box-shadow: var(--ot-shadow);
+  animation: ot-fade-up 0.28s cubic-bezier(0.2, 0.9, 0.25, 1) both;
+}
+
+.ot-cal-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.ot-cal-title {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}
+
+.ot-cal-title b {
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.ot-cal-summary {
+  color: var(--ot-text-dim);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ot-cal-flip {
+  padding: 0 4px;
+}
+
+.ot-cal-week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.ot-cal-week span {
+  text-align: center;
+  color: var(--ot-text-dim);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+}
+
+.ot-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.ot-cal-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-height: 42px;
+  padding: 5px 2px 4px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--ot-text-dim);
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
+}
+
+.ot-cal-cell:hover {
+  transform: translateY(-1px);
+  border-color: var(--ot-border-strong);
+  background: color-mix(in srgb, var(--ot-text) 6%, transparent);
+  color: var(--ot-text);
+}
+
+/* Days outside the month stay clickable — they are real days with real
+   schedules — but recede so the month itself reads as the subject. */
+.ot-cal-cell[data-outside="true"] {
+  opacity: 0.42;
+}
+
+.ot-cal-cell[data-marked="true"] {
+  color: var(--ot-text);
+}
+
+.ot-cal-cell[data-today="true"] {
+  border-color: color-mix(in srgb, var(--ot-accent) 52%, transparent);
+}
+
+.ot-cal-cell[data-selected="true"] {
+  border-color: transparent;
+  background: linear-gradient(140deg, color-mix(in srgb, var(--ot-accent) 26%, transparent), color-mix(in srgb, var(--ot-accent-2) 20%, transparent));
+  color: var(--ot-text);
+  font-weight: 650;
+}
+
+.ot-cal-daynum {
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.ot-cal-marks {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  height: 5px;
+}
+
+.ot-cal-mark {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--ot-accent);
+}
+
+.ot-cal-mark-more {
+  border-radius: 2px;
+}
+
+/* Every schedule on the day is ticked off: the day still counts, it is just
+   done — a hollow dot says that without pretending the day is empty. */
+.ot-cal-mark-done {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--ot-success);
+}
+
+.ot-cal-items {
+  margin-top: 11px;
+  padding-top: 10px;
+  border-top: 1px solid var(--ot-border);
+}
+
+.ot-cal-items-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 7px;
+  font-size: 12.5px;
+}
+
+.ot-cal-item {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  padding: 4px 0;
+  font-size: 12.5px;
+}
+
+.ot-cal-item-time {
+  flex: none;
+  width: 46px;
+  text-align: right;
+  color: var(--ot-text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.ot-cal-item-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ot-cal-item-place {
+  flex: none;
+  padding: 1px 7px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--ot-text) 7%, transparent);
+  color: var(--ot-text-dim);
+  font-size: 11px;
+}
+
+.ot-cal-item[data-done="true"] {
+  color: var(--ot-text-dim);
+}
+
+.ot-cal-item[data-done="true"] .ot-cal-item-title {
+  text-decoration: line-through;
+}
+
+.ot-cal-item-done {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex: none;
+  color: var(--ot-success);
+  font-size: 11px;
+}
+
+.ot-cal-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 9px;
+}
+
+/* -------------------------------------------------------- add an event */
+
+.ot-add {
+  margin-bottom: 12px;
+  padding: 12px 13px 11px;
+  border: 1px solid color-mix(in srgb, var(--ot-accent-3) 34%, var(--ot-border));
+  border-radius: var(--ot-radius);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--ot-layer-1) 96%, transparent), color-mix(in srgb, var(--ot-accent-3) 9%, transparent));
+  box-shadow: var(--ot-shadow);
+  animation: ot-fade-up 0.28s cubic-bezier(0.2, 0.9, 0.25, 1) both;
+}
+
+.ot-add-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.ot-add-head b {
+  font-size: 13.5px;
+  font-weight: 650;
+}
+
+.ot-add-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2.2fr) repeat(3, minmax(0, 1fr)) minmax(0, 1.4fr);
+  gap: 8px;
+  align-items: end;
+}
+
+.ot-add-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.ot-add-grid label > span {
+  color: var(--ot-text-dim);
+  font-size: 11px;
+}
+
+.ot-add-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+@media (max-width: 860px) {
+  .ot-add-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ot-add-title { grid-column: 1 / -1; }
+}
+
+@media (max-width: 460px) {
+  .ot-add-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 620px) {
+  .ot-cal-item-place { display: none; }
+}
+
+/* --------------------------------------------------------------- companion */
+
+.ot-comp {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  height: 100%;
+  min-height: 0;
+}
+
+.ot-comp-head {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.ot-avatar {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: 14px;
+  background: linear-gradient(140deg, var(--ot-accent), var(--ot-accent-2) 60%, var(--ot-accent-3));
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--ot-accent) 32%, transparent);
+  animation: ot-float 5s ease-in-out infinite;
+}
+
+.ot-avatar::after {
+  content: "";
+  position: absolute;
+  inset: 7px 9px auto 9px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 12px 0 -1px rgba(255, 255, 255, 0.9);
+  opacity: 0.92;
+}
+
+.ot-avatar[data-busy="true"]::after {
+  animation: ot-blink 1.1s steps(2, end) infinite;
+}
+
+@keyframes ot-float {
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  50% { transform: translateY(-4px) rotate(1deg); }
+}
+
+@keyframes ot-blink {
+  50% { opacity: 0.35; }
+}
+
+.ot-comp-name {
+  font-size: 14px;
+  font-weight: 640;
+}
+
+.ot-comp-state {
+  color: var(--ot-text-dim);
+  font-size: 11.5px;
+}
+
+.ot-msgs {
+  flex: 1;
+  min-height: 180px;
+  max-height: 46vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding-right: 3px;
+  scrollbar-width: thin;
+}
+
+.ot-msg {
+  max-width: 88%;
+  padding: 9px 12px;
+  border-radius: 13px;
+  font-size: 12.5px;
+  animation: ot-pop 0.3s cubic-bezier(0.2, 0.9, 0.25, 1);
+}
+
+@keyframes ot-pop {
+  from { opacity: 0; transform: translateY(7px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+
+.ot-msg-ai {
+  align-self: flex-start;
+  border: 1px solid var(--ot-border);
+  border-bottom-left-radius: 5px;
+  background: color-mix(in srgb, var(--ot-layer-1) 92%, transparent);
+}
+
+.ot-msg-user {
+  align-self: flex-end;
+  border-bottom-right-radius: 5px;
+  background: linear-gradient(120deg, color-mix(in srgb, var(--ot-accent) 88%, transparent), color-mix(in srgb, var(--ot-accent-2) 82%, transparent));
+  color: #fff;
+}
+
+.ot-msg-speak {
+  font-weight: 600;
+}
+
+.ot-msg-detail {
+  margin-top: 4px;
+  color: var(--ot-text-dim);
+  font-size: 12px;
+  white-space: pre-wrap;
+}
+
+.ot-msg-user .ot-msg-detail {
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.ot-msg-trace {
+  margin-top: 6px;
+  padding-top: 5px;
+  border-top: 1px dashed color-mix(in srgb, var(--ot-text) 14%, transparent);
+  color: var(--ot-text-dim);
+  font-size: 10.5px;
+}
+
+/* Capability chip beside the companion name: which brain is answering. */
+.ot-model-chip {
+  display: inline-block;
+  margin-left: 7px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 600;
+  vertical-align: 1px;
+}
+
+.ot-model-chip-live {
+  background: color-mix(in srgb, var(--ot-success) 20%, transparent);
+  color: color-mix(in srgb, var(--ot-success) 88%, var(--ot-text));
+}
+
+.ot-model-chip-live::before {
+  content: "";
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  margin-right: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: ot-pulse 2.4s ease-out infinite;
+}
+
+.ot-model-chip-local {
+  background: color-mix(in srgb, var(--ot-text) 10%, transparent);
+  color: var(--ot-text-dim);
+}
+
+.ot-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.ot-chipbtn {
+  padding: 3px 9px;
+  border: 1px solid color-mix(in srgb, var(--ot-accent) 32%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ot-accent) 10%, transparent);
+  color: color-mix(in srgb, var(--ot-accent) 88%, var(--ot-text));
+  font-size: 11.5px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.ot-chipbtn:hover {
+  transform: translateY(-1px);
+  background: color-mix(in srgb, var(--ot-accent) 22%, transparent);
+}
+
+.ot-typing {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.ot-typing i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--ot-text-dim);
+  animation: ot-typing 1.1s ease-in-out infinite;
+}
+
+.ot-typing i:nth-child(2) { animation-delay: 0.16s; }
+.ot-typing i:nth-child(3) { animation-delay: 0.32s; }
+
+@keyframes ot-typing {
+  0%, 100% { transform: translateY(0); opacity: 0.4; }
+  50% { transform: translateY(-3px); opacity: 1; }
+}
+
+.ot-composer {
+  display: flex;
+  gap: 7px;
+  flex: none;
+}
+
+/* ------------------------------------------------------------------ import */
+
+/*
+ * The import page is a form, so the controls follow form rules: a control and
+ * the button that acts on it sit on one line, labels align in a column, and
+ * nothing floats in the middle of a row. `.ot-inline-form` is that line.
+ */
+.ot-gap {
+  height: 12px;
+}
+
+.ot-inline-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* The import page is a single column of forms; keep it from stretching. */
+.ot-import {
+  max-width: 980px;
+}
+
+.ot-inline-form > .ot-input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ot-inline-form > .ot-btn {
+  flex: none;
+}
+
+.ot-headspace {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ot-warn-text {
+  color: color-mix(in srgb, var(--ot-warn) 80%, var(--ot-text));
+}
+
+.ot-drop {
+  padding: 16px;
+  border: 1px dashed var(--ot-border-strong);
+  border-radius: var(--ot-radius);
+  background: color-mix(in srgb, var(--ot-layer-1) 70%, transparent);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.ot-drop:hover,
+.ot-drop-active {
+  border-color: color-mix(in srgb, var(--ot-accent) 52%, transparent);
+  background: color-mix(in srgb, var(--ot-accent) 8%, var(--ot-layer-1));
+}
+
+.ot-drop-active {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ot-accent) 14%, transparent);
+}
+
+.ot-drop-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ot-text);
+}
+
+.ot-drop-sub {
+  margin-top: 4px;
+  color: var(--ot-text-dim);
+  font-size: 11.5px;
+}
+
+.ot-drop-actions {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* The real input stays in the tree so its click() is trusted, but never shown. */
+.ot-file-hidden {
+  display: none;
+}
+
+.ot-details {
+  margin-top: 10px;
+}
+
+.ot-details > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 2px;
+  color: var(--ot-text-dim);
+  font-size: 11.5px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.ot-details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.ot-details > summary::before {
+  content: "▸";
+  font-size: 10px;
+  transition: transform 0.18s ease;
+}
+
+.ot-details[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+.ot-details > summary:hover {
+  color: var(--ot-text);
+}
+
+.ot-details code {
+  max-width: 46ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--ot-text) 8%, transparent);
+  font-size: 11px;
+}
+
+/* ---- analysis verdict ---- */
+
+.ot-verdict {
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px solid var(--ot-border);
+  border-radius: var(--ot-radius-sm);
+  background: color-mix(in srgb, var(--ot-layer-1) 82%, transparent);
+}
+
+.ot-verdict[data-tone="high"] {
+  border-color: color-mix(in srgb, var(--ot-success) 34%, var(--ot-border));
+}
+
+.ot-verdict[data-tone="low"] {
+  border-color: color-mix(in srgb, var(--ot-warn) 34%, var(--ot-border));
+}
+
+.ot-verdict-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ot-verdict-model {
+  color: var(--ot-text-dim);
+  font-size: 11px;
+}
+
+.ot-verdict-body {
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.ot-verdict-hints {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  color: var(--ot-text-dim);
+  font-size: 11.5px;
+  line-height: 1.7;
+}
+
+.ot-verdict-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.ot-tag {
+  padding: 2px 8px;
+  border: 1px solid var(--ot-border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ot-text) 5%, transparent);
+  color: var(--ot-text-dim);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.ot-pill {
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.ot-pill[data-tone="high"] {
+  background: color-mix(in srgb, var(--ot-success) 18%, transparent);
+  color: color-mix(in srgb, var(--ot-success) 78%, var(--ot-text));
+}
+
+.ot-pill[data-tone="mid"] {
+  background: color-mix(in srgb, var(--ot-accent) 16%, transparent);
+  color: color-mix(in srgb, var(--ot-accent) 82%, var(--ot-text));
+}
+
+.ot-pill[data-tone="low"] {
+  background: color-mix(in srgb, var(--ot-warn) 18%, transparent);
+  color: color-mix(in srgb, var(--ot-warn) 80%, var(--ot-text));
+}
+
+.ot-verdict-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--ot-border);
+}
+
+.ot-linkbtn {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ot-text-dim);
+  font-size: 11.5px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.ot-linkbtn:hover {
+  color: var(--ot-text);
+}
+
+.ot-working {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 11px;
+  border: 1px solid color-mix(in srgb, var(--ot-accent) 26%, var(--ot-border));
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--ot-accent) 7%, transparent);
+  color: var(--ot-text-dim);
+  font-size: 12px;
+}
+
+.ot-advanced {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid var(--ot-border);
+  border-radius: var(--ot-radius-sm);
+  background: color-mix(in srgb, var(--ot-layer-2) 42%, transparent);
+}
+
+.ot-advanced-head {
+  margin-bottom: 4px;
+}
+
+.ot-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--ot-border);
+  border-radius: var(--ot-radius-sm);
+}
+
+.ot-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.ot-table th,
+.ot-table td {
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--ot-border);
+  text-align: left;
+}
+
+.ot-table th {
+  position: sticky;
+  top: 0;
+  background: var(--ot-layer-2);
+  color: var(--ot-text-dim);
+  font-weight: 600;
+  z-index: 1;
+}
+
+.ot-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.ot-table tr[data-match="true"] {
+  background: color-mix(in srgb, var(--ot-accent) 9%, transparent);
+}
+
+.ot-table tr[data-match="false"] {
+  opacity: 0.5;
+}
+
+.ot-maprow {
+  display: grid;
+  grid-template-columns: minmax(88px, 0.7fr) minmax(0, 1fr) minmax(0, 1.1fr);
+  gap: 8px;
+  align-items: center;
+}
+
+.ot-map-label {
+  color: var(--ot-text-dim);
+  font-size: 12px;
+}
+
+.ot-map-hint {
+  color: var(--ot-text-dim);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .ot-maprow {
+    grid-template-columns: minmax(80px, 0.6fr) minmax(0, 1fr);
+  }
+
+  .ot-map-hint {
+    display: none;
+  }
+}
+
+
+.ot-note {
+  padding: 9px 11px;
+  border-radius: 9px;
+  border: 1px solid var(--ot-border);
+  background: color-mix(in srgb, var(--ot-layer-2) 60%, transparent);
+  color: var(--ot-text-dim);
+  font-size: 11.5px;
+}
+
+.ot-note-warn {
+  border-color: color-mix(in srgb, var(--ot-warn) 40%, transparent);
+  background: color-mix(in srgb, var(--ot-warn) 12%, transparent);
+  color: color-mix(in srgb, var(--ot-warn) 82%, var(--ot-text));
+}
+
+.ot-note-error {
+  border-color: color-mix(in srgb, var(--ot-danger) 42%, transparent);
+  background: color-mix(in srgb, var(--ot-danger) 12%, transparent);
+  color: color-mix(in srgb, var(--ot-danger) 82%, var(--ot-text));
+}
+
+.ot-note-ok {
+  border-color: color-mix(in srgb, var(--ot-success) 40%, transparent);
+  background: color-mix(in srgb, var(--ot-success) 12%, transparent);
+  color: color-mix(in srgb, var(--ot-success) 82%, var(--ot-text));
+}
+
+.ot-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.ot-switch input {
+  appearance: none;
+  position: relative;
+  width: 36px;
+  height: 20px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ot-text) 18%, transparent);
+  cursor: pointer;
+  transition: background 0.22s ease;
+}
+
+.ot-switch input::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.22s cubic-bezier(0.3, 0.9, 0.3, 1);
+}
+
+.ot-switch input:checked {
+  background: linear-gradient(120deg, var(--ot-accent), var(--ot-accent-2));
+}
+
+.ot-switch input:checked::after {
+  transform: translateX(16px);
+}
+
+.ot-mapping-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.ot-sub {
+  color: var(--ot-text-dim);
+  font-size: 11.5px;
+}
+
+.ot-mono {
+  font-variant-numeric: tabular-nums;
+}
+
+.ot-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.ot-feed-item {
+  display: flex;
+  gap: 9px;
+  padding: 8px 10px;
+  border: 1px solid var(--ot-border);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--ot-layer-1) 70%, transparent);
+}
+
+.ot-feed-item[data-level="urgent"] {
+  border-color: color-mix(in srgb, var(--ot-danger) 40%, transparent);
+}
+
+.ot-feed-time {
+  flex: none;
+  color: var(--ot-text-dim);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ot-feed-title {
+  font-weight: 600;
+  font-size: 12.5px;
+}
+
+.ot-feed-body {
+  color: var(--ot-text-dim);
+  font-size: 11.5px;
+}
+
+.ot-enter {
+  animation: ot-fade-up 0.4s cubic-bezier(0.2, 0.85, 0.25, 1) both;
+}
+
+/* ---------------------------------------------------------------- notices */
+
+/* `shell.overlay` entries are click-through until they opt back in, so every
+   interactive surface in this layer declares `pointer-events: auto` explicitly.
+   The notice STACK stays inert — a full-width transparent box that swallowed
+   clicks would break the app underneath — and each notice re-enables itself. */
+
+.ot-notices {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  width: min(330px, calc(100vw - 36px));
+  pointer-events: none;
+}
+
+/* The floating card and the mini pill are each their own overlay root. The
+   harness turns an overlay entry into a hit target with
+   `overlayLayer > * { pointer-events: auto }`, but relying on that alone means a
+   nested wrapper silently kills every click, so each root also asks for pointer
+   events itself. */
+.ot-float-shell,
+.ot-float-mini {
+  pointer-events: auto;
+}
+
+.ot-notice {
+  position: relative;
+  padding: 11px 13px 11px 15px;
+  border: 1px solid var(--ot-border-strong);
+  border-radius: 12px;
+  background: var(--ot-overlay);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(14px);
+  pointer-events: auto;
+  animation: ot-slide-in 0.36s cubic-bezier(0.2, 0.9, 0.25, 1);
+  overflow: hidden;
+}
+
+.ot-notice::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, var(--ot-accent), var(--ot-accent-2));
+}
+
+.ot-notice[data-level="urgent"]::before {
+  background: linear-gradient(180deg, var(--ot-danger), var(--ot-warn));
+}
+
+.ot-notice[data-level="warn"]::before {
+  background: linear-gradient(180deg, var(--ot-warn), var(--ot-accent));
+}
+
+.ot-notice.leaving {
+  animation: ot-slide-out 0.26s ease forwards;
+}
+
+@keyframes ot-slide-in {
+  from { opacity: 0; transform: translateX(28px) scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes ot-slide-out {
+  to { opacity: 0; transform: translateX(24px) scale(0.97); }
+}
+
+.ot-notice-title {
+  font-size: 12.5px;
+  font-weight: 640;
+}
+
+.ot-notice-body {
+  margin-top: 2px;
+  color: var(--ot-text-dim);
+  font-size: 11.5px;
+}
+
+.ot-notice-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+/* ------------------------------------------------------------------- float */
+
+.ot-float-root {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  padding: 10px;
+  background: transparent;
+}
+
+.ot-float-shell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  height: 100%;
+  padding: 12px;
+  border: 1px solid var(--ot-border-strong);
+  border-radius: 18px;
+  background: var(--ot-overlay);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(18px);
+  /* Opt back in: an overlay entry is click-through until it does. */
+  pointer-events: auto;
+  overflow: hidden;
+  animation: ot-pop 0.34s cubic-bezier(0.2, 0.9, 0.25, 1);
+}
+
+.ot-float-grip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 26px;
+  cursor: grab;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--ot-text) 6%, transparent), transparent);
+}
+
+.ot-float-grip:active {
+  cursor: grabbing;
+}
+
+.ot-float-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 2px;
+  -webkit-app-region: drag;
+}
+
+.ot-float-title {
+  font-size: 11.5px;
+  font-weight: 620;
+  letter-spacing: 0.05em;
+  color: var(--ot-text-dim);
+  text-transform: uppercase;
+}
+
+.ot-float-ring {
+  position: relative;
+  width: 142px;
+  height: 142px;
+  margin: 2px auto 0;
+}
+
+.ot-float-time {
+  font-size: 30px;
+}
+
+.ot-float-next {
+  padding: 9px 11px;
+  border: 1px solid var(--ot-border);
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--ot-layer-1) 80%, transparent);
+}
+
+.ot-float-next-title {
+  font-size: 12.5px;
+  font-weight: 620;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ot-float-next-meta {
+  color: var(--ot-text-dim);
+  font-size: 11px;
+  margin-top: 2px;
+}
+
+.ot-float-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  scrollbar-width: thin;
+}
+
+.ot-float-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ot-text) 5%, transparent);
+  font-size: 12px;
+}
+
+.ot-float-row[data-phase="current"] {
+  background: color-mix(in srgb, var(--ot-accent) 18%, transparent);
+}
+
+.ot-float-row-time {
+  flex: none;
+  color: var(--ot-text-dim);
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+}
+
+.ot-float-row-title {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ot-float-foot {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+}
+
+.ot-float-mini {
+  /* The inline style carries the position; these are the same values restated
+     so a styling regression cannot leave the pill laid out in flow. */
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 60px;
+  padding: 0 12px;
+  border: 1px solid var(--ot-border-strong);
+  border-radius: 999px;
+  background: var(--ot-overlay);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(16px);
+  /* Opt back in: an overlay entry is click-through until it does. */
+  pointer-events: auto;
+  cursor: grab;
+  overflow: hidden;
+  animation: ot-pop 0.3s cubic-bezier(0.2, 0.9, 0.25, 1);
+}
+
+.ot-float-mini:active {
+  cursor: grabbing;
+}
+
+.ot-float-mini-ring {
+  width: 38px;
+  height: 38px;
+  flex: none;
+}
+
+.ot-float-mini-time {
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.ot-float-mini-meta {
+  color: var(--ot-text-dim);
+  font-size: 10.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ot-float-mini-body {
+  min-width: 0;
+  flex: 1;
+}
+
+/* -------------------------------------------------------- reduced motion */
+
+@media (prefers-reduced-motion: reduce) {
+  .ot-root *,
+  .ot-root *::before,
+  .ot-root *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+
+  .ot-aurora { animation: none; }
+}
+
+</style></head>
+<body><div class="preview-frame"><div class="ot-root"><div class="ot-root"><div class="ot-aurora"></div><header class="ot-header"><div class="ot-headrow"><h1 class="ot-title">Orbit Time</h1><span class="ot-subtitle">今天 · 6 条日程</span><div class="ot-headspace"></div><div class="ot-headmeta"><span class="ot-chip ot-chip-owner" title="Excel 里只抓取这些名字的行"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M12 3.5 13.9 9.6 20 11.5l-6.1 1.9L12 19.5l-1.9-6.1L4 11.5l6.1-1.9z"></path></svg>张三 / 张老师</span><span class="ot-chip ot-chip-live" title="C:\Users\User\Desktop\2026春季学期值班与课程安排表.xlsx">已同步 12 条</span><span class="ot-chip ot-chip-manual" title="这些是你自己加的，重新导入 Excel 也不会被覆盖"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M12 6v12M6 12h12"></path></svg>自己加的 1 条</span><span class="ot-chip"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3.2 2"></path></svg>00:06</span><button type="button" class="ot-btn ot-btn-sm ot-btn-icon" title="打开置顶悬浮小窗" aria-label="打开置顶悬浮小窗"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M14 4.5h5.5V10M10 19.5H4.5V14M19.5 4.5 13 11M4.5 19.5 11 13"></path></svg></button></div></div></header><nav class="ot-tabs" role="tablist"><button type="button" class="ot-tab" data-active="false">日程时间轴<span class="ot-badge">12</span></button><button type="button" class="ot-tab" data-active="false">日程时间轴 · 日历</button><button type="button" class="ot-tab" data-active="true">日程时间轴 · 加一条</button><button type="button" class="ot-tab" data-active="false">番茄专注<span class="ot-badge">18:00</span></button><button type="button" class="ot-tab" data-active="false">AI 助手</button><button type="button" class="ot-tab" data-active="false">设置 / 导入</button></nav><div class="ot-body"><div><div class="ot-daybar"><div class="ot-daylist"><button type="button" class="ot-daychip" data-active="false"><span>周一</span><b>12</b></button><button type="button" class="ot-daychip" data-active="false"><span>周二</span><b>13</b></button><button type="button" class="ot-daychip" data-active="true"><span>今天</span><b>14</b><i></i></button><button type="button" class="ot-daychip" data-active="false"><span>周四</span><b>15</b><i></i></button><button type="button" class="ot-daychip" data-active="false"><span>周五</span><b>16</b></button><button type="button" class="ot-daychip" data-active="false"><span>周六</span><b>17</b></button><button type="button" class="ot-daychip" data-active="false"><span>周日</span><b>18</b></button></div><div class="ot-headspace"></div><button type="button" class="ot-btn ot-btn-sm ot-btn-primary"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"></rect><path d="M3.5 10h17M8 3.5v3.5M16 3.5v3.5"></path></svg>日历</button><button type="button" class="ot-btn ot-btn-sm"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.4 5.7M20 5.5V11h-5.5"></path></svg></button></div><form class="ot-add"><div class="ot-add-head"><b>直接加一条</b><span class="ot-sub">只写这一行也行；时间留空就是全天备忘</span><div class="ot-headspace"></div><button type="button" class="ot-btn ot-btn-ghost ot-btn-sm" title="收起" aria-label="收起"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M6.5 6.5 17.5 17.5M17.5 6.5 6.5 17.5"></path></svg>收起</button></div><div class="ot-add-grid"><label class="ot-add-title"><span>要做什么</span><input class="ot-input" type="text" placeholder="例如：交实验报告 / 找导师确认选题" autofocus="" value=""/></label><label><span>日期</span><input class="ot-input" type="date" value="2026-10-14"/></label><label><span>开始</span><input class="ot-input" type="time" value="01:00"/></label><label><span>结束</span><input class="ot-input" type="time" value="02:00"/></label><label><span>地点</span><input class="ot-input" type="text" placeholder="可不填" value=""/></label></div><div class="ot-add-foot"><span class="ot-sub">提醒节奏跟着设置里的来；这条是你自己加的，重新导入 Excel 也不会被覆盖。</span><div class="ot-headspace"></div><button type="button" class="ot-btn ot-btn-primary ot-btn-sm"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M12 6v12M6 12h12"></path></svg>加进日程</button></div></form><section class="ot-cal"><div class="ot-cal-head"><button type="button" class="ot-btn ot-btn-sm ot-btn-icon ot-cal-flip" title="上一个月" aria-label="上一个月"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M14.5 5.5 8 12l6.5 6.5"></path></svg></button><div class="ot-cal-title"><b>2026 年 10 月</b><span class="ot-sub">10 月 14 日 · 周三</span></div><div class="ot-cal-summary">5 天有日程 · 共 11 条</div><div class="ot-headspace"></div><button type="button" class="ot-btn ot-btn-primary ot-btn-sm" title="在选中的这一天加一条自己的日程" aria-label="在选中的这一天加一条自己的日程"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M12 6v12M6 12h12"></path></svg>加一条</button><button type="button" class="ot-btn ot-btn-sm" disabled="" title="回到今天所在的月份" aria-label="回到今天所在的月份"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"></rect><path d="M3.5 10h17M8 3.5v3.5M16 3.5v3.5"></path></svg>今天</button><button type="button" class="ot-btn ot-btn-sm ot-btn-icon ot-cal-flip" title="下一个月" aria-label="下一个月"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M9.5 5.5 16 12l-6.5 6.5"></path></svg></button></div><div class="ot-cal-week"><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span></div><div class="ot-cal-grid"><button type="button" class="ot-cal-cell ot-enter" data-outside="true" data-today="false" data-selected="false" data-marked="false" title="9 月 28 日 周一
+没有日程"><span class="ot-cal-daynum">28</span><span class="ot-cal-marks"></span></button><button type="button" class="ot-cal-cell ot-enter" data-outside="true" data-today="false" data-selected="false" data-marked="false" title="9 月 29 日 周二
+没有日程"><span class="ot-cal-daynum">29</span><span class="ot-cal-marks"></span></button><button type="button" class="ot-cal-cell ot-enter" data-outside="true" data-today="false" data-selected="false" data-marked="false" title="9 月 30 日 周三
+没有日程"><span class="ot-cal-daynum">30</span><span class="ot-cal-marks"></span></button><button type="button" class="ot-cal-cell ot-enter" data-outside="false" data-today="false" data-selected="false" data-marked="false" title="10 月 1 日 周四
+没有日程"><span class="ot-cal-daynum">1</span><span class="ot-cal-marks"></span></button><button type="button" class="ot-cal-cell ot-enter" data-outside="false" data-today="false" data-selected="false" data-marked="false" title="10 月 2 日 周五
+没有日程"><span class="ot-cal-daynum">2</span><span class="ot-cal-marks"></span></button><button type="button" class="ot-cal-cell ot-enter" data-outside="false" data-today="false" data-selected="false" data-marked="false" title="10 月 3 日 周六
+没有日程"><span class="ot-cal-daynum">3</span><span class="ot-cal-marks"></span></button><button type="button" class="ot-cal-cell ot-enter" data-outside="false" data-today="false" data-selected="false" data-marked="false" title="10 月 4 日 周日
+没有日程"><span class="ot-cal-daynum">4</span><span class="ot-cal-marks"></span></button><button type="button" class="ot-cal-cell ot-enter" data-outside="false" data-today="false" data-selected="false" data-marked="false" title="10 月 5 日 周一
+没有日程"><span class="ot-cal-daynum">5</span><span class="ot-cal-marks"></span></button><button type="button" class="ot-cal-cell ot-enter" data-outside="false" data-today="false" data-selected="false" data-marked="false" title="10 月 6 日 周二
+没有日程"><span class="ot-cal-daynum">6</span><span class="ot-cal-marks"></span></button><button type="button" class="ot-cal-cell ot-enter" data-outside="false" data-today="false" data-selected="false" data-marked="false" title="10 月 7 日 周三
+没有日程"><span class="ot-cal-daynum">7</span><span class="ot-cal-marks"></span></button><button type="button" class="ot-cal-cell ot-enter" data-outside="false" data-today="false" data-selected="false" data-marked="false" title="10 月 8 日 周四
+没有日程"><span class="ot-cal-daynum">8</span><span class="ot-cal-marks"></span></button><button type="button" class="ot-cal-cell ot-enter" data-outside="false" data-today="false" data-selected="false" data-marked="false" title="10 月 9 日 周五
+没有日程"><span class="ot-cal-daynum">9</span><span class="ot-cal-marks"></span></button><button type="button" class="ot-cal-cell ot-enter" data-outside="false" data-today="false" data-selected="false" data-marked="false" title="10 月 10 日 周六
+没有日程"><span class="ot-cal-daynum">10</span><span class="ot-cal-marks"></span></button><button type="button" class="ot-cal-cell ot-enter" data-outside="false" data-today="false" data-selected="false" data-marked="false" title="10 月 11 日 周日
+没有日程"><span class="ot-cal-daynum">11</span><span class="ot-cal-marks"></span></button><button type="button" class="ot-cal-cell ot-enter" data-outside="false" data-today="false" data-selected="false" data-marked="false" title="10 月 12 日 周一
+没有日程"><span class="ot-cal-daynum">12</span><span class="ot-cal-marks"></span></button><button type="button" class="ot-cal-cell ot-enter" data-outside="false" data-today="false" data-selected="false" data-marked="false" title="10 月 13 日 周二
+没有日程"><span class="ot-cal-daynum">13</span><span class="ot-cal-marks"></span></button><button type="button" class="ot-cal-cell ot-enter" data-outside="false" data-today="true" data-selected="true" data-marked="true" title="10 月 14 日 周三
+英语听力、高等数学 A、项目周会、数据结构实验、1:1 沟通、交实验报告"><span class="ot-cal-daynum">14</span><span class="ot-cal-marks"><i class="ot-cal-mark"></i><i class="ot-cal-mark"></i><i class="ot-cal-mark"></i><i class="ot-cal-mark ot-cal-mark-more"></i></span></button><button type="button" class="ot-cal-cell ot-enter" data-outside="false" data-today="false" data-selected="false" data-marked="true" title="10 月 15 日 周四
+教研活动、客户拜访"><span class="ot-cal-daynum">15</span><span class="ot-cal-marks"><i class="ot-cal-mark"></i><i class="ot-cal-mark"></i></span></button><button type="button" class="ot-cal-cell ot-enter" data-outside="false" data-today="false" data-selected="false" data-marked="false" title="10 月 16 日 周五
+没有日程"><span class="ot-cal-daynum">16</span><span class="ot-cal-marks"></span></button><button type="button" class="ot-cal-cell ot-enter" data-outside="false" data-today="false" data-selected="false" data-marked="false" title="10 月 17 日 周六
+没有日程"><span class="ot-cal-daynum">17</span><span class="ot-cal-marks"></span></button><button type="button" class="ot-cal-cell ot-enter" data-outside="false" data-today="false" data-selected="false" data-marked="false" title="10 月 18 日 周日
+没有日程"><span class="ot-cal-daynum">18</span><span class="ot-cal-marks"></span></button><button type="button" class="ot-cal-cell ot-enter" data-outside="false" data-today="false" data-selected="false" data-marked="false" title="10 月 19 日 周一
+没有日程"><span class="ot-cal-daynum">19</span><span class="ot-cal-marks"></span></button><button type="button" class="ot-cal-cell ot-enter" data-outside="false" data-today="false" data-selected="false" data-marked="true" title="10 月 20 日 周二
+示例支部早打卡值班"><span class="ot-cal-daynum">20</span><span class="ot-cal-marks"><i class="ot-cal-mark"></i></span></button><button type="button" class="ot-cal-cell ot-enter" data-outside="false" data-today="false" data-selected="false" data-marked="false" title="10 月 21 日 周三
+没有日程"><span class="ot-cal-daynum">21</span><span class="ot-cal-marks"></span></button><button type="button" class="ot-cal-cell ot-enter" data-outside="false" data-today="false" data-selected="false" data-marked="false" title="10 月 22 日 周四
+没有日程"><span class="ot-cal-daynum">22</span><span class="ot-cal-marks"></span></button><button type="button" class="ot-cal-cell ot-enter" data-outside="false" data-today="false" data-selected="false" data-marked="true" title="10 月 23 日 周五
+示例支部晚自习考勤点名"><span class="ot-cal-daynum">23</span><span class="ot-cal-marks"><i class="ot-cal-mark"></i></span></button><button type="button" class="ot-cal-cell ot-enter" data-outside="false" data-today="false" data-selected="false" data-marked="false" title="10 月 24 日 周六
+没有日程"><span class="ot-cal-daynum">24</span><span class="ot-cal-marks"></span></button><button type="button" class="ot-cal-cell ot-enter" data-outside="false" data-today="false" data-selected="false" data-marked="false" title="10 月 25 日 周日
+没有日程"><span class="ot-cal-daynum">25</span><span class="ot-cal-marks"></span></button><button type="button" class="ot-cal-cell ot-enter" data-outside="false" data-today="false" data-selected="false" data-marked="false" title="10 月 26 日 周一
+没有日程"><span class="ot-cal-daynum">26</span><span class="ot-cal-marks"></span></button><button type="button" class="ot-cal-cell ot-enter" data-outside="false" data-today="false" data-selected="false" data-marked="true" title="10 月 27 日 周二
+示例支部早打卡值班"><span class="ot-cal-daynum">27</span><span class="ot-cal-marks"><i class="ot-cal-mark"></i></span></button><button type="button" class="ot-cal-cell ot-enter" data-outside="false" data-today="false" data-selected="false" data-marked="false" title="10 月 28 日 周三
+没有日程"><span class="ot-cal-daynum">28</span><span class="ot-cal-marks"></span></button><button type="button" class="ot-cal-cell ot-enter" data-outside="false" data-today="false" data-selected="false" data-marked="false" title="10 月 29 日 周四
+没有日程"><span class="ot-cal-daynum">29</span><span class="ot-cal-marks"></span></button><button type="button" class="ot-cal-cell ot-enter" data-outside="false" data-today="false" data-selected="false" data-marked="false" title="10 月 30 日 周五
+没有日程"><span class="ot-cal-daynum">30</span><span class="ot-cal-marks"></span></button><button type="button" class="ot-cal-cell ot-enter" data-outside="false" data-today="false" data-selected="false" data-marked="false" title="10 月 31 日 周六
+没有日程"><span class="ot-cal-daynum">31</span><span class="ot-cal-marks"></span></button><button type="button" class="ot-cal-cell ot-enter" data-outside="true" data-today="false" data-selected="false" data-marked="false" title="11 月 1 日 周日
+没有日程"><span class="ot-cal-daynum">1</span><span class="ot-cal-marks"></span></button></div><div class="ot-cal-items"><div class="ot-cal-items-head"><b>10 月 14 日 周三</b><span class="ot-tag">6 条</span></div><div class="ot-cal-item" data-done="false"><span class="ot-cal-item-time">08:00</span><span class="ot-cal-item-title" title="英语听力">英语听力</span><span class="ot-cal-item-place">语音室 2</span></div><div class="ot-cal-item" data-done="false"><span class="ot-cal-item-time">10:00</span><span class="ot-cal-item-title" title="高等数学 A">高等数学 A</span><span class="ot-cal-item-place">三教 305</span></div><div class="ot-cal-item" data-done="false"><span class="ot-cal-item-time">19:30</span><span class="ot-cal-item-title" title="项目周会">项目周会</span><span class="ot-cal-item-place">线上腾讯会议</span></div><div class="ot-cal-item" data-done="false"><span class="ot-cal-item-time">21:00</span><span class="ot-cal-item-title" title="数据结构实验">数据结构实验</span><span class="ot-cal-item-place">实验楼 B210</span></div><div class="ot-cal-item" data-done="false"><span class="ot-cal-item-time">23:00</span><span class="ot-cal-item-title" title="1:1 沟通">1:1 沟通</span><span class="ot-cal-item-place">会议室 A</span></div><div class="ot-cal-item" data-done="false"><span class="ot-cal-item-time">17:00</span><span class="ot-cal-item-title" title="交实验报告">交实验报告</span><span class="ot-tag ot-tag-manual">自己加的</span><span class="ot-cal-item-place">实验楼 B210</span></div><div class="ot-cal-actions"><span class="ot-sub">点日期看那一天的完整时间轴；想加东西就点「加一条」</span><div class="ot-headspace"></div><button type="button" class="ot-btn ot-btn-ghost ot-btn-sm"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M6.5 6.5 17.5 17.5M17.5 6.5 6.5 17.5"></path></svg>收起日历</button></div></div></section></div></div><div class="ot-notices"><div class="ot-notice" data-level="urgent"><div class="ot-notice-title">⏰ 5 分钟后开始 · 数据结构实验</div><div class="ot-notice-body">21:00 · 实验楼 B210 · 计算机</div><div class="ot-notice-actions"><button type="button" class="ot-btn ot-btn-sm"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"></path></svg>已完成</button><button type="button" class="ot-btn ot-btn-sm"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3.2 2"></path></svg>5 分钟后再提醒</button><button type="button" class="ot-btn ot-btn-ghost ot-btn-sm"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M6.5 6.5 17.5 17.5M17.5 6.5 6.5 17.5"></path></svg>关闭</button></div></div></div></div></div></body></html>

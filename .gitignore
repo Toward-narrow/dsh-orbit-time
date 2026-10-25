@@ -1,0 +1,16 @@
+# build artifacts and scratch
+.cache/
+node_modules/
+*.log
+
+# python bytecode
+__pycache__/
+*.pyc
+
+# OS junk
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# personal schedule workbooks kept local (repo root only)
+/*.xlsx

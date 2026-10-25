@@ -1,0 +1,66 @@
+{
+  "name": "dsh-orbit-time",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Orbit Time — a schedule dashboard for DeepSeek Harness: Excel schedule import, multi-stage reminders, Pomodoro focus timer, and an AI companion.",
+  "main": "lib/index.js",
+  "exports": {
+    ".": {
+      "default": "./lib/index.js"
+    },
+    "./client": {
+      "default": "./lib/client.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "client": {
+      "platform": "web",
+      "immediately": true
+    }
+  },
+  "files": [
+    "lib/index.js",
+    "lib/client.js",
+    "lib/hud.ps1",
+    "lib/parse-xlsx.py",
+    "lib/shared-repair.cjs"
+  ],
+  "scripts": {
+    "build": "node scripts/build-host.mjs && node scripts/build-client.mjs",
+    "install-profile": "node scripts/sync-profile.mjs",
+    "test": "node scripts/smoke-client.mjs && node scripts/test-patch-parser.mjs && node scripts/test-state-location.mjs && node scripts/test-excel.mjs && node scripts/test-labels.mjs && node scripts/test-hud.mjs && node scripts/test-host.mjs",
+    "test:fast": "node scripts/smoke-client.mjs && node scripts/test-patch-parser.mjs && node scripts/test-state-location.mjs && node scripts/test-excel.mjs && node scripts/test-labels.mjs && node scripts/test-hud.mjs && node scripts/test-host.mjs --fast",
+    "test:client": "node scripts/smoke-client.mjs",
+    "test:analyze": "node scripts/test-analyze.mjs",
+    "test:state": "node scripts/test-state-location.mjs",
+    "repair-state": "node scripts/repair-state.mjs",
+    "test:excel": "node scripts/test-excel.mjs",
+    "test:labels": "node scripts/test-labels.mjs",
+    "test:host": "node scripts/test-host.mjs",
+    "test:patch": "node scripts/test-patch-parser.mjs",
+    "test:hud": "node scripts/test-hud.mjs",
+    "inspect": "node scripts/inspect-workbook.mjs",
+    "verify": "node scripts/verify-profile.mjs",
+    "check-live": "node scripts/check-live.mjs",
+    "probe-apply": "node scripts/probe-apply.mjs",
+    "dump-config": "node scripts/dump-entry.mjs",
+    "preview": "node scripts/preview-panel.mjs",
+    "hud": "node scripts/manual-hud.mjs",
+    "capture-hud": "node scripts/capture-hud.mjs",
+    "debug-live": "node scripts/debug-live.mjs",
+    "verify-installed": "node scripts/verify-installed.mjs"
+  },
+  "devDependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "keywords": [
+    "dsh-plugin",
+    "schedule",
+    "pomodoro",
+    "dashboard"
+  ],
+  "license": "MIT"
+}
