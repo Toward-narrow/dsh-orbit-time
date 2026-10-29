@@ -976,11 +976,20 @@ await check('the boot timer launches the floating HUD with the right arguments',
   const portAt = args.indexOf('-port')
   if (portAt === -1 || !/^\d+$/.test(args[portAt + 1])) throw new Error('no usable port was passed')
   // The mock web server reports port 0, so the widget must fall back to the
-  // configured DSH_WEB_URL rather than handing the user a dead button.
+  // configured DSH_WEB_URL rather than handing the user a dead button. The
+  // expected value comes from the environment, not a literal: the port belongs
+  // to the install that happens to be running, and a fixed one only passes on
+  // the machine the test was written on.
   const urlAt = args.indexOf('-dashboardUrl')
   if (urlAt === -1) throw new Error(`no dashboardUrl was passed: ${args.join(' ')}`)
-  if (args[urlAt + 1] !== 'http://127.0.0.1:19387/') {
-    throw new Error(`dashboardUrl=${args[urlAt + 1]} (expected the DSH_WEB_URL fallback)`)
+  const fallback = process.env.DSH_WEB_URL
+  if (typeof fallback === 'string' && /^https?:\/\//.test(fallback)) {
+    const expected = fallback.endsWith('/') ? fallback : fallback + '/'
+    if (args[urlAt + 1] !== expected) {
+      throw new Error(`dashboardUrl=${args[urlAt + 1]} (expected the DSH_WEB_URL fallback ${expected})`)
+    }
+  } else if (!/^https?:\/\/127\.0\.0\.1:\d+\/$/.test(args[urlAt + 1])) {
+    throw new Error(`dashboardUrl=${args[urlAt + 1]} is not a usable local URL`)
   }
 
   const running = await post('/hud', { action: 'status' })

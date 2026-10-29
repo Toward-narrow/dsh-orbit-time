@@ -301,6 +301,11 @@ function Dashboard() {
           snapshot.manualCount > 0
             ? h('span', { className: 'ot-chip ot-chip-manual', title: '这些是你自己加的，重新导入 Excel 也不会被覆盖' }, ui.glyph('plus', 11), '自己加的 ' + snapshot.manualCount + ' 条')
             : null,
+          // Rows the model read out of a document or a picture. Counted apart
+          // from typed rows: "读了 6 条" is not "我自己加了 6 条".
+          snapshot.readCount > 0
+            ? h('span', { className: 'ot-chip ot-chip-ai', title: '这些是 AI 从资料里读出来的，重新导入 Excel 也不会被覆盖' }, ui.glyph('robot', 11), 'AI 读出 ' + snapshot.readCount + ' 条')
+            : null,
           h('span', { className: 'ot-chip' }, ui.glyph('clock', 11), snapshot.serverTime.label),
           ui.button({
             small: true,

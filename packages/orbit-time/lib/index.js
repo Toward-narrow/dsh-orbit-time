@@ -8,7 +8,7 @@
  * face and stays installable as an ordinary local package.
  */
 
-import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync, statSync, unlinkSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync, statSync, unlinkSync, rmSync } from 'node:fs'
 import * as childProcess from 'node:child_process'
 import { createRequire } from 'node:module'
 import { homedir, tmpdir } from 'node:os'
@@ -29,6 +29,7 @@ export const inject = ['webServer', 'timer']
 const require_ = createRequire(import.meta.url)
 const HERE = dirname(fileURLToPath(import.meta.url))
 const PARSE_SCRIPT = join(HERE, 'parse-xlsx.py')
+const READ_SCRIPT = join(HERE, 'read-document.py')
 
 const ROUTE_BASE = '/api/orbit-time'
 const STATE_DIR_NAME = 'orbit-time'
@@ -43,6 +44,27 @@ const MAX_FEED = 60
  * already-persisted manual rows.
  */
 const MANUAL_SHEET = '手动添加'
+
+/**
+ * The marker for a row the model read out of a document or a picture.
+ *
+ * Same job as `MANUAL_SHEET` — the row has no spreadsheet behind it, so the next
+ * import must not sweep it away — but a different origin, because "I typed this"
+ * and "Orbyt read this off a photo" are different things to see on the timeline,
+ * and deleting one should not look like deleting the other.
+ */
+const AI_SHEET = 'AI 读资料'
+
+/** Formats each pipeline owns. Excel has its own parser; everything else is read as material. */
+const EXCEL_EXTENSIONS = new Set(['.xlsx', '.xlsm', '.xls'])
+const IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp', '.tif', '.tiff'])
+const TEXT_EXTENSIONS = new Set([
+  '.txt', '.text', '.md', '.markdown', '.csv', '.tsv', '.json', '.ics',
+  '.log', '.yaml', '.yml', '.ini', '.conf', '.xml', '.html', '.htm',
+])
+const DOCUMENT_EXTENSIONS = new Set([...IMAGE_EXTENSIONS, ...TEXT_EXTENSIONS, '.pdf', '.docx', '.doc', '.pptx'])
+const IMAGE_MEDIA_TYPES = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.gif': 'image/gif' }
+
 
 // ---------------------------------------------------------------------------
 // small helpers
@@ -529,6 +551,8 @@ export function apply(ctx, rawConfig = {}) {
     feedSeq: 0,
     lastScanAt: null,
     scanErrors: [],
+    /** The last document the model read, so the panel can say what it was. */
+    lastExtraction: null,
   }
   try {
     if (existsSync(runtimePath)) {
@@ -549,7 +573,7 @@ export function apply(ctx, rawConfig = {}) {
    * the exact complaint ("自己加的日程重启就没了") that the bucket was added for.
    */
   if (!Array.isArray(runtime.manualEvents) || runtime.manualEvents.length === 0) {
-    const recovered = runtime.events.filter((event) => isObject(event) && event.source?.sheet === MANUAL_SHEET)
+    const recovered = runtime.events.filter((event) => isObject(event) && isSelfMadeSheet(event.source?.sheet))
     if (recovered.length > 0) runtime.manualEvents = recovered
   }
   if (!Number.isFinite(Number(runtime.manualSeq)) || Number(runtime.manualSeq) < 0) runtime.manualSeq = 0
@@ -741,11 +765,27 @@ export function apply(ctx, rawConfig = {}) {
    */
 
   function isManualEvent(event) {
-    return isObject(event) && event.source?.sheet === MANUAL_SHEET
+    return isObject(event) && isSelfMadeSheet(event.source?.sheet)
+  }
+
+  /** Rows that have no file behind them: typed in, or read out of a document. */
+  function isSelfMadeSheet(sheet) {
+    return sheet === MANUAL_SHEET || sheet === AI_SHEET
   }
 
   function manualRows() {
     return Array.isArray(runtime.manualEvents) ? runtime.manualEvents.filter((row) => isObject(row)) : []
+  }
+
+  /** How many rows each origin contributes, for the panel's counters. */
+  function selfMadeCounts() {
+    let typed = 0
+    let read = 0
+    for (const row of manualRows()) {
+      if (row.source?.sheet === AI_SHEET) read += 1
+      else typed += 1
+    }
+    return { typed, read }
   }
 
   function nextManualIndex() {
@@ -1531,6 +1571,19 @@ export function apply(ctx, rawConfig = {}) {
     if (dshHome) {
       list.push(join(dshHome, 'dsh-runtimes', 'dsh-primary-runtime', 'dependencies', 'python', 'python.exe'))
     }
+    /*
+     * The desktop app does not export `DSH_HOME` into a plugin process, so the
+     * bundled interpreter was never found by that branch and the plugin fell
+     * through to whatever `python` happened to be on PATH. That works for
+     * openpyxl by luck; the document reader needs PyMuPDF and python-docx, which
+     * ship with the managed runtime specifically. Look there by the resolved
+     * harness home too — the same place `prepareStateDir` already trusts.
+     */
+    try {
+      list.push(join(resolveHarnessHome().dir, 'dsh-runtimes', 'dsh-primary-runtime', 'dependencies', 'python', 'python.exe'))
+    } catch {
+      /* no home: the PATH candidates still apply */
+    }
     try {
       const payload = require_('@deepseek-ai/dsh-workspace-dependencies')
       if (typeof payload?.pythonPath === 'string') list.push(payload.pythonPath)
@@ -1570,7 +1623,7 @@ export function apply(ctx, rawConfig = {}) {
           } catch {
             /* ignore */
           }
-          reject(new Error(`读取 Excel 超时（${timeoutMs} ms）`))
+          reject(new Error(`读取文件超时（${timeoutMs} ms）`))
         }, timeoutMs)
         child.stdout?.on('data', (chunk) => {
           stdout += chunk
@@ -2032,20 +2085,22 @@ export function apply(ctx, rawConfig = {}) {
     }
     runtime.events = events
     mergeManualEvents(events)
-    runtime.excel.manualCount = runtime.manualEvents.length
+    const selfMade = selfMadeCounts()
+    runtime.excel.manualCount = selfMade.typed
+    runtime.excel.readCount = selfMade.read
     runtime.lastScanAt = new Date().toISOString()
 
     const summary = sources
       .map((source) => `${source.sheet}(${source.rowCount} 行/${source.matchedHere} 条)`)
       .join('、')
-    const manual = runtime.manualEvents.length
+    const manual = selfMade.typed + selfMade.read
     pushFeed({
       kind: 'import',
       level: failures.length > 0 ? 'warn' : 'info',
       title: '日程已更新',
       body:
         `共 ${sources.length} 份表，抓取 ${events.length} 条与你相关的日程 · ${summary}` +
-        (manual > 0 ? `；另有 ${manual} 条手动添加的日程保留着` : '') +
+        (manual > 0 ? `；另有 ${manual} 条自己加 / 从资料里读出来的日程保留着` : '') +
         (carried.length > 0 ? `；${carried.length} 条来自这次没读到的表，先原样保留` : ''),
       meta: {
         kept: events.length,
@@ -2088,7 +2143,7 @@ export function apply(ctx, rawConfig = {}) {
     return statSyncImpl(path)
   }
 
-  // ---- uploaded workbooks --------------------------------------------------
+  // ---- uploaded material ---------------------------------------------------
 
   /**
    * Where a dropped file lands.
@@ -2098,19 +2153,22 @@ export function apply(ctx, rawConfig = {}) {
    * process's scratch file.
    */
   const UPLOAD_DIR = join(stateDir, 'uploads')
+  /** Scratch directory for page images rendered out of a PDF or a Word file. */
+  const READ_TMP_DIR = join(stateDir, 'read-tmp')
 
   /**
-   * Persist a workbook the browser handed us.
+   * Persist a file the browser handed us.
    *
    * A drop or a file picker gives the page the bytes but never the path, so the
-   * panel uploads them and the host parses from disk — the same code path as a
-   * pasted path, which keeps one parser instead of two. Only the newest few are
+   * panel uploads them and the host reads from disk — the same code path as a
+   * pasted path, which keeps one reader instead of two. Only the newest few are
    * kept: a saved schedule is a read-only snapshot that the next drop replaces.
    */
   function saveUpload(fileName, base64) {
     const raw = String(fileName ?? '').replace(/[\\/]/g, '_').trim() || 'dropped.xlsx'
-    if (!/\.(xlsx|xlsm|xls)$/i.test(raw)) {
-      throw new Error(`只支持 .xlsx / .xlsm / .xls，收到的是「${raw}」。`)
+    const extension = extensionOf(raw)
+    if (!EXCEL_EXTENSIONS.has(extension) && !DOCUMENT_EXTENSIONS.has(extension)) {
+      throw new Error(`这个格式还读不了：${raw}。可以拖 Excel、PDF、Word(.docx)、PPT(.pptx)、纯文本或图片。`)
     }
     if (typeof base64 !== 'string' || base64 === '') throw new Error('上传内容为空。')
     const buffer = Buffer.from(base64, 'base64')
@@ -2125,12 +2183,896 @@ export function apply(ctx, rawConfig = {}) {
         .filter((entry) => entry !== raw)
         .map((entry) => ({ entry, at: statSync(join(UPLOAD_DIR, entry)).mtimeMs }))
         .sort((left, right) => right.at - left.at)
-        .slice(6)
+        .slice(9)
       for (const item of stale) unlinkSync(join(UPLOAD_DIR, item.entry))
     } catch {
       /* pruning is best-effort */
     }
     return target
+  }
+
+  // ---- material → schedule -------------------------------------------------
+  //
+  // A roster is not the only way a schedule reaches a person. A notice taped to
+  // a door, a Word file from the class group, a screenshot of the duty table, or
+  // a paragraph pasted out of a chat all say "you are on at 19:30" — none of them
+  // has columns, and none of them is a spreadsheet. This pipeline reads those:
+  // text is pulled out locally (PDF / Word / PPT / plain text), pictures and
+  // scanned pages are handed to the model as images, and the model answers with
+  // concrete events. When no model is available a deterministic scanner still
+  // finds the lines that carry a date and a time, so the feature degrades the way
+  // the workbook importer does — with a reason instead of a spinner.
+
+  function extensionOf(path) {
+    const match = /\.([A-Za-z0-9]+)$/.exec(String(path ?? ''))
+    return match === null ? '' : '.' + match[1].toLowerCase()
+  }
+
+  /** Which reader owns this path. */
+  function sourceKindOf(path) {
+    const extension = extensionOf(path)
+    if (EXCEL_EXTENSIONS.has(extension)) return 'excel'
+    if (IMAGE_EXTENSIONS.has(extension)) return 'image'
+    if (TEXT_EXTENSIONS.has(extension)) return 'text'
+    if (extension === '.pdf') return 'pdf'
+    if (extension === '.docx' || extension === '.doc') return 'docx'
+    if (extension === '.pptx') return 'pptx'
+    return 'unknown'
+  }
+
+  /**
+   * A path the user typed, resolved the same way a workbook path is.
+   *
+   * Blank stays blank here: an empty document field means "nothing to read",
+   * not "use whatever is on the Desktop". A bare file name is still searched for
+   * in the places people keep files.
+   */
+  function resolveResourcePath(candidate) {
+    const trimmed = typeof candidate === 'string' ? candidate.trim().replace(/^"|"$/g, '') : ''
+    if (trimmed === '') return ''
+    if (existsSync(trimmed)) return resolve(trimmed)
+    if (isAbsolute(trimmed)) return resolve(trimmed)
+    for (const base of workbookSearchBases()) {
+      const joined = join(base, trimmed)
+      if (existsSync(joined)) return resolve(joined)
+    }
+    return resolve(trimmed)
+  }
+
+  /** Decode a text file without assuming UTF-8, which a Chinese Windows box rarely uses. */
+  function readTextFile(path) {
+    const buffer = readFileSync(path)
+    let text = buffer.toString('utf8')
+    if (text.includes('\uFFFD')) {
+      try {
+        text = new TextDecoder('gb18030').decode(buffer)
+      } catch {
+        /* Node without full ICU: keep the replacement characters */
+      }
+    }
+    text = text.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n')
+    const limit = 24_000
+    return { text: text.slice(0, limit), truncated: text.length > limit }
+  }
+
+  /**
+   * Drop scratch directories a crashed or interrupted read left behind.
+   *
+   * Each read names its own directory and deletes it on the way out, so anything
+   * still here is a leftover. Pruning is bounded and best-effort: a scratch
+   * directory that survives a crash is not worth failing a read over.
+   */
+  function pruneReadTmp() {
+    try {
+      if (!existsSync(READ_TMP_DIR)) return
+      const entries = readdirSync(READ_TMP_DIR)
+        .map((entry) => {
+          try {
+            return { entry, at: statSync(join(READ_TMP_DIR, entry)).mtimeMs }
+          } catch {
+            return { entry, at: 0 }
+          }
+        })
+        .sort((left, right) => right.at - left.at)
+      for (const [index, item] of entries.entries()) {
+        if (index < 12 && Date.now() - item.at < 2 * 86_400_000) continue
+        rmSync(join(READ_TMP_DIR, item.entry), { recursive: true, force: true })
+      }
+    } catch {
+      /* best-effort */
+    }
+  }
+
+  /**
+   * Read one piece of material into text plus page images.
+   *
+   * @returns {Promise<{kind:string,file:string,path:string,text:string,chars:number,
+   *   truncated:boolean,pages:Array<object>,images:string[],notes:string[],meta:object}>}
+   */
+  async function readResource(options = {}) {
+    const pasted = typeof options.text === 'string' ? options.text.trim() : ''
+    if (pasted !== '') {
+      const limit = 24_000
+      return {
+        kind: 'text',
+        file: typeof options.label === 'string' && options.label.trim() !== '' ? options.label.trim() : '粘贴的文字',
+        path: '',
+        text: pasted.slice(0, limit),
+        chars: Math.min(pasted.length, limit),
+        truncated: pasted.length > limit,
+        pages: [],
+        images: [],
+        notes: [],
+        meta: {},
+        scratchDir: '',
+        pasted: true,
+      }
+    }
+
+    const resolved = resolveResourcePath(options.path)
+    if (resolved === '') throw new Error('还没有指定要读的文件。')
+    if (!existsSync(resolved)) throw new Error(`找不到文件：${resolved}`)
+    let info = null
+    try {
+      info = statSyncLazy(resolved)
+    } catch (error) {
+      throw new Error(`无法读取文件：${error?.message ?? error}`)
+    }
+    if (!info.isFile()) throw new Error(`这不是一个文件：${resolved}`)
+
+    const kind = sourceKindOf(resolved)
+    if (kind === 'excel') throw new Error('Excel 排班表请走「读表」这条路：它按列映射解析，比 AI 猜得更准。')
+    if (kind === 'unknown') {
+      throw new Error(`这个格式还读不了（${extensionOf(resolved) || '无扩展名'}）：${basename(resolved)}。可以读 PDF / Word(.docx) / PPT(.pptx) / 纯文本 / 图片。`)
+    }
+    if (kind === 'text') {
+      // A log file the size of a disk is not a schedule; refusing it up front
+      // beats loading it into memory to find that out.
+      if (info.size > 8_000_000) throw new Error(`这个文本文件太大了（${Math.round(info.size / 1_048_576)} MB）。先截取相关的那一段再读。`)
+      const decoded = readTextFile(resolved)
+      if (decoded.text.trim() === '') throw new Error('这个文件是空的。')
+      return {
+        kind,
+        file: basename(resolved),
+        path: resolved,
+        text: decoded.text,
+        chars: decoded.text.length,
+        truncated: decoded.truncated,
+        pages: [],
+        images: [],
+        notes: decoded.truncated ? ['文件很长，只读了前 24000 字。'] : [],
+        meta: {},
+        scratchDir: '',
+      }
+    }
+
+    // One scratch directory per read: a second request must not delete the page
+    // images the first one is still handing to the model.
+    const outDir = join(READ_TMP_DIR, shortId('read', `${Date.now()}|${resolved}|${Math.random()}`))
+    mkdirSync(outDir, { recursive: true })
+    pruneReadTmp()
+    let parsed = null
+    try {
+      const { stdout, stderr } = await runPython(
+        READ_SCRIPT,
+        [resolved, JSON.stringify({ outDir, maxChars: 24_000, maxImages: 4 })],
+        90_000,
+      )
+      try {
+        parsed = JSON.parse(stdout)
+      } catch {
+        throw new Error(`读取结果无法识别：${(stderr || stdout).slice(0, 400)}`)
+      }
+    } catch (error) {
+      try {
+        rmSync(outDir, { recursive: true, force: true })
+      } catch {
+        /* scratch cleanup is best-effort */
+      }
+      throw error
+    }
+    if (parsed?.ok !== true) {
+      try {
+        rmSync(outDir, { recursive: true, force: true })
+      } catch {
+        /* ignore */
+      }
+      throw new Error(String(parsed?.error ?? '这个文件读不了'))
+    }
+    const images = Array.isArray(parsed.images) ? parsed.images.filter((path) => typeof path === 'string' && existsSync(path)) : []
+    return {
+      kind: typeof parsed.kind === 'string' ? parsed.kind : kind,
+      file: basename(resolved),
+      path: resolved,
+      text: typeof parsed.text === 'string' ? parsed.text : '',
+      chars: Number(parsed.chars) || 0,
+      truncated: parsed.truncated === true,
+      pages: Array.isArray(parsed.pages) ? parsed.pages : [],
+      images,
+      notes: Array.isArray(parsed.notes) ? parsed.notes.filter((note) => typeof note === 'string') : [],
+      meta: isObject(parsed.meta) ? parsed.meta : {},
+      scratchDir: outDir,
+    }
+  }
+
+  /** Save decoded images into the attachment store and keep the references. */
+  async function saveImageAttachments(images) {
+    if (images.length === 0) return []
+    const attachments = ctx.get?.('attachments')
+    if (!attachments || typeof attachments.saveImages !== 'function') {
+      throw new Error('当前组合里没有图片附件服务，读不了图。')
+    }
+    const inputs = []
+    for (const image of images) {
+      const extension = extensionOf(image)
+      const mediaType = IMAGE_MEDIA_TYPES[extension]
+      if (mediaType === undefined) continue
+      inputs.push({ data: readFileSync(image), mediaType, name: basename(image) })
+    }
+    if (inputs.length === 0) throw new Error('这些图片的格式读不了（只支持 PNG / JPEG / WebP / GIF）。')
+    return attachments.saveImages(inputs)
+  }
+
+  const KIND_LABELS = {
+    text: '文字',
+    image: '图片',
+    pdf: 'PDF',
+    docx: 'Word 文档',
+    pptx: 'PPT',
+  }
+
+  // ---- material → schedule: what the model is asked ------------------------
+
+  /**
+   * The extraction contract.
+   *
+   * Everything here is a rule the panel can check afterwards: dates are ISO,
+   * times are 24-hour, and the only thing that makes a row "yours" is the name
+   * filter. The prompt says so explicitly because a model's default instinct is
+   * to summarise the document — a summary cannot be put on a timeline.
+   */
+  const EXTRACT_SYSTEM = [
+    '你是日程抽取器。用户给你一份资料（一段文字、一个文档的节选，或几张图片），',
+    '你只做一件事：把里面「这个人要在什么时候做什么」变成确定的日程条目。',
+    '',
+    '只输出 JSON，不要解释，不要 Markdown 代码块：',
+    '{',
+    '  "events": [',
+    '    {',
+    '      "date": "YYYY-MM-DD",',
+    '      "start": "HH:MM",',
+    '      "end": "HH:MM",',
+    '      "title": "这件事叫什么（8–24 字，写具体动作，不要只抄文件名）",',
+    '      "location": "地点，没有就留空",',
+    '      "person": "这条是谁的事，资料里没写就留空",',
+    '      "notes": "原文里需要记住的要求（带什么、找谁、注意什么），没有就留空",',
+    '      "confidence": 0.8',
+    '    }',
+    '  ],',
+    '  "summary": "一两句中文：这份资料是什么、你读到了什么",',
+    '  "hints": ["给用户的提醒，最多 3 条"]',
+    '}',
+    '',
+    '硬性要求：',
+    '- 今天几号、星期几、关注的人是谁，都在「资料事实」里。相对日期（明天、下周三、本周五）要换算成具体日期。',
+    '- 只保留「关注的人」要参加的条目；明确写着是别人值班/开会/交材料的，不要放进来。',
+    '- 没有日期的条目不要输出；没有具体时间的条目 start / end 留空字符串（当作全天）。',
+    '- 时间是 24 小时制。跨零点（例如 23:30–00:30）照实写，不要拆成两天。',
+    '- 图片如果是表格，按行列关系读出「谁、哪天、几点、做什么」，不要只描述表格长什么样。',
+    '- 不确定的日期宁可不输出，绝对不要编造资料里没有的日期、地点或人名。',
+    '- 同一件事只输出一次。',
+  ].join('\n')
+
+  const EXTRACT_QUESTION = '把这份资料里属于我的日程读出来，按约定的 JSON 返回。'
+
+  /** The facts the model is allowed to reason from, as compact JSON. */
+  function buildExtractFacts(source, context) {
+    const facts = {
+      今天: context.todayKey,
+      星期: context.weekday,
+      现在: `${pad2(context.today.getHours())}:${pad2(context.today.getMinutes())}`,
+      关注的人: context.ownerNames.length > 0 ? context.ownerNames : ['（没有设置姓名，资料里所有日程都收下）'],
+      只保留未来天数: context.horizonDays,
+      时区: context.timezone,
+      资料: {
+        文件名: source.file,
+        类型: KIND_LABELS[source.kind] ?? source.kind,
+        页数: source.pages.length > 0 ? source.pages.length : undefined,
+        字数: source.chars > 0 ? source.chars : undefined,
+        附带图片: source.images.length > 0 ? `${source.images.length} 张，内容在用户消息的图片里` : undefined,
+        说明: source.notes.length > 0 ? source.notes : undefined,
+      },
+    }
+    if (source.text !== '') {
+      facts.资料文字 = source.truncated ? `${source.text}\n（资料太长，后文被截断）` : source.text
+    } else if (source.images.length > 0) {
+      facts.资料文字 = `这份资料没有可读的文字层，内容全在附带的 ${source.images.length} 张图片里。`
+    }
+    return JSON.stringify(facts, null, 1)
+  }
+
+  // ---- material → schedule: validation -------------------------------------
+
+  function pad2(value) {
+    return String(value).padStart(2, '0')
+  }
+
+  function isoDateOf(date) {
+    return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`
+  }
+
+  /** A date the timeline can sort, or '' if it cannot be one. */
+  function validIsoDate(value) {
+    const text = String(value ?? '').trim()
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return ''
+    const date = new Date(`${text}T00:00:00`)
+    if (Number.isNaN(date.getTime())) return ''
+    return isoDateOf(date) === text ? text : ''
+  }
+
+  /** `9:5` -> `09:05`, `19：30` -> `19:30`, anything unusable -> ''. */
+  function normaliseClock(value) {
+    const match = /^(\d{1,2})\s*[:：.]\s*(\d{1,2})$/.exec(String(value ?? '').trim())
+    if (match === null) return ''
+    const hour = Number(match[1])
+    const minute = Number(match[2])
+    if (!Number.isFinite(hour) || !Number.isFinite(minute) || hour > 23 || minute > 59) return ''
+    return `${pad2(hour)}:${pad2(minute)}`
+  }
+
+  function clockOf(minutes) {
+    const wrapped = ((minutes % 1440) + 1440) % 1440
+    return `${pad2(Math.floor(wrapped / 60))}:${pad2(wrapped % 60)}`
+  }
+
+  /**
+   * Keep the rows the timeline can actually use, and say why the rest went.
+   *
+   * The model is not trusted to have followed the rules, so this re-checks every
+   * field and drops anything that would render as a broken row. Exclusions are
+   * returned rather than swallowed: "it read 12 rows but only 4 are mine" is a
+   * fact the confirmation step has to be able to state.
+   */
+  function sanitiseExtractedEvents(rawEvents, context) {
+    const events = []
+    const excluded = []
+    const seen = new Set()
+    for (const raw of Array.isArray(rawEvents) ? rawEvents.slice(0, 80) : []) {
+      if (!isObject(raw)) continue
+      const title = repairText(String(raw.title ?? raw.course ?? '').trim())
+        .replace(/^["'「『]+|["'」』]+$/g, '')
+        .slice(0, 80)
+        .trim()
+      if (title === '') {
+        excluded.push({ title: '（没有标题）', reason: '没有标题' })
+        continue
+      }
+      const date = validIsoDate(raw.date)
+      if (date === '') {
+        excluded.push({ title, reason: '没有可用的日期' })
+        continue
+      }
+      const person = repairText(String(raw.person ?? '').trim()).slice(0, 40)
+      if (person !== '' && context.ownerNames.length > 0 && !matchesOwner(person)) {
+        excluded.push({ title, reason: `是 ${person} 的事，不是你的` })
+        continue
+      }
+      const start = normaliseClock(raw.start)
+      let end = normaliseClock(raw.end)
+      if (start !== '' && end === '') end = addMinutes(start, 60)
+      if (start === '') end = ''
+      const key = `${date}|${start}|${title}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      events.push({
+        date,
+        start,
+        end,
+        title,
+        location: repairText(String(raw.location ?? raw.place ?? '').trim()).slice(0, 80),
+        notes: repairText(String(raw.notes ?? raw.note ?? '').trim()).slice(0, 300),
+        person,
+        confidence: Number.isFinite(Number(raw.confidence)) ? clamp(Number(raw.confidence), 0.05, 0.99) : 0.55,
+      })
+    }
+    events.sort((left, right) => `${left.date}T${left.start}`.localeCompare(`${right.date}T${right.start}`))
+    return { events, excluded }
+  }
+
+  /** How many of the extracted rows the import filters would keep. */
+  function summarizeExtractPlan(events, context) {
+    const horizonKey = isoDateOf(new Date(context.today.getTime() + context.horizonDays * 86_400_000))
+    let importable = 0
+    let past = 0
+    let beyondHorizon = 0
+    let undated = 0
+    let firstDate = ''
+    let lastDate = ''
+    for (const event of events) {
+      if (event.date === '') {
+        undated += 1
+        continue
+      }
+      if (firstDate === '' || event.date < firstDate) firstDate = event.date
+      if (lastDate === '' || event.date > lastDate) lastDate = event.date
+      if (event.date < context.todayKey) past += 1
+      else if (event.date > horizonKey) beyondHorizon += 1
+      else importable += 1
+    }
+    return {
+      rows: events.length,
+      matched: events.length,
+      importable,
+      past,
+      beyondHorizon,
+      undated,
+      firstDate,
+      lastDate,
+      horizonDays: context.horizonDays,
+      ownerNames: context.ownerNames,
+    }
+  }
+
+  // ---- material → schedule: the local fallback -----------------------------
+  //
+  // No model, no problem: a notice that says "11月4日 07:00-07:30 早打卡值班"
+  // states everything the timeline needs, and a scanner can read it without
+  // understanding anything else. That is the floor this feature stands on — when
+  // the model is off, out of quota, or looking at a picture it cannot see, the
+  // panel still shows what the file plainly says and labels it 本机读的.
+
+  const LOCAL_RELATIVE_DAYS = { 今天: 0, 今日: 0, 今晚: 0, 明天: 1, 明日: 1, 明晚: 1, 后天: 2, 大后天: 3 }
+  const LOCAL_WEEKDAYS = { 一: 1, 二: 2, 三: 3, 四: 4, 五: 5, 六: 6, 日: 0, 天: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 0 }
+  const LOCAL_TIME_PREFIX = '上午|下午|晚上|傍晚|中午|早上|凌晨|早|晚'
+
+  function localHour(prefix, hour) {
+    const text = String(prefix ?? '')
+    if (text === '下午' || text === '晚上' || text === '晚' || text === '傍晚') return hour < 12 ? hour + 12 : hour
+    if (text === '中午') return hour < 11 ? hour + 12 : hour
+    if (text === '凌晨') return hour === 12 ? 0 : hour
+    return hour
+  }
+
+  /** The first date in one line, plus the exact substring that stated it. */
+  function findLocalDate(text, today) {
+    let match = /(\d{4})\s*[-/.年]\s*(\d{1,2})\s*[-/.月]\s*(\d{1,2})\s*日?/.exec(text)
+    if (match !== null) {
+      const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]))
+      if (!Number.isNaN(date.getTime()) && date.getMonth() === Number(match[2]) - 1) return { date, token: match[0] }
+    }
+    match = /(?<![\d:])(\d{1,2})\s*月\s*(\d{1,2})\s*[日号]/.exec(text)
+    if (match !== null) {
+      const month = Number(match[1])
+      const day = Number(match[2])
+      const date = new Date(today.getFullYear(), month - 1, day)
+      if (!Number.isNaN(date.getTime()) && date.getMonth() === month - 1) {
+        // A date far in the past is next year's: "12月3日" read in January.
+        if (date.getTime() < today.getTime() - 180 * 86_400_000) date.setFullYear(date.getFullYear() + 1)
+        return { date, token: match[0] }
+      }
+    }
+    // 11-04 / 11/4, but never the "00-07" inside "07:00-07:30".
+    match = /(?<![\d:])(\d{1,2})\s*[-/]\s*(\d{1,2})(?![\d:])/.exec(text)
+    if (match !== null) {
+      const month = Number(match[1])
+      const day = Number(match[2])
+      if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+        const date = new Date(today.getFullYear(), month - 1, day)
+        if (!Number.isNaN(date.getTime()) && date.getMonth() === month - 1) {
+          if (date.getTime() < today.getTime() - 180 * 86_400_000) date.setFullYear(date.getFullYear() + 1)
+          return { date, token: match[0] }
+        }
+      }
+    }
+    match = /(大后天|后天|明天|明日|今天|今日|今晚|明晚)/.exec(text)
+    if (match !== null) {
+      const offset = LOCAL_RELATIVE_DAYS[match[1]] ?? 0
+      return { date: new Date(today.getFullYear(), today.getMonth(), today.getDate() + offset), token: match[0] }
+    }
+    match = /(下)?\s*(?:周|星期|礼拜)\s*([一二三四五六日天1-7])/.exec(text)
+    if (match !== null) {
+      const target = LOCAL_WEEKDAYS[match[2]]
+      if (target !== undefined) {
+        let delta = (target - today.getDay() + 7) % 7
+        if (match[1] === '下') delta = delta === 0 ? 7 : delta + 7
+        return { date: new Date(today.getFullYear(), today.getMonth(), today.getDate() + delta), token: match[0] }
+      }
+    }
+    return null
+  }
+
+  /** The first clock range (or single clock time) in one line. */
+  function findLocalTime(text) {
+    const range = new RegExp(
+      `(${LOCAL_TIME_PREFIX})?\\s*(\\d{1,2})\\s*[:：点时]\\s*(\\d{1,2})?\\s*分?\\s*(?:[-–—~～]|至|到)\\s*` +
+        `(${LOCAL_TIME_PREFIX})?\\s*(\\d{1,2})\\s*[:：点时]\\s*(\\d{1,2})?\\s*分?`,
+    ).exec(text)
+    if (range !== null) {
+      const startHour = localHour(range[1], Number(range[2]))
+      const startMinute = Number(range[3] || 0)
+      const endHour = localHour(range[4], Number(range[5]))
+      const endMinute = Number(range[6] || 0)
+      if (startHour <= 23 && startMinute <= 59 && endHour <= 23 && endMinute <= 59) {
+        let start = startHour * 60 + startMinute
+        let end = endHour * 60 + endMinute
+        // "下午 3 点到 5 点": the second half lost its 下午 but still means 17:00.
+        if (end <= start && endHour < 12 && end + 12 * 60 > start) end += 12 * 60
+        if (end > start) return { start: clockOf(start), end: clockOf(end), token: range[0], ranged: true }
+      }
+    }
+    const single = new RegExp(`(${LOCAL_TIME_PREFIX})?\\s*(\\d{1,2})\\s*[:：点时]\\s*(\\d{1,2})?\\s*分?`).exec(text)
+    if (single !== null) {
+      const hour = localHour(single[1], Number(single[2]))
+      const minute = Number(single[3] || 0)
+      if (hour <= 23 && minute <= 59) {
+        const start = clockOf(hour * 60 + minute)
+        return { start, end: addMinutes(start, 60), token: single[0], ranged: false }
+      }
+    }
+    return null
+  }
+
+  const LOCAL_ACTION_WORDS = /(交|提交|报名|开会|会议|值班|点名|考试|上课|答辩|面试|截止|打卡|培训|讲座|活动|签到|交付|出差|体检|缴费|复习|晚自习|早自习)/
+
+  function extractFromLine(line, context) {
+    const text = String(line ?? '').trim()
+    if (text.length < 4) return null
+    const dateHit = findLocalDate(text, context.today)
+    if (dateHit === null) return null
+    let rest = text.replace(dateHit.token, ' ')
+    // The weekday is already encoded in the date; "（周三）" in the title is noise.
+    rest = rest.replace(/[（(]\s*(?:周|星期|礼拜)[一二三四五六日天]\s*[)）]/g, ' ')
+    const timeHit = findLocalTime(rest)
+    if (timeHit !== null) rest = rest.replace(timeHit.token, ' ')
+    // A date with no clock still schedules something, but only when the line
+    // says what to do — otherwise every dated sentence in a memo becomes an event.
+    if (timeHit === null && !LOCAL_ACTION_WORDS.test(text)) return null
+    const title = rest
+      .replace(/^[\s·•●▪◦◆◇\-–—*#>、,，.。:：;；|]+/, '')
+      .replace(/^(?:通知|备注|注意|安排|事项|内容)\s*[:：]\s*/, '')
+      .replace(/^[（(【[]?\s*\d{1,2}\s*[.、)）\]】]\s*/, '')
+      .replace(/\s+/g, ' ')
+      .replace(/[，,。.;；:：、\s]+$/, '')
+      .trim()
+      .slice(0, 60)
+    if (title.length < 2) return null
+    return {
+      date: isoDateOf(dateHit.date),
+      start: timeHit === null ? '' : timeHit.start,
+      end: timeHit === null ? '' : timeHit.end,
+      title,
+      location: '',
+      notes: '',
+      person: '',
+      confidence: 0.4,
+    }
+  }
+
+  function extractLocally(text, context) {
+    const events = []
+    const seen = new Set()
+    // A notice often packs several items into one paragraph, so units are
+    // sentences as well as lines.
+    const units = String(text).split(/\n+|\r+|(?<=[。；;])/u)
+    for (const unit of units) {
+      const event = extractFromLine(unit, context)
+      if (event === null) continue
+      const key = `${event.date}|${event.start}|${event.title}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      events.push(event)
+    }
+    events.sort((left, right) => `${left.date}T${left.start}`.localeCompare(`${right.date}T${right.start}`))
+    return events
+  }
+
+  // ---- material → schedule: one read ---------------------------------------
+
+  function extractContext() {
+    const now = new Date()
+    const horizon = Number(settings.workbook.importHorizonDays)
+    return {
+      today: now,
+      todayKey: localDayKey(now),
+      weekday: WEEKDAY_LABELS[now.getDay()] ?? '',
+      horizonDays: Number.isFinite(horizon) && horizon > 0 ? Math.round(horizon) : 30,
+      ownerNames: activeNames(),
+      timezone: settings.profile?.timezone || '本机时区',
+    }
+  }
+
+  function localSummary(events, source) {
+    if (events.length === 0) {
+      return source.kind === 'image'
+        ? '这张图里没读出日程。'
+        : '本机规则没有在这份资料里找到「日期 + 时间」都明确的句子。'
+    }
+    return `本机按「日期 + 时间」找出 ${events.length} 条候选日程。`
+  }
+
+  function localHints(source) {
+    const hints = []
+    if (source.kind === 'image') hints.push('图片需要能看图的模型，本机只能读文字文件。')
+    else hints.push('本机规则只看句子里的日期和时间；打开模型能读懂「下周三之前」这类说法。')
+    if (source.truncated) hints.push('资料很长，只读了前面一部分。')
+    return hints
+  }
+
+  /**
+   * Read one piece of material and propose events for it.
+   *
+   * Returns the proposal; it does not touch the schedule. Committing is a
+   * separate, explicit action — the same rule the workbook importer follows.
+   *
+   * Page images are rendered into a per-read scratch directory, handed to the
+   * model, and deleted here whatever the outcome: they are an input to one read,
+   * not state.
+   */
+  async function extractSchedule(options = {}) {
+    const source = await readResource(options)
+    try {
+      return await proposeFromSource(source, options)
+    } finally {
+      if (source.scratchDir) {
+        try {
+          rmSync(source.scratchDir, { recursive: true, force: true })
+        } catch {
+          /* scratch cleanup is best-effort */
+        }
+      }
+    }
+  }
+
+  async function proposeFromSource(source, options = {}) {
+    const startedAt = Date.now()
+    const context = extractContext()
+    const local = source.text !== '' ? extractLocally(source.text, context) : []
+    const status = assistantStatus()
+
+    if (status.mode !== 'model' || options.useModel === false) {
+      if (source.kind === 'image') {
+        const why = status.mode === 'model' ? '这次没有让模型参与' : `模型用不了：${status.detail}`
+        throw new Error(`读图片需要模型看图，但现在${why}。可以在设置里打开模型，或者把图片里的文字复制成一段文字再读。`)
+      }
+      return {
+        source: publicSource(source),
+        analysis: {
+          mode: 'local',
+          reason: status.mode === 'model' ? 'disabled' : status.reason,
+          detail: status.detail,
+          events: local,
+          excluded: [],
+          summary: localSummary(local, source),
+          hints: localHints(source),
+          confidence: local.length > 0 ? 0.42 : 0.1,
+          modelNote: `本机读的（${status.mode === 'model' ? '这次没有让模型参与' : status.detail}）`,
+        },
+        plan: summarizeExtractPlan(local, context),
+        elapsedMs: Date.now() - startedAt,
+      }
+    }
+
+    const model = await askModel(EXTRACT_QUESTION, null, [], {
+      system: `${EXTRACT_SYSTEM}\n\n资料事实（JSON）：\n${buildExtractFacts(source, context)}`,
+      maxTokens: 1800,
+      images: source.images.map((path) => ({ path, name: basename(path) })),
+    })
+
+    if (!model.ok) {
+      ctx.logger?.warn?.(`[orbit-time] document extraction fell back to local rules (${model.reason}): ${model.detail}`)
+      return {
+        source: publicSource(source),
+        analysis: {
+          mode: 'local',
+          reason: model.reason,
+          detail: model.detail,
+          events: local,
+          excluded: [],
+          summary: localSummary(local, source),
+          hints: localHints(source),
+          confidence: local.length > 0 ? 0.42 : 0.1,
+          modelNote: `本机读的（${model.detail}）`,
+        },
+        plan: summarizeExtractPlan(local, context),
+        elapsedMs: Date.now() - startedAt,
+      }
+    }
+
+    const proposal = extractJsonObject(model.text)
+    if (proposal === null) {
+      return {
+        source: publicSource(source),
+        analysis: {
+          mode: 'local',
+          reason: 'unparsable',
+          detail: '模型没有按要求返回 JSON',
+          events: local,
+          excluded: [],
+          summary: localSummary(local, source),
+          hints: localHints(source),
+          confidence: local.length > 0 ? 0.42 : 0.1,
+          modelText: String(model.text).slice(0, 600),
+          modelNote: '本机读的（模型没有按要求返回 JSON）',
+        },
+        plan: summarizeExtractPlan(local, context),
+        elapsedMs: Date.now() - startedAt,
+      }
+    }
+
+    const { events, excluded } = sanitiseExtractedEvents(proposal.events, context)
+    /*
+     * "The model says there is nothing here" and "the file plainly says there is"
+     * cannot both be right. When they disagree, the deterministic reading wins and
+     * is labelled as such — a silent empty result would look like the feature
+     * failed, and asking the user to trust a model that missed an explicit
+     * "11月4日 07:00" is worse than admitting which half produced the rows.
+     */
+    if (events.length === 0 && local.length > 0) {
+      return {
+        source: publicSource(source),
+        analysis: {
+          mode: 'local',
+          reason: 'model-empty',
+          detail: '模型没从这份资料里读出日程',
+          events: local,
+          excluded,
+          summary: `模型没读出日程，本机按日期时间找到 ${local.length} 条。`,
+          hints: ['看一下下面这些是不是真的日程，再决定加不加。'],
+          confidence: 0.35,
+          modelNote: '本机读的（模型返回了空结果）',
+        },
+        plan: summarizeExtractPlan(local, context),
+        elapsedMs: Date.now() - startedAt,
+      }
+    }
+
+    const summary = typeof proposal.summary === 'string' && proposal.summary.trim() !== ''
+      ? repairText(proposal.summary.trim()).slice(0, 300)
+      : events.length > 0
+        ? `从这份资料里读出 ${events.length} 条日程。`
+        : '这份资料里没有找到明确的日程。'
+    const hints = (Array.isArray(proposal.hints) ? proposal.hints : [])
+      .filter((hint) => typeof hint === 'string' && hint.trim() !== '')
+      .map((hint) => repairText(hint.trim()).slice(0, 120))
+      .slice(0, 3)
+
+    return {
+      source: publicSource(source),
+      analysis: {
+        mode: 'model',
+        model: { provider: model.provider, model: model.model },
+        events,
+        excluded,
+        summary,
+        hints,
+        confidence: events.length > 0 ? 0.72 : 0.3,
+        modelNote: 'AI 读的',
+      },
+      plan: summarizeExtractPlan(events, context),
+      elapsedMs: Date.now() - startedAt,
+    }
+  }
+
+  /** What the panel is told about the file, without leaking scratch paths. */
+  function publicSource(source) {
+    return {
+      kind: source.kind,
+      type: KIND_LABELS[source.kind] ?? source.kind,
+      file: source.file,
+      path: source.path,
+      chars: source.chars,
+      truncated: source.truncated,
+      pages: source.pages.length,
+      scannedPages: source.pages.filter((page) => page.scanned === true).length,
+      imageCount: source.images.length,
+      notes: source.notes,
+      pasted: source.pasted === true,
+    }
+  }
+
+  // ---- material → schedule: committing -------------------------------------
+
+  function buildExtractedEvent(raw, source) {
+    const date = validIsoDate(raw.date)
+    const title = repairText(String(raw.title ?? '').trim())
+      .replace(/^["'「『]+|["'」』]+$/g, '')
+      .slice(0, 80)
+      .trim()
+    if (date === '' || title === '') return null
+    const start = normaliseClock(raw.start)
+    let end = normaliseClock(raw.end)
+    if (start !== '' && end === '') end = addMinutes(start, 60)
+    if (start === '') end = ''
+    // Deterministic per (file, when, what): reading the same notice twice must
+    // not put the same meeting on the timeline twice.
+    const id = shortId('ai', `${source.file}|${date}|${start}|${title}`)
+    return {
+      id,
+      date,
+      start,
+      end,
+      title,
+      course: '',
+      classroom: '',
+      teacher: '',
+      location: repairText(String(raw.location ?? '').trim()).slice(0, 80),
+      // The origin is carried by `source.sheet` (and rendered from it); putting
+      // it in `category` as well printed the same "AI 读出" tag twice.
+      category: '',
+      status: '',
+      priority: '',
+      notes: repairText(String(raw.notes ?? '').trim()).slice(0, 400),
+      link: '',
+      contact: '',
+      owner: repairText(String(raw.person ?? '').trim()).slice(0, 40),
+      matchedBy: '',
+      weekday: '',
+      extras: {
+        readFrom: source.file,
+        readFromPath: source.path,
+        confidence: Number.isFinite(Number(raw.confidence)) ? clamp(Number(raw.confidence), 0, 1) : null,
+      },
+      source: { sheet: AI_SHEET, path: source.path, row: null },
+      warnings: [],
+    }
+  }
+
+  /**
+   * Put the accepted rows on the schedule.
+   *
+   * They join `manualEvents`, the list imports never rebuild — a document has no
+   * file watcher re-reading it, so "read once, kept until deleted" is the only
+   * behaviour that does not lose the row on the next Excel scan. The marker is
+   * `AI_SHEET`, which keeps them distinguishable from typed rows.
+   */
+  function commitExtraction(body) {
+    const source = {
+      file: String(body.file ?? '').trim() || '资料',
+      path: typeof body.path === 'string' ? body.path : '',
+    }
+    const incoming = Array.isArray(body.events) ? body.events : []
+    const known = new Set(runtime.events.map((event) => event.id))
+    const committed = []
+    const skipped = []
+    for (const raw of incoming.slice(0, 60)) {
+      if (!isObject(raw)) continue
+      const event = buildExtractedEvent(raw, source)
+      if (event === null) {
+        skipped.push({ title: String(raw.title ?? ''), reason: '日期或标题不完整' })
+        continue
+      }
+      if (known.has(event.id)) {
+        skipped.push({ title: event.title, reason: '已经在日程里了' })
+        continue
+      }
+      known.add(event.id)
+      committed.push(event)
+    }
+    if (committed.length === 0) return { added: 0, skipped, events: [], firstDate: '' }
+
+    runtime.events = [...runtime.events, ...committed]
+    runtime.manualEvents = [...manualRows(), ...committed]
+    runtime.lastExtraction = {
+      file: source.file,
+      path: source.path,
+      at: new Date().toISOString(),
+      added: committed.length,
+    }
+    const first = committed.slice().sort((left, right) => `${left.date}T${left.start}`.localeCompare(`${right.date}T${right.start}`))[0]
+    pushFeed({
+      kind: 'import',
+      level: 'success',
+      title: `🤖 从《${source.file}》读出 ${committed.length} 条日程`,
+      body: committed
+        .slice(0, 4)
+        .map((event) => `${event.date} ${event.start || '全天'} ${event.title}`)
+        .join('\n')
+        .slice(0, 400),
+      meta: { read: committed.length, skipped: skipped.length, file: source.file },
+    })
+    persistSoon()
+    broadcast({ type: 'import', count: runtime.events.length, files: 0 })
+    return { added: committed.length, skipped, events: committed, firstDate: first?.date ?? '' }
   }
 
   // ---- pomodoro timer ------------------------------------------------------
@@ -2537,8 +3479,14 @@ export function apply(ctx, rawConfig = {}) {
       },
       ownerNames: activeNames(),
       excel: runtime.excel,
-      /** How many rows the user typed in themselves, so the panel can say so. */
-      manualCount: manualRows().length,
+      /**
+       * How many rows did not come from a spreadsheet, split by origin: rows the
+       * user typed, and rows the model read out of a document. They live in the
+       * same bucket and survive imports the same way, but "自己加的 3 条" should
+       * not quietly include three things Orbyt read off a photo.
+       */
+      manualCount: selfMadeCounts().typed,
+      readCount: selfMadeCounts().read,
       day: { dayKey, events: dayEvents, stats: statsFor(dayKey), undated },
       nextEvent: nextEventOf(now),
       upcoming: upcomingEvents(now, 8),
@@ -2612,6 +3560,7 @@ export function apply(ctx, rawConfig = {}) {
         place: event.classroom || event.location || '',
         done: overrideOf(event).done === true,
         manual: isManualEvent(event),
+        origin: event.source?.sheet === AI_SHEET ? 'ai' : isManualEvent(event) ? 'manual' : 'import',
       }))
   }
 
@@ -2695,6 +3644,14 @@ export function apply(ctx, rawConfig = {}) {
       stateDir,
       migratedFrom: stateLocation.migratedFrom,
       lastScanAt: runtime.lastScanAt,
+      /**
+       * What this host generation can do.
+       *
+       * The page can be refreshed without the app restarting, so a new panel can
+       * meet an old host. The panel probes this before blaming the user's file
+       * for what is really a missing route.
+       */
+      capabilities: ['read-documents'],
     })
   })
 
@@ -3052,6 +4009,59 @@ export function apply(ctx, rawConfig = {}) {
       persistSoon()
       sendJson(res, 200, { ok: false, error: error?.message ?? String(error) })
     }
+  })
+
+  /**
+   * Read a document, a picture, or pasted text and propose events.
+   *
+   * One round trip, like `/analyze`: locate the file (or decode the upload),
+   * pull out its text and page images, let the model turn them into events (or
+   * fall back to the local scanner), and hand back the proposal plus the counts
+   * the confirmation step needs. Reading never writes to the schedule — only
+   * `/extract/commit` does.
+   */
+  route('/extract', async (req, res) => {
+    const body = req.method === 'POST' ? await readBody(req, 24 * 1024 * 1024) : {}
+    try {
+      let path = ''
+      if (isObject(body.file) && typeof body.file.base64 === 'string') {
+        path = saveUpload(body.file.name, body.file.base64)
+        ctx.logger?.info?.(`[orbit-time] reading an uploaded document: ${body.file.name}`)
+      } else if (typeof body.path === 'string' && body.path.trim() !== '') {
+        path = normalisePath(body.path)
+      }
+      const text = typeof body.text === 'string' ? body.text : ''
+      if (path === '' && text.trim() === '') {
+        sendJson(res, 400, { ok: false, error: '要么给一个文件，要么把要读的文字贴进来。' })
+        return
+      }
+      const result = await extractSchedule({ path, text, useModel: body.useModel !== false })
+      sendJson(res, 200, {
+        ok: true,
+        ...result,
+        assistant: (({ mode, reason, detail }) => ({ mode, reason, detail }))(assistantStatus()),
+      })
+    } catch (error) {
+      sendJson(res, 422, { ok: false, error: error?.message ?? String(error) })
+    }
+  })
+
+  /**
+   * Adopt a reading: the rows the user kept become schedule entries.
+   *
+   * They go into the self-made bucket (`AI_SHEET`), so no later Excel import can
+   * erase them, and the id is derived from the file and the event itself, so
+   * confirming the same notice twice cannot duplicate it.
+   */
+  route('/extract/commit', async (req, res) => {
+    const body = req.method === 'POST' ? await readBody(req) : {}
+    if (!Array.isArray(body.events) || body.events.length === 0) {
+      sendJson(res, 400, { ok: false, error: '没有勾选任何日程。' })
+      return
+    }
+    const result = commitExtraction(body)
+    const view = requestedView(req)
+    sendJson(res, 200, { ok: true, ...result, snapshot: buildSnapshot(view.day, view.month) })
   })
 
   route('/events', async (req, res) => {
@@ -3425,10 +4435,12 @@ export function apply(ctx, rawConfig = {}) {
    * @param {string} question - the user turn.
    * @param {unknown} snapshot - schedule facts, for the companion's system prompt.
    * @param {unknown} history - prior turns.
-   * @param {{ system?: string, maxTokens?: number }} [options] - overrides. The
-   *   workbook analyzer supplies its own system prompt and a larger token budget;
-   *   both share this transport so route selection, retry-without-effort, and
-   *   every failure mode behave identically.
+   * @param {{ system?: string, maxTokens?: number, images?: Array<{path:string,name?:string}> }} [options] -
+   *   overrides. The workbook analyzer supplies its own system prompt and a larger
+   *   token budget; the document reader additionally attaches pictures of the
+   *   pages it could not read as text. All callers share this transport so route
+   *   selection, the vision check, retry-without-effort, and every failure mode
+   *   behave identically.
    */
   async function askModel(question, snapshot, history, options = {}) {
     const status = assistantStatus()
@@ -3440,7 +4452,47 @@ export function apply(ctx, rawConfig = {}) {
     if (typeof timerHandle.unref === 'function') timerHandle.unref()
 
     const messages = shrinkHistory(history).map((turn) => ({ role: turn.role, content: [{ type: 'text', text: turn.text }] }))
-    messages.push({ role: 'user', content: [{ type: 'text', text: question }] })
+    const userContent = [{ type: 'text', text: question }]
+
+    /**
+     * Pictures ride along as real image blocks, which the harness's attachment
+     * service turns into provider-specific bytes. Two things are checked before
+     * that happens: the service has to exist in this composition (it is optional
+     * here, like `llm`), and the *route* has to declare image input — otherwise
+     * the provider rejects the whole call and the user reads a transport error
+     * instead of "this model cannot see pictures".
+     */
+    const pictures = Array.isArray(options.images) ? options.images.filter((image) => typeof image?.path === 'string') : []
+    if (pictures.length > 0) {
+      const llm = ctx.get?.('llm')
+      let modalities = null
+      try {
+        if (llm && typeof llm.resolveModelInfo === 'function') {
+          const info = await llm.resolveModelInfo(status.route.provider, status.route.model, controller.signal)
+          modalities = Array.isArray(info?.inputModalities) ? info.inputModalities : null
+        }
+      } catch {
+        /* capability lookup is advisory: let the adapter be the judge */
+      }
+      if (Array.isArray(modalities) && !modalities.includes('image')) {
+        clearTimeout(timerHandle)
+        return {
+          ok: false,
+          reason: 'no-vision',
+          detail: `${status.route.provider} · ${status.route.model} 不支持读图，换一个支持视觉的模型再读，或者把图片里的文字复制成一段文字。`,
+        }
+      }
+      let refs = []
+      try {
+        refs = await saveImageAttachments(pictures.map((image) => image.path))
+      } catch (error) {
+        clearTimeout(timerHandle)
+        return { ok: false, reason: 'image-rejected', detail: error?.message ?? String(error) }
+      }
+      for (const ref of refs) userContent.push({ type: 'image', attachment: ref })
+    }
+
+    messages.push({ role: 'user', content: userContent })
 
     const call = {
       provider: status.route.provider,
@@ -4214,6 +5266,7 @@ export function apply(ctx, rawConfig = {}) {
       excel: runtime.excel,
       events: runtime.events,
       overrides: runtime.overrides,
+      lastExtraction: runtime.lastExtraction,
       settings,
     }
     const body = Buffer.from(JSON.stringify(payload, null, 2), 'utf8')

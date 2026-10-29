@@ -100,6 +100,37 @@ check('the widget script is the three-state capsule', () => {
   return `${needed.length} markers`
 })
 
+check('both halves carry the "read anything" path', () => {
+  const host = read('lib/index.js')
+  const client = read('lib/client.js')
+  const hostNeeded = [
+    ["route('/extract'", 'the reading route exists'],
+    ["route('/extract/commit'", 'the commit route exists'],
+    ['read-document.py', 'the document reader is staged next to the host'],
+    ['EXTRACT_SYSTEM', 'the extraction contract exists'],
+    ['extractLocally', 'a model-free fallback exists'],
+    ['AI 读资料', 'read rows carry their own origin'],
+    ["type: 'image'", 'page images are sent as image blocks'],
+    ['inputModalities', 'the route vision check runs before upload'],
+    ['summarizeExtractPlan', 'the confirmation can count the reading'],
+  ]
+  const clientNeeded = [
+    ['ot-extract-row', 'the reading list is editable'],
+    ['ExtractBar', 'the reading has its own confirmation bar'],
+    ['extractSource', 'the store can ask for a reading'],
+    ['commitExtraction', 'the store can commit one'],
+    ['.docx', 'the file picker offers documents'],
+    ['AI 读出', 'the timeline labels read rows'],
+  ]
+  const missing = hostNeeded
+    .filter(([needle]) => !host.includes(needle))
+    .map(([, label]) => `host: ${label}`)
+    .concat(clientNeeded.filter(([needle]) => !client.includes(needle)).map(([, label]) => `client: ${label}`))
+  if (!existsSync(join(installed, 'lib', 'read-document.py'))) missing.push('lib/read-document.py was not installed')
+  if (missing.length > 0) throw new Error(`missing: ${missing.join('; ')}`)
+  return `${hostNeeded.length + clientNeeded.length} markers + the reader script`
+})
+
 check('both halves are newer than the last build', () => {
   const local = readFileSync(join(root, 'lib', 'client.js'))
   const copy = readFileSync(join(installed, 'lib', 'client.js'))

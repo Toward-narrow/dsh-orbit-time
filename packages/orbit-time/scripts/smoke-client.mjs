@@ -632,6 +632,62 @@ check('the import confirmation is an in-panel bar with the real import counts', 
   return 'sticky confirm bar, plan counts, no toast'
 })
 
+// The other half of the import page: a document or a picture is read into event
+// drafts, not into a column mapping. The bar has to say what will be added, the
+// rows have to be editable, and an unticked row must stay out of the count.
+check('a reading shows its proposed events, editable, before anything is written', () => {
+  realStore.set({
+    importState: { status: 'idle', message: '', preview: null, analysis: null, error: null, modelNote: '' },
+    extractState: {
+      status: 'ready',
+      message: '一份值班通知。',
+      source: { kind: 'docx', type: 'Word 文档', file: '示例值班通知.docx', path: 'C:\\Users\\x\\Desktop\\示例值班通知.docx', chars: 120, pages: 0, imageCount: 0, notes: ['文档里有 1 张表格'] },
+      analysis: {
+        mode: 'model',
+        model: { provider: 'deepseek-account', model: 'deepseek-flash' },
+        events: [
+          { date: '2026-11-04', start: '07:00', end: '07:30', title: '早打卡值班', location: '东区门口', notes: '带上签到表', confidence: 0.86 },
+          { date: '2026-11-04', start: '19:30', end: '20:50', title: '晚自习考勤点名', location: '', notes: '', confidence: 0.6 },
+        ],
+        excluded: [{ title: '李四交材料', reason: '是 李四 的事，不是你的' }],
+        summary: '读了两次值班，其中一条是别人的。',
+        hints: ['早打卡在门口签到'],
+        confidence: 0.72,
+        modelNote: 'AI 读的',
+      },
+      plan: { rows: 1, matched: 1, importable: 1, past: 0, beyondHorizon: 0, undated: 0, firstDate: '2026-11-04', lastDate: '2026-11-04', horizonDays: 60, ownerNames: ['张三'] },
+      draft: [
+        { key: 'x0', date: '2026-11-04', start: '07:00', end: '07:30', title: '早打卡值班', location: '东区门口', notes: '带上签到表', confidence: 0.86, include: true },
+        { key: 'x1', date: '2026-11-04', start: '19:30', end: '20:50', title: '晚自习考勤点名', location: '', notes: '', confidence: 0.6, include: false },
+      ],
+      error: null,
+    },
+  })
+  const html = renderToStaticMarkup(h(app.SettingsView, { store: realStore, snapshot }))
+  const needed = [
+    'ot-confirm',
+    '读完了「示例值班通知.docx」',
+    '加入日程（1 条）',
+    'AI 读出来的日程',
+    'ot-extract-row',
+    '早打卡值班',
+    '晚自习考勤点名',
+    '全不选',
+    '不属于你',
+  ]
+  for (const needle of needed) {
+    if (!html.includes(needle)) throw new Error(`the reading view is missing ${needle}`)
+  }
+  if (html.includes('加入日程（2 条）')) throw new Error('an unticked row was counted')
+  // The file picker must offer the new formats, or the feature is unreachable
+  // from the one control people actually click.
+  for (const extension of ['.pdf', '.docx', '.png']) {
+    if (!html.includes(extension)) throw new Error(`the picker does not accept ${extension}`)
+  }
+  realStore.set({ extractState: { status: 'idle', message: '', source: null, analysis: null, plan: null, draft: [], error: null } })
+  return 'reading bar, editable rows, unticked rows excluded'
+})
+
 // A page refresh updates this bundle but not the host module, and the symptom —
 // "importing a second roster still drops the first" — looks exactly like a fix
 // that did nothing. The panel has to say which half is stale.

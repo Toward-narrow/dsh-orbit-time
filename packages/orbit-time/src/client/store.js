@@ -24,6 +24,25 @@ var state = {
     /** Why the last analysis did not use the model, when it did not. */
     modelNote: '',
   },
+  /**
+   * The "read anything" draft: a document, a picture or pasted text that the
+   * host turned into candidate events.
+   *
+   * Separate from `importState` because the two flows answer different
+   * questions. An Excel read produces a *mapping* and a verified count ("这些行
+   * 属于你"); a document read produces *events* that may need editing one by one.
+   * Sharing one blob made the confirmation bar describe the wrong thing.
+   */
+  extractState: {
+    status: 'idle', // idle | reading | ready | saving | done | error
+    message: '',
+    source: null,
+    analysis: null,
+    plan: null,
+    /** The candidate events, as edited by the user, each with `key` + `include`. */
+    draft: [],
+    error: null,
+  },
   notices: [],
   floatOpen: false,
   /**
@@ -48,8 +67,8 @@ var state = {
         // The greeting is UI copy, not a model turn: sending it back would make
         // the provider read it as something Orbyt actually said.
         greeting: true,
-        speak: '我是 Orbyt，你的日程副驾。先导入 Excel，或者直接问我今天的安排。',
-        detail: '我可以帮你：把 Excel 里属于你的日程抓出来、在开始前 30/10/5 分钟提醒、陪你跑番茄钟。',
+        speak: '我是 Orbyt，你的日程副驾。拖一份 Excel、通知、截图给我，或者直接问我今天的安排。',
+        detail: '我可以帮你：从 Excel / 文档 / 图片里读出属于你的日程、在开始前 30/10/5 分钟提醒、陪你跑番茄钟。',
         chips: ['生成今日简报', '分析我的空档', '提醒是怎么设置的？'],
       },
     ],
@@ -205,6 +224,9 @@ async function previewWorkbook(options) {
  * click or correct field by field.
  */
 async function analyzeWorkbook(options) {
+  // A workbook read and a document read are two pending confirmations for the
+  // same schedule; only one may be on screen at a time.
+  if (state.extractState.status !== 'idle') resetExtraction()
   set({
     importState: Object.assign({}, state.importState, {
       status: 'analyzing',
@@ -298,6 +320,165 @@ async function runImport(options) {
     return payload.excel
   } catch (error) {
     set({ importState: Object.assign({}, state.importState, { status: 'error', error: String((error && error.message) || error) }) })
+    throw error
+  }
+}
+
+function idleExtraction() {
+  return { status: 'idle', message: '', source: null, analysis: null, plan: null, draft: [], error: null }
+}
+
+function resetExtraction() {
+  set({ extractState: idleExtraction() })
+}
+
+/**
+ * Read a document, a picture or pasted text into candidate events.
+ *
+ * This is a *reading*, not an import: nothing lands on the timeline until
+ * `commitExtraction`. An open workbook draft is dropped first so the page only
+ * ever shows one pending confirmation.
+ */
+async function extractSource(options) {
+  if (state.importState.status !== 'idle') resetImport()
+  set({
+    extractState: Object.assign(idleExtraction(), {
+      status: 'reading',
+      message: '正在读这份资料，找里面的日期和时间…',
+    }),
+  })
+  try {
+    var payload = await request('/extract', { method: 'POST', body: JSON.stringify(options || {}) })
+    var analysis = payload.analysis || {}
+    var draft = util.safeArray(analysis.events).map(function (event, index) {
+      return Object.assign({}, event, { key: 'x' + index, include: true })
+    })
+    set({
+      extractState: {
+        status: 'ready',
+        message: analysis.summary || '',
+        source: payload.source || null,
+        analysis: analysis,
+        plan: payload.plan || null,
+        draft: draft,
+        error: null,
+      },
+    })
+    return payload
+  } catch (error) {
+    var reason = String((error && error.message) || error)
+    /**
+     * A host that predates this feature has no `/extract` route, while the page
+     * is the half that can be refreshed independently. Ask the host what it can
+     * do before blaming the file: `/health` carries a capability list in this
+     * build, and an older one does not.
+     */
+    try {
+      var health = await request('/health')
+      if (!(health && Array.isArray(health.capabilities) && health.capabilities.indexOf('read-documents') >= 0)) {
+        reason = '宿主进程还不认识「读资料」这个动作，它还是启动时加载的旧版本。关掉 DeepSeek Harness（托盘退出）再打开，然后刷新页面。'
+      }
+    } catch (probeError) {
+      /* the original failure is the one worth showing */
+    }
+    set({
+      extractState: Object.assign(idleExtraction(), {
+        status: 'error',
+        error: reason,
+      }),
+    })
+    throw error
+  }
+}
+
+/** Replace one draft row's fields as the user edits it. */
+function updateExtraction(key, patch) {
+  var draft = state.extractState.draft.map(function (event) {
+    return event.key === key ? Object.assign({}, event, patch) : event
+  })
+  set({ extractState: Object.assign({}, state.extractState, { draft: draft }) })
+}
+
+function toggleExtraction(key) {
+  var draft = state.extractState.draft.map(function (event) {
+    return event.key === key ? Object.assign({}, event, { include: event.include === false }) : event
+  })
+  set({ extractState: Object.assign({}, state.extractState, { draft: draft }) })
+}
+
+function selectAllExtraction(include) {
+  var draft = state.extractState.draft.map(function (event) {
+    return Object.assign({}, event, { include: include === true })
+  })
+  set({ extractState: Object.assign({}, state.extractState, { draft: draft }) })
+}
+
+/**
+ * Put the ticked rows on the schedule, and open the day they land on.
+ *
+ * The day comes from the rows themselves: a notice read on Thursday for next
+ * Monday should not leave the user staring at an unchanged Thursday timeline
+ * wondering whether it worked.
+ */
+async function commitExtraction() {
+  var current = state.extractState
+  var included = current.draft.filter(function (event) {
+    return event.include !== false
+  })
+  if (included.length === 0) throw new Error('先勾选至少一条日程。')
+  var source = current.source || {}
+  var events = included.map(function (event) {
+    return {
+      date: event.date,
+      start: event.start,
+      end: event.end,
+      title: event.title,
+      location: event.location,
+      notes: event.notes,
+      person: event.person,
+      confidence: event.confidence,
+    }
+  })
+  var dates = events
+    .map(function (event) {
+      return event.date
+    })
+    .filter(function (date) {
+      return typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)
+    })
+    .sort()
+  var day = dates.length > 0 ? dates[0] : state.day
+  set({ extractState: Object.assign({}, current, { status: 'saving', message: '正在把勾选的日程写进时间轴…', error: null }) })
+  try {
+    var query = '/extract/commit?day=' + encodeURIComponent(day) + '&month=' + encodeURIComponent(day.slice(0, 7))
+    var payload = await request(query, {
+      method: 'POST',
+      body: JSON.stringify({ file: source.file, path: source.path, events: events }),
+    })
+    var skipped = util.safeArray(payload.skipped)
+    set({
+      day: day,
+      month: day.slice(0, 7),
+      snapshot: payload.snapshot || state.snapshot,
+      extractState: Object.assign({}, state.extractState, {
+        status: 'done',
+        message:
+          '已加入 ' +
+          (payload.added || 0) +
+          ' 条日程' +
+          (skipped.length > 0 ? '；另外 ' + skipped.length + ' 条已经在日程里，没有重复添加' : '') +
+          '。',
+        draft: [],
+      }),
+    })
+    return payload
+  } catch (error) {
+    set({
+      extractState: Object.assign({}, state.extractState, {
+        status: 'ready',
+        error: String((error && error.message) || error),
+      }),
+    })
     throw error
   }
 }
@@ -676,6 +857,12 @@ exports.store = {
   analyzeWorkbook: analyzeWorkbook,
   resetImport: resetImport,
   runImport: runImport,
+  extractSource: extractSource,
+  resetExtraction: resetExtraction,
+  updateExtraction: updateExtraction,
+  toggleExtraction: toggleExtraction,
+  selectAllExtraction: selectAllExtraction,
+  commitExtraction: commitExtraction,
   eventAction: eventAction,
   addEvent: addEvent,
   removeEvent: removeEvent,

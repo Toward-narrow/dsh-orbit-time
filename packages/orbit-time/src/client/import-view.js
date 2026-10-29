@@ -181,6 +181,299 @@ function ConfirmBar(props) {
   )
 }
 
+/** Everything the file picker and the drop zone accept. */
+var ACCEPT = '.xlsx,.xlsm,.xls,.pdf,.docx,.pptx,.txt,.md,.markdown,.csv,.tsv,.json,.ics,.log,.png,.jpg,.jpeg,.webp,.gif,.bmp,.tif,.tiff'
+
+function isExcelFile(name) {
+  return /\.(xlsx|xlsm|xls)$/i.test(String(name || ''))
+}
+
+/**
+ * Does this path mean "read a roster"?
+ *
+ * A folder has no extension and the workbook reader already knows how to pick
+ * the newest spreadsheet out of one, so "no extension" goes to the roster path.
+ */
+function isExcelTarget(path) {
+  var text = String(path || '').trim()
+  if (text === '') return true
+  if (isExcelFile(text)) return true
+  return !/\.[A-Za-z0-9]+$/.test(text)
+}
+
+function describeExtractPlan(plan) {
+  if (!plan) return ''
+  var parts = ['读出 ' + plan.rows + ' 条']
+  if (plan.importable !== plan.rows) parts.push('可加入 ' + plan.importable + ' 条')
+  var span = describeSpan(plan)
+  if (span !== '') parts.push(span)
+  return parts.join(' · ')
+}
+
+function describeExtractSkips(plan, analysis) {
+  var notes = []
+  if (plan && plan.past > 0) notes.push(plan.past + ' 条在今天之前')
+  if (plan && plan.beyondHorizon > 0) notes.push(plan.beyondHorizon + ' 条超过 ' + plan.horizonDays + ' 天')
+  var excluded = analysis ? util.safeArray(analysis.excluded).length : 0
+  if (excluded > 0) notes.push(excluded + ' 条不属于你或没有日期')
+  if (plan && plan.undated > 0) notes.push(plan.undated + ' 条没有日期')
+  return notes.length === 0 ? '' : '没读进来：' + notes.join('、')
+}
+
+/**
+ * The confirmation step for a reading.
+ *
+ * Same job as `ConfirmBar`, different object: a workbook produces rows to
+ * compare against a mapping, a document produces event drafts the user may want
+ * to fix first. Saying "读出了 6 条，其中 2 条不是你的" before anything is written
+ * is the whole point — a reading that silently lands on the timeline is a guess
+ * the user never agreed to.
+ */
+function ExtractBar(props) {
+  var state = props.state
+  if (!state || state.status === 'idle') return null
+  var status = state.status
+  var busy = status === 'reading' || status === 'saving'
+  var ready = status === 'ready'
+  var tone = status === 'error' ? 'error' : status === 'done' ? 'done' : busy ? 'busy' : 'ready'
+  var source = state.source || {}
+  var analysis = state.analysis || null
+  var plan = state.plan || null
+  // `draft` is what the user is looking at — the analysis is only its first
+  // version. Counting the analysis instead made the bar say "没找到日程" while
+  // three editable rows sat right below it.
+  var draft = util.safeArray(state.draft)
+  var selected = draft.filter(function (event) {
+    return event.include !== false
+  }).length
+  var confidence = analysis ? confidenceLabel(analysis.confidence) : null
+
+  var headline
+  if (busy) headline = state.message || '正在读这份资料…'
+  else if (status === 'error') headline = '这次没能读完这份资料'
+  else if (status === 'done') headline = state.message || '已经加入日程'
+  else if (draft.length === 0) headline = '读完了「' + (source.file || '这份资料') + '」，但没找到日程'
+  else headline = '读完了「' + (source.file || '这份资料') + '」'
+
+  var detail = null
+  if (ready) {
+    var lines = []
+    if (plan) {
+      lines.push(
+        h('div', { className: 'ot-confirm-line', key: 'plan' }, ui.glyph('calendar', 12), h('span', null, describeExtractPlan(plan))),
+      )
+    }
+    var skips = describeExtractSkips(plan, analysis)
+    if (skips !== '') {
+      lines.push(h('div', { className: 'ot-confirm-line ot-warn-text', key: 'skip' }, ui.glyph('clock', 12), h('span', null, skips)))
+    }
+    if (analysis && analysis.mode === 'local') {
+      lines.push(
+        h(
+          'div',
+          { className: 'ot-confirm-line', key: 'local' },
+          ui.glyph('spark', 12),
+          h('span', null, analysis.modelNote || '这是本机按日期和时间读的，不是 AI 读的'),
+        ),
+      )
+    }
+    detail = h('div', { className: 'ot-confirm-lines' }, lines)
+  } else if (status === 'done') {
+    detail = h(
+      'div',
+      { className: 'ot-confirm-lines' },
+      h(
+        'div',
+        { className: 'ot-confirm-line' },
+        ui.glyph('check', 12),
+        h('span', null, '和导入的排班表一样，提醒、番茄钟、日历都照常管它们；重新导入 Excel 也不会被覆盖。'),
+      ),
+    )
+  } else if (status === 'error' && state.error) {
+    detail = h('div', { className: 'ot-confirm-lines' }, h('div', { className: 'ot-confirm-line ot-warn-text' }, h('span', null, state.error)))
+  }
+
+  var actions = []
+  if (ready) {
+    actions.push(
+      ui.button(
+        { key: 'commit', variant: 'primary', icon: 'check', disabled: busy || selected === 0, onClick: props.onCommit },
+        selected === 0 ? '先勾选日程' : '加入日程（' + selected + ' 条）',
+      ),
+      ui.button({ key: 'another', icon: 'refresh', small: true, disabled: busy, onClick: props.onAnother }, '换一份资料'),
+      ui.button({ key: 'details', variant: 'ghost', small: true, disabled: busy, onClick: props.onDetails }, '看看细节'),
+    )
+  } else if (status === 'done') {
+    actions.push(
+      ui.button({ key: 'again', variant: 'primary', icon: 'plus', onClick: props.onAnother }, '再读一份'),
+      props.onOpenTimeline
+        ? ui.button({ key: 'timeline', icon: 'calendar', small: true, onClick: props.onOpenTimeline }, '查看日程时间轴')
+        : null,
+    )
+  } else if (status === 'error') {
+    actions.push(
+      ui.button({ key: 'retry', icon: 'refresh', small: true, onClick: props.onRetry }, '再读一次'),
+      ui.button({ key: 'reset', variant: 'ghost', small: true, onClick: props.onReset }, '换一份资料'),
+    )
+  }
+
+  return h(
+    'div',
+    { className: 'ot-confirm', 'data-tone': tone, role: 'status', 'aria-live': 'polite' },
+    h(
+      'div',
+      { className: 'ot-confirm-head' },
+      busy ? h('span', { className: 'ot-typing' }, h('i'), h('i'), h('i')) : ui.glyph(status === 'done' ? 'check' : status === 'error' ? 'close' : 'robot', 15),
+      h('strong', { className: 'ot-confirm-title' }, headline),
+      confidence && ready && draft.length > 0 ? h('span', { className: 'ot-pill', 'data-tone': confidence.tone }, confidence.text) : null,
+      h('div', { className: 'ot-headspace' }),
+      h('span', { className: 'ot-confirm-hint' }, ready ? '勾选后才会写进日程' : ''),
+    ),
+    detail,
+    actions.filter(Boolean).length > 0 ? h('div', { className: 'ot-confirm-actions' }, actions) : null,
+  )
+}
+
+/**
+ * The editable reading.
+ *
+ * Rows are vertical rather than a table because the panel is a sidebar: six
+ * columns of a four-inch-wide panel is a horizontal scrollbar, and the field
+ * people actually need to fix is the date. Every field here is the same value
+ * the host will re-validate on commit.
+ */
+function ExtractionEditor(props) {
+  var draft = util.safeArray(props.draft)
+  if (draft.length === 0) return null
+  var selected = draft.filter(function (event) {
+    return event.include !== false
+  }).length
+
+  function edit(key, field, value) {
+    var patch = {}
+    patch[field] = value
+    props.onEdit(key, patch)
+  }
+
+  return h(
+    'div',
+    { className: 'ot-extract' },
+    h(
+      'div',
+      { className: 'ot-extract-head' },
+      h('strong', null, '勾选要加入的，时间和标题都能直接改'),
+      h('div', { className: 'ot-headspace' }),
+      h(
+        'button',
+        {
+          type: 'button',
+          className: 'ot-linkbtn',
+          onClick: function () {
+            props.onSelectAll(true)
+          },
+        },
+        '全选',
+      ),
+      h(
+        'button',
+        {
+          type: 'button',
+          className: 'ot-linkbtn',
+          onClick: function () {
+            props.onSelectAll(false)
+          },
+        },
+        '全不选',
+      ),
+    ),
+    h(
+      'div',
+      { className: 'ot-extract-list' },
+      draft.map(function (event) {
+        var confidence = confidenceLabel(event.confidence)
+        var included = event.include !== false
+        return h(
+          'div',
+          { className: 'ot-extract-row', key: event.key, 'data-included': included ? 'true' : 'false' },
+          h(
+            'label',
+            { className: 'ot-extract-check' },
+            h('input', {
+              type: 'checkbox',
+              checked: included,
+              onChange: function () {
+                props.onToggle(event.key)
+              },
+            }),
+            h('span', { className: 'ot-pill', 'data-tone': confidence.tone }, confidence.text),
+          ),
+          h(
+            'div',
+            { className: 'ot-extract-body' },
+            h('input', {
+              className: 'ot-input ot-extract-title',
+              type: 'text',
+              value: event.title || '',
+              placeholder: '这件事叫什么',
+              onChange: function (input) {
+                edit(event.key, 'title', input.target.value)
+              },
+            }),
+            h(
+              'div',
+              { className: 'ot-extract-when' },
+              h('input', {
+                className: 'ot-input ot-extract-date',
+                type: 'date',
+                value: event.date || '',
+                onChange: function (input) {
+                  edit(event.key, 'date', input.target.value)
+                },
+              }),
+              h('input', {
+                className: 'ot-input ot-extract-time',
+                type: 'time',
+                value: event.start || '',
+                onChange: function (input) {
+                  edit(event.key, 'start', input.target.value)
+                },
+              }),
+              h('span', { className: 'ot-sub' }, '–'),
+              h('input', {
+                className: 'ot-input ot-extract-time',
+                type: 'time',
+                value: event.end || '',
+                onChange: function (input) {
+                  edit(event.key, 'end', input.target.value)
+                },
+              }),
+            ),
+            h('input', {
+              className: 'ot-input ot-extract-place',
+              type: 'text',
+              value: event.location || '',
+              placeholder: '地点（可不填）',
+              onChange: function (input) {
+                edit(event.key, 'location', input.target.value)
+              },
+            }),
+            event.notes ? h('div', { className: 'ot-extract-note', title: event.notes }, event.notes) : null,
+          ),
+        )
+      }),
+    ),
+    h(
+      'div',
+      { className: 'ot-extract-foot' },
+      ui.button(
+        { variant: 'primary', icon: 'check', disabled: props.busy || selected === 0, onClick: props.onCommit },
+        selected === 0 ? '先勾选日程' : '加入日程（' + selected + ' 条）',
+      ),
+      h('span', { className: 'ot-sub' }, '没勾选的不加入；加入之后还能在时间轴上删掉。'),
+    ),
+  )
+}
+
 function ImportView(props) {
   var store = props.store
   var snapshot = props.snapshot
@@ -188,10 +481,15 @@ function ImportView(props) {
   var workbook = settings.workbook
   var excel = snapshot.excel
   var importState = store.get().importState
+  var extractState = store.get().extractState
 
   var pair = React.useState(repair.repairPath(workbook.path || ''))
   var path = pair[0]
   var setPath = pair[1]
+
+  var pastePair = React.useState('')
+  var paste = pastePair[0]
+  var setPaste = pastePair[1]
 
   var mapPair = React.useState({})
   var overrides = mapPair[0]
@@ -222,7 +520,11 @@ function ImportView(props) {
   var analysis = importState.analysis
   var preview = importState.preview
   var plan = (preview && preview.plan) || null
-  var busy = importState.status === 'analyzing' || importState.status === 'loading'
+  var readingIdle = extractState.status === 'idle'
+  var readingDone = extractState.status === 'done'
+  var extractBusy = extractState.status === 'reading' || extractState.status === 'saving'
+  var busy = importState.status === 'analyzing' || importState.status === 'loading' || extractBusy
+  var extracting = !readingIdle && !readingDone
 
   /**
    * What the mapping selects should show. An explicit user override wins, then
@@ -313,39 +615,95 @@ function ImportView(props) {
   }
 
   /** Upload path: the browser has the bytes but never the file path. */
-  function analyzeFile(file) {
-    if (!file) return
-    if (!/\.(xlsx|xlsm|xls)$/i.test(file.name)) {
-      store.pushNotice({ level: 'warn', title: '这个文件读不了', body: '只支持 .xlsx / .xlsm / .xls，请另存为 xlsx 再拖进来。' })
-      return
-    }
-    setPath(file.name)
-    clearDraft()
-    store.set({
-      importState: Object.assign({}, store.get().importState, {
-        status: 'analyzing',
-        message: '正在上传「' + file.name + '」并读表…',
-        error: null,
-      }),
+  function fileBase64(file) {
+    return new Promise(function (resolvePromise, rejectPromise) {
+      if (typeof file.arrayBuffer !== 'function') {
+        rejectPromise(new Error('浏览器不支持读取该文件，请改用「粘贴路径」方式。'))
+        return
+      }
+      file
+        .arrayBuffer()
+        .then(function (buffer) {
+          var bytes = new Uint8Array(buffer)
+          var chunk = 0x8000
+          var binary = ''
+          for (var i = 0; i < bytes.length; i += chunk) {
+            binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk))
+          }
+          resolvePromise(btoa(binary))
+        })
+        .catch(rejectPromise)
     })
-    if (typeof file.arrayBuffer !== 'function') {
-      store.pushNotice({ level: 'warn', title: '浏览器不支持读取该文件', body: '请改用「粘贴路径」方式。' })
+  }
+
+  function readAnotherFile(file) {
+    if (!file) return
+    setPath(file.name)
+    if (isExcelFile(file.name)) {
+      clearDraft()
+      store.set({
+        importState: Object.assign({}, store.get().importState, {
+          status: 'analyzing',
+          message: '正在上传「' + file.name + '」并读表…',
+          error: null,
+        }),
+      })
+      fileBase64(file)
+        .then(function (base64) {
+          return store.analyzeWorkbook({ file: { name: file.name, base64: base64 } })
+        })
+        .catch(function (error) {
+          store.pushNotice({ level: 'warn', title: '读表失败', body: String((error && error.message) || error) })
+        })
       return
     }
-    file
-      .arrayBuffer()
-      .then(function (buffer) {
-        var bytes = new Uint8Array(buffer)
-        var chunk = 0x8000
-        var binary = ''
-        for (var i = 0; i < bytes.length; i += chunk) {
-          binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk))
-        }
-        return store.analyzeWorkbook({ file: { name: file.name, base64: btoa(binary) } })
+    fileBase64(file)
+      .then(function (base64) {
+        return store.extractSource({ file: { name: file.name, base64: base64 } })
       })
       .catch(function (error) {
-        store.pushNotice({ level: 'warn', title: '读表失败', body: String((error && error.message) || error) })
+        store.pushNotice({ level: 'warn', title: '读资料失败', body: String((error && error.message) || error) })
       })
+  }
+
+  function analyzeFile(file) {
+    readAnotherFile(file)
+  }
+
+  /** Read a path: a roster goes to the importer, anything else to the reader. */
+  function readFromPath(pathValue) {
+    var target = pathValue === undefined ? path : pathValue
+    var trimmed = String(target || '').trim()
+    if (trimmed === '') return
+    if (isExcelTarget(trimmed)) {
+      analyze(trimmed)
+      return
+    }
+    clearDraft()
+    void store.extractSource({ path: trimmed }).catch(function (error) {
+      store.pushNotice({ level: 'warn', title: '读资料失败', body: String((error && error.message) || error) })
+    })
+  }
+
+  /** Read pasted text — the "I got this in a group chat" path. */
+  function readPastedText() {
+    var text = String(paste || '').trim()
+    if (text === '') return
+    void store.extractSource({ text: text }).catch(function (error) {
+      store.pushNotice({ level: 'warn', title: '读文字失败', body: String((error && error.message) || error) })
+    })
+  }
+
+  function commitReading() {
+    void store.commitExtraction().catch(function (error) {
+      store.pushNotice({ level: 'warn', title: '加入日程失败', body: String((error && error.message) || error) })
+    })
+  }
+
+  /** Back to "pick a file", keeping everything already on the schedule. */
+  function readAnother() {
+    store.resetExtraction()
+    if (fileInput.current) fileInput.current.click()
   }
 
   function onDrop(event) {
@@ -638,6 +996,130 @@ function ImportView(props) {
     return ''
   })()
 
+  /**
+   * The roster details: what the sheet looked like and how the reader read it.
+   * This is the card the old page was built around.
+   */
+  var rosterDetails = h(
+    'div',
+    null,
+    importState.status === 'error' && importState.error
+      ? ui.note({ variant: 'error', children: importState.error })
+      : importState.status === 'analyzing'
+        ? h(
+            'div',
+            { className: 'ot-working' },
+            h('span', { className: 'ot-typing' }, h('i'), h('i'), h('i')),
+            h('span', null, importState.message || '正在读表…'),
+          )
+        : importState.status === 'done' && importState.message
+          ? ui.note({ variant: 'ok', children: importState.message })
+          : analysis
+            ? null
+            : ui.note({
+                children: '拖一个 Excel 进来，或者点「选择文件」；读完会在页面顶部给你一张确认卡，说清楚要导入什么，再让你决定。',
+              }),
+    verdict,
+    advanced,
+    previewTable,
+    warnings.length > 0 ? h('div', { className: 'ot-sub', style: { marginTop: 10 } }, '读表提示：' + warnings.slice(0, 4).join('；')) : null,
+  )
+
+  /**
+   * The reading details: where it came from, what the model said, and the rows
+   * it proposed — editable, because a misread date is cheaper to fix here than
+   * to discover on the timeline tomorrow.
+   */
+  var readingDetails = (function () {
+    if (extractState.status === 'reading') {
+      return h(
+        'div',
+        { className: 'ot-working' },
+        h('span', { className: 'ot-typing' }, h('i'), h('i'), h('i')),
+        h('span', null, extractState.message || '正在读这份资料…'),
+      )
+    }
+    if (extractState.status === 'error') {
+      return ui.note({ variant: 'error', children: extractState.error || '这次没能读完这份资料。' })
+    }
+    var source = extractState.source
+    var reading = extractState.analysis
+    var rows = []
+    if (source) {
+      var facts = [source.type || '资料']
+      if (source.pages > 0) facts.push(source.pages + ' 页')
+      if (source.chars > 0) facts.push(source.chars + ' 字')
+      if (source.imageCount > 0) facts.push(source.imageCount + ' 张图')
+      rows.push(
+        h(
+          'div',
+          { className: 'ot-extract-source', key: 'source' },
+          ui.glyph(source.kind === 'image' ? 'image' : 'file', 15),
+          h('div', null, h('strong', null, source.file), h('div', { className: 'ot-sub' }, facts.join(' · '))),
+        ),
+      )
+      if (util.safeArray(source.notes).length > 0) {
+        rows.push(h('div', { className: 'ot-sub', key: 'notes', style: { marginTop: 6 } }, source.notes.join('；')))
+      }
+    }
+    if (reading) {
+      var confidence = confidenceLabel(reading.confidence)
+      rows.push(
+        h(
+          'div',
+          { className: 'ot-verdict', key: 'verdict', 'data-tone': confidence.tone, style: { marginTop: 10 } },
+          h(
+            'div',
+            { className: 'ot-verdict-head' },
+            ui.glyph(reading.mode === 'model' ? 'robot' : 'spark', 14),
+            h('strong', null, reading.mode === 'model' ? 'AI 读完了这份资料' : '本机读完了这份资料'),
+            h('span', { className: 'ot-pill', 'data-tone': confidence.tone }, confidence.text),
+            reading.model && reading.model.model
+              ? h('span', { className: 'ot-verdict-model' }, reading.model.provider + ' · ' + reading.model.model)
+              : null,
+          ),
+          h('div', { className: 'ot-verdict-body' }, reading.summary || ''),
+          util.safeArray(reading.hints).length > 0
+            ? h(
+                'ul',
+                { className: 'ot-verdict-hints' },
+                util.safeArray(reading.hints).map(function (hint, index) {
+                  return h('li', { key: 'hint' + index }, hint)
+                }),
+              )
+            : null,
+          reading.mode === 'local' && reading.modelNote ? h('div', { className: 'ot-sub' }, reading.modelNote) : null,
+        ),
+      )
+    }
+    if (extractState.status === 'done') {
+      rows.push(ui.note({ variant: 'ok', key: 'done', children: extractState.message || '已经加入日程。' }))
+    } else if (util.safeArray(extractState.draft).length > 0) {
+      rows.push(
+        h(ExtractionEditor, {
+          key: 'editor',
+          draft: extractState.draft,
+          busy: extractBusy,
+          onToggle: store.toggleExtraction,
+          onEdit: store.updateExtraction,
+          onSelectAll: store.selectAllExtraction,
+          onCommit: commitReading,
+        }),
+      )
+    } else if (reading) {
+      rows.push(
+        ui.note({
+          key: 'empty',
+          children:
+            reading.mode === 'local'
+              ? '本机规则没有在这份资料里找到「日期 + 时间」都明确的句子。打开模型再读一次，或者把关键句子粘贴进第 2 张卡。'
+              : '模型没有在这份资料里读到明确的日程。可以换一份更清楚的资料，或者直接把时间地点写进第 2 张卡。',
+        }),
+      )
+    }
+    return h('div', null, rows)
+  })()
+
   return h(
     'div',
     { className: 'ot-view ot-import' },
@@ -683,6 +1165,36 @@ function ImportView(props) {
       onOpenTimeline: props.onOpenTimeline || null,
     }),
 
+    /**
+     * The reading's own confirmation bar.
+     *
+     * A document read and a workbook read ask different questions, so they get
+     * different bars: this one counts events to add, the one above counts rows to
+     * match. Only one of them can be active — the store clears the other draft.
+     */
+    h(ExtractBar, {
+      state: extractState,
+      onCommit: commitReading,
+      onAnother: readAnother,
+      onDetails: scrollToDetails,
+      onRetry: function () {
+        var source = extractState.source || {}
+        if (source.pasted) {
+          readPastedText()
+          return
+        }
+        if (source.path) {
+          readFromPath(source.path)
+          return
+        }
+        if (fileInput.current) fileInput.current.click()
+      },
+      onReset: function () {
+        store.resetExtraction()
+      },
+      onOpenTimeline: props.onOpenTimeline || null,
+    }),
+
     // ---- 1 · who -----------------------------------------------------------
     ui.card({
       title: '1 · 关注的人',
@@ -717,9 +1229,9 @@ function ImportView(props) {
 
     h('div', { className: 'ot-gap' }),
 
-    // ---- 2 · the file ------------------------------------------------------
+    // ---- 2 · the material --------------------------------------------------
     ui.card({
-      title: '2 · Excel 文件',
+      title: '2 · 日程资料',
       children: h(
         'div',
         null,
@@ -739,11 +1251,11 @@ function ImportView(props) {
             },
             onDrop: onDrop,
           },
-          h('div', { className: 'ot-drop-title' }, busy ? '正在读表…' : '选一个 Excel，AI 直接帮你读'),
+          h('div', { className: 'ot-drop-title' }, busy ? '正在读…' : '拖一份日程资料进来，AI 读成日程'),
           h(
             'div',
             { className: 'ot-drop-sub' },
-            '点这里选文件，也可以直接把 .xlsx / .xlsm 拖进来。读完会告诉你这是什么表、认出哪些字段，再让你确认导入。',
+            'Excel 排班表按列解析；PDF、Word、PPT、图片和一段文字交给 AI 读懂。读完全部先摊开给你看，确认之后才写进时间轴。',
           ),
           h(
             'div',
@@ -758,20 +1270,20 @@ function ImportView(props) {
                 if (event && typeof event.stopPropagation === 'function') event.stopPropagation()
                 if (fileInput.current) fileInput.current.click()
               },
-            }, busy ? '正在读表…' : '选择 Excel'),
+            }, busy ? '正在读…' : '选择文件'),
             ui.button({
               icon: 'sheet',
               disabled: busy || path.trim() === '',
               onClick: function (event) {
                 if (event && typeof event.stopPropagation === 'function') event.stopPropagation()
-                analyze()
+                readFromPath()
               },
-            }, '按已填的路径读表'),
+            }, '按已填的路径读'),
           ),
           h('input', {
             ref: fileInput,
             type: 'file',
-            accept: '.xlsx,.xlsm,.xls',
+            accept: ACCEPT,
             className: 'ot-file-hidden',
             onChange: function (event) {
               var file = event.target.files && event.target.files[0]
@@ -793,22 +1305,50 @@ function ImportView(props) {
               className: 'ot-input',
               type: 'text',
               value: path,
-              placeholder: 'C:\\Users\\你的账号\\Desktop\\排班表.xlsx（填文件夹也行，会选最新的那个）',
+              placeholder: 'C:\\Users\\你的账号\\Desktop\\排班表.xlsx，或一份 PDF / Word / 图片',
               onChange: function (event) {
                 setPath(event.target.value)
                 // A new path invalidates the column choices made for the old one.
                 clearDraft()
               },
               onKeyDown: function (event) {
-                if (event.key === 'Enter' && path.trim() !== '') analyze()
+                if (event.key === 'Enter' && path.trim() !== '') readFromPath()
               },
             }),
-            ui.button({ icon: 'spark', disabled: busy || path.trim() === '', onClick: function () { analyze() } }, '读这份表'),
+            ui.button({ icon: 'spark', disabled: busy || path.trim() === '', onClick: function () { readFromPath() } }, '读这份'),
           ),
           h(
             'div',
             { className: 'ot-sub', style: { marginTop: 6 } },
             '填文件夹时会选其中「最近修改」的那个 Excel；资源管理器里 Shift + 右键文件 →「复制文件地址」可拿到完整路径。',
+          ),
+        ),
+
+        /**
+         * Text is a first-class input.
+         *
+         * Half the schedules people actually receive are a paragraph in a group
+         * chat — easier to paste than to save as a file, and the model reads it
+         * exactly the same way.
+         */
+        h(
+          'details',
+          { className: 'ot-details' },
+          h('summary', null, '或者粘贴一段文字（通知、群消息、会议纪要）'),
+          h('textarea', {
+            className: 'ot-input ot-textarea',
+            rows: 4,
+            value: paste,
+            placeholder: '例如：11月4日（周三）07:00-07:30 早打卡值班，张三到岗，东区门口查验。',
+            onChange: function (event) {
+              setPaste(event.target.value)
+            },
+          }),
+          h(
+            'div',
+            { className: 'ot-row', style: { marginTop: 8 } },
+            ui.button({ variant: 'primary', icon: 'robot', disabled: busy || paste.trim() === '', onClick: readPastedText }, '读这段文字'),
+            h('span', { className: 'ot-sub' }, '粘贴的文字不会存盘，只用于这一次读取。'),
           ),
         ),
 
@@ -859,43 +1399,19 @@ function ImportView(props) {
 
     h('div', { className: 'ot-gap' }),
 
-    // ---- 3 · what it is ----------------------------------------------------
+    // ---- 3 · what it read --------------------------------------------------
     //
-    // The details behind the confirmation: what the sheet looked like, how sure
-    // the reader was, the sample rows, and the column mapping. The decision itself
-    // is the bar at the top — this card is where you go to double-check it.
+    // The details behind the confirmation. For a roster: what the sheet looked
+    // like, how sure the reader was, the sample rows, the column mapping. For a
+    // document: the source, what the model said, and the editable event list.
+    // The decision itself is the bar at the top — this card is where you go to
+    // double-check it.
     h(
       'div',
       { ref: detailsRef },
       ui.card({
-        title: '3 · 读表细节',
-        children: h(
-          'div',
-          null,
-          importState.status === 'error' && importState.error
-            ? ui.note({ variant: 'error', children: importState.error })
-            : importState.status === 'analyzing'
-              ? h(
-                  'div',
-                  { className: 'ot-working' },
-                  h('span', { className: 'ot-typing' }, h('i'), h('i'), h('i')),
-                  h('span', null, importState.message || '正在读表…'),
-                )
-              : importState.status === 'done' && importState.message
-                ? ui.note({ variant: 'ok', children: importState.message })
-                : analysis
-                  ? null
-                  : ui.note({
-                      children: '拖一个 Excel 进来，或者点「选择 Excel」；读完会在页面顶部给你一张确认卡，说清楚要导入什么，再让你决定。',
-                    }),
-
-          verdict,
-          advanced,
-          previewTable,
-          warnings.length > 0
-            ? h('div', { className: 'ot-sub', style: { marginTop: 10 } }, '读表提示：' + warnings.slice(0, 4).join('；'))
-            : null,
-        ),
+        title: extracting || readingDone ? '3 · AI 读出来的日程' : '3 · 读表细节',
+        children: extracting || readingDone ? readingDetails : rosterDetails,
       }),
     ),
 

@@ -1,4 +1,4 @@
-/* Orbit Time — dashboard styles.
+/** Orbit Time â€” dashboard styles.
    Every colour resolves through a --dsw-alias-* theme token when the harness
    provides one, and falls back to a self-contained palette otherwise, so the
    panel reads correctly in both light and dark themes. */
@@ -161,7 +161,7 @@
 
 /* --------------------------------------------------------- segmented control */
 
-/* Three mutually exclusive choices (完整胶囊 / 最小圆点 / 关闭) read better as one
+/* Three mutually exclusive choices (å®Œæ•´èƒ¶å›Š / æœ€å°åœ†ç‚¹ / å…³é—­) read better as one
    control than as three unrelated buttons, and the sliding highlight makes the
    current state obvious at a glance. */
 .ot-seg {
@@ -1157,8 +1157,8 @@
   color: var(--ot-text);
 }
 
-/* Days outside the month stay clickable — they are real days with real
-   schedules — but recede so the month itself reads as the subject. */
+/* Days outside the month stay clickable â€” they are real days with real
+   schedules â€” but recede so the month itself reads as the subject. */
 .ot-cal-cell[data-outside="true"] {
   opacity: 0.42;
 }
@@ -1204,7 +1204,7 @@
 }
 
 /* Every schedule on the day is ticked off: the day still counts, it is just
-   done — a hollow dot says that without pretending the day is empty. */
+   done â€” a hollow dot says that without pretending the day is empty. */
 .ot-cal-mark-done {
   background: transparent;
   box-shadow: inset 0 0 0 1px var(--ot-success);
@@ -1623,7 +1623,7 @@
   font-size: 13.5px;
   font-weight: 650;
   /* A long file name must wrap instead of pushing the confidence pill off the
-     card — the toast this replaced did exactly that, and then got clipped by the
+     card â€” the toast this replaced did exactly that, and then got clipped by the
      window edge on top of it. */
   min-width: 0;
   overflow-wrap: anywhere;
@@ -1746,7 +1746,7 @@
 }
 
 .ot-details > summary::before {
-  content: "▸";
+  content: "â–¸";
   font-size: 10px;
   transition: transform 0.18s ease;
 }
@@ -2100,8 +2100,8 @@
 
 /* `shell.overlay` entries are click-through until they opt back in, so every
    interactive surface in this layer declares `pointer-events: auto` explicitly.
-   The notice STACK stays inert — a full-width transparent box that swallowed
-   clicks would break the app underneath — and each notice re-enables itself. */
+   The notice STACK stays inert â€” a full-width transparent box that swallowed
+   clicks would break the app underneath â€” and each notice re-enables itself. */
 
 /* The stack fills its containing block and aligns its cards to the bottom-right
    corner instead of positioning itself with `bottom: 18px`.
@@ -2109,7 +2109,7 @@
    `bottom` looked equivalent and is not: if anything between the overlay layer
    and the document establishes a containing block for `position: fixed` (a
    transform, a filter, `contain`, a zoomed ancestor), `bottom` is measured
-   against *that* box. The cards then land wherever that box ends — in the app
+   against *that* box. The cards then land wherever that box ends â€” in the app
    this put an import confirmation under the window's caption buttons, clipped by
    the title bar. With `inset: 0` the stack can only ever be as large as that
    containing block, so its cards stay inside it whatever it turns out to be, and
@@ -2167,7 +2167,7 @@
   cursor: pointer;
 }
 
-/* The grip is the *only* place a drag starts — see the drag behaviour notes in
+/* The grip is the *only* place a drag starts â€” see the drag behaviour notes in
    `drag.js`. Everything else on the card keeps its own click, which is what
    "clicking a button sometimes starts a drag instead" needed. */
 .ot-grip {
@@ -2402,8 +2402,8 @@
    
    Flex used to distribute this: the grip, the ring, the text and the two buttons
    all competed for 248 px, and with the text able to shrink to nothing the two
-   buttons ended up *left of the grip* with the clock running under them — which
-   is exactly what "按钮和数字有重叠" looks like on screen. Declaring the columns
+   buttons ended up *left of the grip* with the clock running under them â€” which
+   is exactly what "æŒ‰é’®å’Œæ•°å­—æœ‰é‡å " looks like on screen. Declaring the columns
    makes the geometry a fact instead of an outcome: 30 px of grip, 34 px of ring,
    the buttons at their natural width, and the text taking whatever is left.
    `scripts/../.tools/browser-click.mjs` measures every lane and fails if two of
@@ -2461,8 +2461,8 @@
   background: color-mix(in srgb, var(--ot-text) 8%, transparent);
 }
 
-/* Grow and close, side by side at the right edge — the same pair the expanded
-   card carries, so "收起" is one click from either state. */
+/* Grow and close, side by side at the right edge â€” the same pair the expanded
+   card carries, so "æ”¶èµ·" is one click from either state. */
 .ot-float-mini-actions {
   display: flex;
   align-items: center;
@@ -2557,6 +2557,162 @@
   /* Belt and braces: if a child still overflows, clip it rather than let the
      panel grow a scrollbar in the horizontal direction. */
   overflow-x: hidden;
+}
+
+/* ------------------------------------------------- reading documents â†’ events */
+
+/* A row read out of a document: same timeline as any other row, different origin. */
+.ot-tag-ai {
+  background: color-mix(in srgb, var(--ot-accent-2) 18%, transparent);
+  color: color-mix(in srgb, var(--ot-accent-2) 84%, var(--ot-text));
+}
+
+.ot-chip-ai {
+  background: color-mix(in srgb, var(--ot-accent-2) 18%, transparent);
+  color: color-mix(in srgb, var(--ot-accent-2) 84%, var(--ot-text));
+}
+
+.ot-textarea {
+  margin-top: 8px;
+  width: 100%;
+  min-height: 84px;
+  resize: vertical;
+  line-height: 1.55;
+  font: inherit;
+}
+
+.ot-extract-source {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--ot-layer-2) 72%, transparent);
+  border: 1px solid var(--ot-border);
+  color: var(--ot-text-dim);
+}
+
+.ot-extract-source strong {
+  color: var(--ot-text);
+  font-size: 12.5px;
+  font-weight: 620;
+  overflow-wrap: anywhere;
+}
+
+.ot-extract {
+  margin-top: 12px;
+}
+
+.ot-extract-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: var(--ot-text-dim);
+}
+
+.ot-extract-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  /* A reading can be twenty rows; the page keeps its scroll position and the
+     list scrolls inside its own box instead of pushing the reminders card away. */
+  max-height: 420px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.ot-extract-row {
+  display: flex;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid var(--ot-border);
+  background: color-mix(in srgb, var(--ot-layer-2) 62%, transparent);
+  transition: opacity 0.2s ease, border-color 0.2s ease;
+}
+
+.ot-extract-row[data-included="false"] {
+  opacity: 0.5;
+  border-style: dashed;
+}
+
+.ot-extract-check {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  padding-top: 3px;
+  cursor: pointer;
+}
+
+.ot-extract-check input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--ot-accent);
+  cursor: pointer;
+}
+
+.ot-extract-check .ot-pill {
+  font-size: 9.5px;
+  padding: 1px 5px;
+  white-space: nowrap;
+}
+
+.ot-extract-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ot-extract-title {
+  font-weight: 580;
+}
+
+.ot-extract-when {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ot-extract-when .ot-input {
+  min-width: 0;
+}
+
+.ot-extract-date {
+  flex: 1 1 46%;
+}
+
+.ot-extract-time {
+  flex: 1 1 22%;
+  padding-left: 6px;
+  padding-right: 4px;
+}
+
+.ot-extract-place {
+  font-size: 12px;
+}
+
+.ot-extract-note {
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--ot-text-dim);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.ot-extract-foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 10px;
 }
 
 /* -------------------------------------------------------- reduced motion */

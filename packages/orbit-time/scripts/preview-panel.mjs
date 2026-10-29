@@ -475,6 +475,65 @@ store.set({
   assistant: { mode: 'model', reason: 'ready', detail: 'deepseek-account · deepseek-flash' },
 })
 
+/**
+ * The other state of the import page: a document has just been read.
+ *
+ * Kept behind a flag so the default preview stays the workbook flow. This is the
+ * state that cannot be reached by refreshing a page — it needs a real file and a
+ * real model — and therefore the one most worth looking at before shipping.
+ */
+if (process.env.OT_PREVIEW_READ === '1') {
+  store.set({
+    importState: { status: 'idle', message: '', preview: null, analysis: null, error: null, modelNote: '' },
+    extractState: {
+      status: 'ready',
+      message: '一份值班通知，读出两次值班；其中一条是李四的事。',
+      source: {
+        kind: 'docx',
+        type: 'Word 文档',
+        file: '示例值班通知.docx',
+        path: 'C:\\Users\\x\\Desktop\\示例值班通知.docx',
+        chars: 240,
+        truncated: false,
+        pages: 0,
+        scannedPages: 0,
+        imageCount: 0,
+        notes: ['文档里有 1 张表格，已按「列 | 列 | 列」的文本读出来。'],
+        pasted: false,
+      },
+      analysis: {
+        mode: 'model',
+        model: { provider: 'deepseek-account', model: 'deepseek-flash' },
+        events: [],
+        excluded: [{ title: '李四交材料', reason: '是 李四 的事，不是你的' }],
+        summary: '一份 11 月的值班通知：早打卡两次、晚自习考勤一次。',
+        hints: ['早打卡在东区门口查验，提前 5 分钟到岗。'],
+        confidence: 0.72,
+        modelNote: 'AI 读的',
+      },
+      plan: {
+        rows: 3,
+        matched: 3,
+        importable: 3,
+        past: 0,
+        beyondHorizon: 0,
+        undated: 0,
+        firstDate: dayKey(7),
+        lastDate: dayKey(21),
+        horizonDays: 60,
+        ownerNames: snapshot.ownerNames,
+      },
+      draft: [
+        { key: 'x0', date: dayKey(7), start: '07:00', end: '07:30', title: '早打卡值班', location: '东区门口', notes: '查验早打卡，按表签到', confidence: 0.86, include: true },
+        { key: 'x1', date: dayKey(7), start: '19:30', end: '20:50', title: '晚自习考勤点名', location: '3 班 A101', notes: '先找班委取考勤记录', confidence: 0.74, include: true },
+        { key: 'x2', date: dayKey(21), start: '07:00', end: '07:30', title: '早打卡值班', location: '东区门口', notes: '', confidence: 0.6, include: true },
+        { key: 'x3', date: dayKey(14), start: '10:00', end: '11:00', title: '替班（不是我的）', location: '', notes: '', confidence: 0.3, include: false },
+      ],
+      error: null,
+    },
+  })
+}
+
 // ------------------------------------------------------------------ markup
 
 const activeTab = process.argv.find((arg) => arg.startsWith('--tab='))?.slice(6) || 'timeline'
@@ -638,11 +697,21 @@ const html = `<!doctype html>
   /* The real main panel is roughly this wide next to the sidebar. */
   .preview-frame { position: relative; width: 940px; height: 940px; margin: 0 auto; }
   .preview-frame > .ot-root { position: relative; height: 940px; }
+  /* A screenshot is a still of the settled page. Headless Chrome writes the
+     frame while the entrance animations are still running, which is why a
+     capture used to come out washed out: the whole panel was caught at
+     partial opacity. Collapsing the durations lands on the final state. */
+  .ot-root *, .ot-root *::before, .ot-root *::after {
+    animation-duration: 0.001ms !important;
+    animation-delay: 0s !important;
+    transition-duration: 0.001ms !important;
+  }
+
   ${styles}
 </style></head>
 <body><div class="preview-frame">${shell(renderTab(activeTab), activeTab)}</div></body></html>`
 
-const htmlPath = join(outDir, `panel-${activeTab}.html`)
+const htmlPath = join(outDir, `${process.env.OT_PREVIEW_NAME || 'panel-' + activeTab}.html`)
 writeFileSync(htmlPath, html, 'utf8')
 console.log(`preview: wrote ${htmlPath} (${(Buffer.byteLength(html, 'utf8') / 1024).toFixed(1)} kB, tab=${activeTab})`)
 
@@ -657,7 +726,7 @@ if (wantPng) {
   if (browser === undefined) {
     console.log('preview: no Edge/Chrome found, skipping the PNG')
   } else {
-    const pngPath = join(outDir, `panel-${activeTab}.png`)
+    const pngPath = join(outDir, `${process.env.OT_PREVIEW_NAME || 'panel-' + activeTab}.png`)
     const result = spawnSync(
       browser,
       [

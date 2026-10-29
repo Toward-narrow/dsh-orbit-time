@@ -27,7 +27,7 @@ mkdirSync(libDir, { recursive: true })
 const BOM = '\uFEFF'
 let staged = 0
 
-for (const file of ['hud.ps1', 'parse-xlsx.py']) {
+for (const file of ['hud.ps1', 'parse-xlsx.py', 'read-document.py']) {
   const from = join(srcDir, file)
   if (!existsSync(from)) {
     console.error(`build-host: missing ${from}`)

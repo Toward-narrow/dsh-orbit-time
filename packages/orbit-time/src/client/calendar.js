@@ -203,7 +203,11 @@ function CalendarView(props) {
               { key: item.id, className: 'ot-cal-item', 'data-done': item.done ? 'true' : 'false' },
               h('span', { className: 'ot-cal-item-time' }, item.start || '全天'),
               h('span', { className: 'ot-cal-item-title', title: item.title }, item.title),
-              item.manual === true ? h('span', { className: 'ot-tag ot-tag-manual' }, '自己加的') : null,
+              item.origin === 'ai'
+                ? h('span', { className: 'ot-tag ot-tag-ai' }, 'AI 读出')
+                : item.manual === true
+                  ? h('span', { className: 'ot-tag ot-tag-manual' }, '自己加的')
+                  : null,
               item.place ? h('span', { className: 'ot-cal-item-place' }, item.place) : null,
               item.done ? h('span', { className: 'ot-cal-item-done' }, ui.glyph('check', 11), '已完成') : null,
             )

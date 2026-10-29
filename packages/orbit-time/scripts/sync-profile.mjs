@@ -31,7 +31,7 @@ if (!existsSync(join(profileDir, 'cordis.yml'))) {
 const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
 const target = join(profileDir, 'node_modules', pkg.name)
 
-for (const required of ['lib/index.js', 'lib/client.js', 'lib/hud.ps1', 'lib/parse-xlsx.py', 'lib/shared-repair.cjs']) {
+for (const required of ['lib/index.js', 'lib/client.js', 'lib/hud.ps1', 'lib/parse-xlsx.py', 'lib/read-document.py', 'lib/shared-repair.cjs']) {
   if (!existsSync(join(root, required))) {
     console.error(`sync-profile: ${required} is missing — run the build first`)
     process.exit(1)
@@ -45,7 +45,7 @@ mkdirSync(dirname(target), { recursive: true })
 // runtime assets. No src, no scripts, no node_modules.
 cpSync(join(root, 'package.json'), join(target, 'package.json'))
 mkdirSync(join(target, 'lib'), { recursive: true })
-for (const file of ['index.js', 'client.js', 'hud.ps1', 'parse-xlsx.py', 'shared-repair.cjs']) {
+for (const file of ['index.js', 'client.js', 'hud.ps1', 'parse-xlsx.py', 'read-document.py', 'shared-repair.cjs']) {
   cpSync(join(root, 'lib', file), join(target, 'lib', file))
 }
 

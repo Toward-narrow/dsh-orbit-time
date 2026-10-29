@@ -57,6 +57,15 @@ function glyph(name, size) {
       h('rect', { key: 'r', x: 4.5, y: 7.5, width: 15, height: 11, rx: 3 }),
       h('path', { key: 'p', d: 'M12 3.5v4M8.5 12.5v1.5M15.5 12.5v1.5' }),
     ],
+    file: [
+      h('path', { key: 'p', d: 'M6.5 3.5h7L18 8v12.5H6.5z' }),
+      h('path', { key: 'q', d: 'M13.5 3.5V8H18' }),
+    ],
+    image: [
+      h('rect', { key: 'r', x: 3.5, y: 4.5, width: 17, height: 15, rx: 2.5 }),
+      h('circle', { key: 'c', cx: 8.6, cy: 9.6, r: 1.6 }),
+      h('path', { key: 'p', d: 'M4 17.2 9 12.6l3.8 3.4 2.8-2.4 4.4 3.8' }),
+    ],
     close: [h('path', { key: 'p', d: 'M6.5 6.5 17.5 17.5M17.5 6.5 6.5 17.5' })],
     expand: [h('path', { key: 'p', d: 'M14 4.5h5.5V10M10 19.5H4.5V14M19.5 4.5 13 11M4.5 19.5 11 13' })],
     minus: [h('path', { key: 'p', d: 'M6 12h12' })],
@@ -179,6 +188,10 @@ function createButtonElement(props, children) {
    * `ref` mean what every caller already assumed it meant.
    */
   if (props.ref !== undefined && props.ref !== null) extra.ref = props.ref
+  // Same reason as `ref`: this is a plain function call, so React never sees the
+  // config object. Without copying `key` every button inside a `.map` — and every
+  // fixed action row built as an array — logs a missing-key warning.
+  if (props.key !== undefined && props.key !== null) extra.key = props.key
   var label = children === undefined || children === null ? props.children : children
   return h(
     'button',

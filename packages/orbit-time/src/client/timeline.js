@@ -57,6 +57,11 @@ function EventRow(props) {
   // Rows typed in by hand have no roster behind them, and look identical to an
   // imported one otherwise — including when the Excel file is later swapped.
   if (event.source && event.source.sheet === '手动添加') tags.push(h('span', { className: 'ot-tag ot-tag-manual', key: 'manual' }, '自己加的'))
+  // Rows the model read out of a document: no file watcher re-reads them, so
+  // they behave like typed rows — but they are not something the user wrote.
+  if (event.source && event.source.sheet === 'AI 读资料') {
+    tags.push(h('span', { className: 'ot-tag ot-tag-ai', key: 'ai', title: 'AI 从资料里读出来的日程' }, 'AI 读出'))
+  }
   if (util.safeArray(event.warnings).length > 0) {
     tags.push(
       h('span', { className: 'ot-tag ot-tag-warn', key: 'warn', title: util.safeArray(event.warnings).join('\n') }, '⚠ ', util.safeArray(event.warnings)[0]),
@@ -138,16 +143,18 @@ function EventRow(props) {
               '+10 分',
             )
           : null,
-        // Only rows added by hand: an imported row deleted here would come back on
+        // Only self-made rows: an imported row deleted here would come back on
         // the next file scan, which is the file doing its job, not a bug to hide.
-        event.source && event.source.sheet === '手动添加'
+        // A row the model read off a document has no file behind it either, so it
+        // is deletable for the same reason.
+        event.source && (event.source.sheet === '手动添加' || event.source.sheet === 'AI 读资料')
           ? h(
               'button',
               {
                 type: 'button',
                 className: 'ot-btn ot-btn-sm ot-btn-ghost',
                 disabled: busy,
-                title: '删掉这条自己加的日程',
+                title: event.source.sheet === 'AI 读资料' ? '删掉这条 AI 读出来的日程' : '删掉这条自己加的日程',
                 onClick: function () {
                   if (typeof props.onDelete === 'function') props.onDelete(event)
                 },

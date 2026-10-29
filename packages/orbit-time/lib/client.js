@@ -27,7 +27,7 @@ window.__ModuleLoader__.load({
 			return mod.exports;
 		}
 
-		var CSS = "/* Orbit Time — dashboard styles.\n   Every colour resolves through a --dsw-alias-* theme token when the harness\n   provides one, and falls back to a self-contained palette otherwise, so the\n   panel reads correctly in both light and dark themes. */\n\n.ot-root {\n  --ot-accent: var(--dsw-alias-brand-primary, #4d8dff);\n  --ot-accent-2: #a970ff;\n  --ot-accent-3: #38d6c4;\n  --ot-bg: var(--dsw-alias-bg-base, #0f1116);\n  --ot-layer-1: var(--dsw-alias-bg-layer-1, #171a21);\n  --ot-layer-2: var(--dsw-alias-bg-layer-2, #1e222b);\n  --ot-overlay: var(--dsw-alias-bg-overlay, rgba(22, 25, 33, 0.86));\n  --ot-border: var(--dsw-alias-border-l1, rgba(255, 255, 255, 0.09));\n  --ot-border-strong: var(--dsw-alias-border-l2, rgba(255, 255, 255, 0.16));\n  --ot-text: var(--dsw-alias-label-primary, #f2f4f8);\n  --ot-text-dim: var(--dsw-alias-label-secondary, #b9c0cd);\n  --ot-warn: var(--dsw-alias-state-warn-primary, #f0a83c);\n  --ot-danger: var(--dsw-alias-state-error-primary, #ff6b6b);\n  --ot-success: var(--dsw-alias-state-success-primary, #3fd18b);\n  --ot-idle: var(--dsw-alias-state-idle-primary, #6b7280);\n  --ot-shadow: 0 12px 34px rgba(0, 0, 0, 0.28);\n  --ot-radius: 14px;\n  --ot-radius-sm: 10px;\n\n  position: relative;\n  display: flex;\n  flex-direction: column;\n  height: 100%;\n  min-height: 0;\n  overflow: hidden;\n  color: var(--ot-text);\n  background: var(--ot-bg);\n  font-family: \"Segoe UI Variable Text\", \"Segoe UI\", \"Microsoft YaHei UI\", system-ui, -apple-system, sans-serif;\n  font-size: 13px;\n  line-height: 1.5;\n}\n\n.ot-root *,\n.ot-root *::before,\n.ot-root *::after {\n  box-sizing: border-box;\n}\n\n.ot-root button {\n  font-family: inherit;\n  font-size: inherit;\n  color: inherit;\n}\n\n.ot-root input,\n.ot-root select,\n.ot-root textarea {\n  font-family: inherit;\n  font-size: inherit;\n}\n\n/* ---------------------------------------------------------------- ambience */\n\n.ot-aurora {\n  position: absolute;\n  inset: -40% -20% auto -20%;\n  height: 70%;\n  pointer-events: none;\n  opacity: 0.5;\n  filter: blur(60px);\n  background:\n    radial-gradient(38% 60% at 18% 30%, color-mix(in srgb, var(--ot-accent) 55%, transparent), transparent 70%),\n    radial-gradient(34% 55% at 62% 20%, color-mix(in srgb, var(--ot-accent-2) 48%, transparent), transparent 72%),\n    radial-gradient(30% 50% at 88% 44%, color-mix(in srgb, var(--ot-accent-3) 40%, transparent), transparent 70%);\n  animation: ot-drift 26s ease-in-out infinite alternate;\n  z-index: 0;\n}\n\n@keyframes ot-drift {\n  0% { transform: translate3d(-3%, -2%, 0) scale(1); }\n  50% { transform: translate3d(3%, 2%, 0) scale(1.08); }\n  100% { transform: translate3d(-2%, 3%, 0) scale(1.03); }\n}\n\n/* ------------------------------------------------------------------ header */\n\n.ot-header {\n  position: relative;\n  z-index: 2;\n  flex: none;\n  padding: 14px 18px 10px;\n  border-bottom: 1px solid var(--ot-border);\n}\n\n.ot-headrow {\n  display: flex;\n  align-items: baseline;\n  gap: 10px;\n}\n\n.ot-title {\n  margin: 0;\n  font-size: 16px;\n  font-weight: 650;\n  letter-spacing: 0.01em;\n  background: linear-gradient(96deg, var(--ot-text) 12%, var(--ot-accent) 60%, var(--ot-accent-2) 96%);\n  -webkit-background-clip: text;\n  background-clip: text;\n  color: transparent;\n}\n\n.ot-subtitle {\n  color: var(--ot-text-dim);\n  font-size: 12px;\n}\n\n.ot-headspace {\n  flex: 1;\n}\n\n.ot-headmeta {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n}\n\n.ot-chip {\n  display: inline-flex;\n  align-items: center;\n  gap: 5px;\n  height: 24px;\n  padding: 0 9px;\n  border: 1px solid var(--ot-border);\n  border-radius: 999px;\n  background: color-mix(in srgb, var(--ot-layer-2) 72%, transparent);\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n  white-space: nowrap;\n}\n\n.ot-chip strong {\n  color: var(--ot-text);\n  font-weight: 600;\n}\n\n.ot-chip-owner {\n  border-color: color-mix(in srgb, var(--ot-accent) 42%, transparent);\n  color: color-mix(in srgb, var(--ot-accent) 82%, var(--ot-text));\n}\n\n.ot-chip-live::before {\n  content: \"\";\n  width: 6px;\n  height: 6px;\n  border-radius: 50%;\n  background: var(--ot-success);\n  box-shadow: 0 0 0 0 color-mix(in srgb, var(--ot-success) 60%, transparent);\n  animation: ot-pulse 2.4s ease-out infinite;\n}\n\n.ot-chip-warn::before {\n  background: var(--ot-warn);\n  animation: none;\n}\n\n/* --------------------------------------------------------- segmented control */\n\n/* Three mutually exclusive choices (完整胶囊 / 最小圆点 / 关闭) read better as one\n   control than as three unrelated buttons, and the sliding highlight makes the\n   current state obvious at a glance. */\n.ot-seg {\n  position: relative;\n  display: grid;\n  grid-auto-flow: column;\n  grid-auto-columns: 1fr;\n  gap: 4px;\n  padding: 3px;\n  border: 1px solid var(--ot-border);\n  border-radius: 11px;\n  background: color-mix(in srgb, var(--ot-layer-2) 70%, transparent);\n}\n\n.ot-seg-item {\n  appearance: none;\n  border: 0;\n  border-radius: 8px;\n  padding: 7px 10px;\n  background: transparent;\n  color: var(--ot-text-dim);\n  font-size: 12.5px;\n  font-weight: 600;\n  cursor: pointer;\n  transition:\n    background 0.22s cubic-bezier(0.2, 0.9, 0.25, 1),\n    color 0.22s ease,\n    transform 0.22s cubic-bezier(0.2, 0.9, 0.25, 1);\n}\n\n.ot-seg-item:hover:not(:disabled) {\n  color: var(--ot-text);\n  background: color-mix(in srgb, var(--ot-text) 6%, transparent);\n}\n\n.ot-seg-item:active:not(:disabled) {\n  transform: scale(0.97);\n}\n\n.ot-seg-item.is-active {\n  color: #fff;\n  background: linear-gradient(135deg, var(--ot-accent), var(--ot-accent-2));\n  box-shadow: 0 4px 14px color-mix(in srgb, var(--ot-accent) 35%, transparent);\n}\n\n.ot-seg-item:disabled {\n  cursor: default;\n  opacity: 0.6;\n}\n\n.ot-seg-item:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ot-accent) 60%, transparent);\n  outline-offset: 1px;\n}\n\n@keyframes ot-pulse {\n  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ot-success) 55%, transparent); }\n  70% { box-shadow: 0 0 0 7px transparent; }\n  100% { box-shadow: 0 0 0 0 transparent; }\n}\n\n/* -------------------------------------------------------------------- tabs */\n\n.ot-tabs {\n  position: relative;\n  z-index: 2;\n  flex: none;\n  display: flex;\n  gap: 4px;\n  padding: 10px 14px 0;\n}\n\n.ot-tab {\n  position: relative;\n  border: 0;\n  background: transparent;\n  padding: 7px 12px 9px;\n  border-radius: 9px 9px 0 0;\n  color: var(--ot-text-dim);\n  cursor: pointer;\n  transition: color 0.18s ease, background 0.18s ease, transform 0.18s ease;\n}\n\n.ot-tab:hover {\n  color: var(--ot-text);\n  background: color-mix(in srgb, var(--ot-layer-2) 60%, transparent);\n}\n\n.ot-tab:active {\n  transform: translateY(1px);\n}\n\n.ot-tab[data-active=\"true\"] {\n  color: var(--ot-text);\n  font-weight: 600;\n}\n\n.ot-tab[data-active=\"true\"]::after {\n  content: \"\";\n  position: absolute;\n  left: 8px;\n  right: 8px;\n  bottom: 1px;\n  height: 2px;\n  border-radius: 2px;\n  background: linear-gradient(90deg, var(--ot-accent), var(--ot-accent-2));\n  animation: ot-grow 0.32s cubic-bezier(0.2, 0.9, 0.2, 1);\n}\n\n@keyframes ot-grow {\n  from { transform: scaleX(0.2); opacity: 0; }\n  to { transform: scaleX(1); opacity: 1; }\n}\n\n.ot-badge {\n  display: inline-block;\n  min-width: 17px;\n  margin-left: 6px;\n  padding: 0 5px;\n  border-radius: 999px;\n  background: color-mix(in srgb, var(--ot-accent) 24%, transparent);\n  color: color-mix(in srgb, var(--ot-accent) 88%, var(--ot-text));\n  font-size: 10.5px;\n  font-weight: 600;\n  text-align: center;\n}\n\n/* ------------------------------------------------------------------- body */\n\n.ot-body {\n  position: relative;\n  z-index: 1;\n  flex: 1;\n  min-height: 0;\n  overflow-y: auto;\n  overflow-x: hidden;\n  padding: 14px 16px 22px;\n  scrollbar-width: thin;\n  scrollbar-color: var(--ot-border-strong) transparent;\n}\n\n.ot-body::-webkit-scrollbar {\n  width: 9px;\n}\n\n.ot-body::-webkit-scrollbar-thumb {\n  background: var(--ot-border-strong);\n  border-radius: 999px;\n  border: 2px solid transparent;\n  background-clip: content-box;\n}\n\n.ot-view {\n  animation: ot-fade-up 0.28s cubic-bezier(0.2, 0.85, 0.25, 1);\n}\n\n@keyframes ot-fade-up {\n  from { opacity: 0; transform: translateY(8px); }\n  to { opacity: 1; transform: none; }\n}\n\n/* -------------------------------------------------------------- crash card */\n\n/* Shown in place of a surface whose render threw. Deliberately loud: the\n   alternative is a blank window and a console nobody opens. */\n.ot-crash {\n  display: grid;\n  place-items: center;\n  padding: 24px;\n}\n\n.ot-crash-card {\n  position: relative;\n  z-index: 1;\n  max-width: 560px;\n  padding: 18px;\n  border: 1px solid color-mix(in srgb, var(--ot-danger) 42%, var(--ot-border));\n  border-radius: var(--ot-radius);\n  background: linear-gradient(160deg, color-mix(in srgb, var(--ot-layer-1) 96%, transparent), color-mix(in srgb, var(--ot-danger) 12%, transparent));\n  box-shadow: var(--ot-shadow);\n}\n\n.ot-crash-card h2 {\n  margin: 0 0 6px;\n  font-size: 15px;\n  font-weight: 650;\n}\n\n.ot-crash-msg {\n  margin: 10px 0 0;\n  padding: 9px 11px;\n  border-radius: 9px;\n  background: color-mix(in srgb, #000 34%, transparent);\n  color: color-mix(in srgb, var(--ot-danger) 80%, var(--ot-text));\n  font-family: Consolas, \"Cascadia Mono\", monospace;\n  font-size: 11.5px;\n  line-height: 1.55;\n  white-space: pre-wrap;\n  overflow-x: auto;\n}\n\n.ot-crash-actions {\n  display: flex;\n  gap: 8px;\n  margin-top: 12px;\n}\n\n.ot-crash details {\n  margin-top: 10px;\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n}\n\n.ot-crash summary {\n  cursor: pointer;\n}\n\n/* ---------------------------------------------------------------- surfaces */\n\n.ot-card {\n  position: relative;\n  border: 1px solid var(--ot-border);\n  border-radius: var(--ot-radius);\n  background: linear-gradient(160deg, color-mix(in srgb, var(--ot-layer-1) 96%, transparent), color-mix(in srgb, var(--ot-layer-2) 80%, transparent));\n  box-shadow: var(--ot-shadow);\n  overflow: hidden;\n}\n\n.ot-card-pad {\n  padding: 14px;\n}\n\n.ot-card-title {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  margin: 0 0 10px;\n  font-size: 12px;\n  font-weight: 650;\n  letter-spacing: 0.04em;\n  text-transform: uppercase;\n  color: var(--ot-text-dim);\n}\n\n.ot-dot {\n  width: 7px;\n  height: 7px;\n  border-radius: 50%;\n  background: linear-gradient(120deg, var(--ot-accent), var(--ot-accent-2));\n}\n\n.ot-grid {\n  display: grid;\n  gap: 12px;\n}\n\n.ot-grid-2 {\n  grid-template-columns: repeat(2, minmax(0, 1fr));\n}\n\n.ot-grid-4 {\n  grid-template-columns: repeat(4, minmax(0, 1fr));\n}\n\n@media (max-width: 720px) {\n  .ot-grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }\n}\n\n@media (max-width: 460px) {\n  .ot-grid-2, .ot-grid-4 { grid-template-columns: minmax(0, 1fr); }\n}\n\n/* -------------------------------------------------------------- stat chips */\n\n.ot-stat {\n  position: relative;\n  padding: 12px 13px;\n  border: 1px solid var(--ot-border);\n  border-radius: var(--ot-radius-sm);\n  background: color-mix(in srgb, var(--ot-layer-1) 88%, transparent);\n  overflow: hidden;\n  transition: transform 0.22s cubic-bezier(0.2, 0.9, 0.25, 1), border-color 0.22s ease;\n}\n\n.ot-stat:hover {\n  transform: translateY(-2px);\n  border-color: color-mix(in srgb, var(--ot-accent) 34%, var(--ot-border));\n}\n\n.ot-stat::after {\n  content: \"\";\n  position: absolute;\n  right: -30px;\n  top: -30px;\n  width: 76px;\n  height: 76px;\n  border-radius: 50%;\n  background: radial-gradient(circle, color-mix(in srgb, var(--ot-accent) 26%, transparent), transparent 68%);\n  pointer-events: none;\n}\n\n.ot-stat-label {\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n}\n\n.ot-stat-value {\n  margin-top: 3px;\n  font-size: 21px;\n  font-weight: 660;\n  letter-spacing: -0.01em;\n  font-variant-numeric: tabular-nums;\n}\n\n.ot-stat-foot {\n  margin-top: 2px;\n  color: var(--ot-text-dim);\n  font-size: 11px;\n}\n\n/* ------------------------------------------------------------------- next */\n\n.ot-next {\n  display: flex;\n  align-items: center;\n  gap: 14px;\n  padding: 15px 16px;\n}\n\n.ot-next-main {\n  min-width: 0;\n  flex: 1;\n}\n\n.ot-next-time {\n  display: flex;\n  align-items: baseline;\n  gap: 8px;\n  font-variant-numeric: tabular-nums;\n}\n\n.ot-next-start {\n  font-size: 24px;\n  font-weight: 680;\n  letter-spacing: -0.02em;\n}\n\n.ot-next-count {\n  color: color-mix(in srgb, var(--ot-accent) 84%, var(--ot-text));\n  font-size: 12.5px;\n  font-weight: 600;\n}\n\n.ot-next-title {\n  margin-top: 2px;\n  font-size: 14.5px;\n  font-weight: 600;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n.ot-next-meta {\n  margin-top: 3px;\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n.ot-countdown {\n  flex: none;\n  text-align: right;\n}\n\n.ot-countdown-value {\n  font-size: 26px;\n  font-weight: 700;\n  font-variant-numeric: tabular-nums;\n  letter-spacing: -0.02em;\n  background: linear-gradient(120deg, var(--ot-accent), var(--ot-accent-3));\n  -webkit-background-clip: text;\n  background-clip: text;\n  color: transparent;\n}\n\n.ot-countdown-label {\n  color: var(--ot-text-dim);\n  font-size: 11px;\n}\n\n.ot-progress {\n  position: relative;\n  height: 3px;\n  margin-top: 10px;\n  border-radius: 999px;\n  background: color-mix(in srgb, var(--ot-text) 10%, transparent);\n  overflow: hidden;\n}\n\n.ot-progress > i {\n  position: absolute;\n  inset: 0 auto 0 0;\n  border-radius: inherit;\n  background: linear-gradient(90deg, var(--ot-accent), var(--ot-accent-2));\n  transition: width 0.6s cubic-bezier(0.25, 0.9, 0.3, 1);\n}\n\n/* ---------------------------------------------------------------- pomodoro */\n\n.ot-pomo {\n  display: grid;\n  grid-template-columns: minmax(0, 220px) minmax(0, 1fr);\n  gap: 18px;\n  align-items: center;\n}\n\n@media (max-width: 620px) {\n  .ot-pomo { grid-template-columns: minmax(0, 1fr); justify-items: center; }\n}\n\n.ot-ring {\n  position: relative;\n  width: 208px;\n  height: 208px;\n  flex: none;\n}\n\n.ot-ring-svg {\n  width: 100%;\n  height: 100%;\n  transform: rotate(-90deg);\n}\n\n.ot-ring-track {\n  fill: none;\n  stroke: color-mix(in srgb, var(--ot-text) 9%, transparent);\n  stroke-width: 10;\n}\n\n.ot-ring-arc {\n  fill: none;\n  stroke: url(#ot-ring-gradient);\n  stroke-width: 10;\n  stroke-linecap: round;\n  transition: stroke-dashoffset 0.95s linear;\n  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--ot-accent) 45%, transparent));\n}\n\n.ot-ring-break .ot-ring-arc {\n  stroke: url(#ot-ring-gradient-break);\n}\n\n.ot-ring-center {\n  position: absolute;\n  inset: 0;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  gap: 2px;\n}\n\n.ot-ring-time {\n  font-size: 40px;\n  font-weight: 700;\n  font-variant-numeric: tabular-nums;\n  letter-spacing: -0.03em;\n}\n\n.ot-ring-phase {\n  color: var(--ot-text-dim);\n  font-size: 12px;\n  letter-spacing: 0.08em;\n  text-transform: uppercase;\n}\n\n.ot-ring-subject {\n  max-width: 150px;\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n  text-align: center;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n.ot-ring.running .ot-ring-center::after {\n  content: \"\";\n  position: absolute;\n  inset: 26px;\n  border-radius: 50%;\n  border: 1px solid color-mix(in srgb, var(--ot-accent) 26%, transparent);\n  animation: ot-breathe 3.6s ease-in-out infinite;\n  pointer-events: none;\n}\n\n@keyframes ot-breathe {\n  0%, 100% { transform: scale(0.97); opacity: 0.35; }\n  50% { transform: scale(1.04); opacity: 0.85; }\n}\n\n.ot-pomo-side {\n  display: flex;\n  flex-direction: column;\n  gap: 12px;\n  min-width: 0;\n}\n\n.ot-row {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  flex-wrap: wrap;\n}\n\n.ot-btn {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  gap: 6px;\n  height: 32px;\n  padding: 0 13px;\n  border: 1px solid var(--ot-border);\n  border-radius: 9px;\n  background: color-mix(in srgb, var(--ot-layer-2) 78%, transparent);\n  color: var(--ot-text);\n  cursor: pointer;\n  white-space: nowrap;\n  transition: transform 0.16s cubic-bezier(0.2, 0.9, 0.25, 1), background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;\n}\n\n.ot-btn:hover:not(:disabled) {\n  transform: translateY(-1px);\n  border-color: color-mix(in srgb, var(--ot-accent) 40%, var(--ot-border));\n  background: color-mix(in srgb, var(--ot-accent) 14%, var(--ot-layer-2));\n  box-shadow: 0 6px 16px color-mix(in srgb, var(--ot-accent) 16%, transparent);\n}\n\n.ot-btn:active:not(:disabled) {\n  transform: translateY(0) scale(0.985);\n}\n\n.ot-btn:disabled {\n  opacity: 0.45;\n  cursor: not-allowed;\n}\n\n.ot-btn-primary {\n  border-color: transparent;\n  background: linear-gradient(120deg, var(--ot-accent), var(--ot-accent-2));\n  color: #fff;\n  font-weight: 600;\n}\n\n.ot-btn-primary:hover:not(:disabled) {\n  background: linear-gradient(120deg, var(--ot-accent), var(--ot-accent-2));\n  box-shadow: 0 8px 22px color-mix(in srgb, var(--ot-accent) 34%, transparent);\n}\n\n.ot-btn-ghost {\n  border-color: transparent;\n  background: transparent;\n  color: var(--ot-text-dim);\n}\n\n.ot-btn-ghost:hover:not(:disabled) {\n  background: color-mix(in srgb, var(--ot-text) 8%, transparent);\n  color: var(--ot-text);\n  box-shadow: none;\n}\n\n.ot-btn-sm {\n  height: 26px;\n  padding: 0 9px;\n  font-size: 11.5px;\n  border-radius: 7px;\n}\n\n.ot-btn-icon {\n  width: 30px;\n  padding: 0;\n}\n\n.ot-rounds {\n  display: flex;\n  align-items: center;\n  gap: 6px;\n}\n\n.ot-round {\n  width: 11px;\n  height: 11px;\n  border-radius: 50%;\n  border: 1px solid var(--ot-border-strong);\n  transition: background 0.3s ease, transform 0.3s ease, border-color 0.3s ease;\n}\n\n.ot-round[data-done=\"true\"] {\n  border-color: transparent;\n  background: linear-gradient(120deg, var(--ot-accent), var(--ot-accent-2));\n  transform: scale(1.12);\n}\n\n.ot-round[data-current=\"true\"] {\n  border-color: color-mix(in srgb, var(--ot-accent) 70%, transparent);\n  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ot-accent) 18%, transparent);\n}\n\n.ot-field {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n}\n\n.ot-field-label {\n  min-width: 92px;\n  color: var(--ot-text-dim);\n  font-size: 12px;\n}\n\n.ot-input {\n  flex: 1;\n  min-width: 0;\n  height: 32px;\n  padding: 0 10px;\n  border: 1px solid var(--ot-border);\n  border-radius: 9px;\n  background: color-mix(in srgb, var(--ot-bg) 60%, transparent);\n  color: var(--ot-text);\n  outline: none;\n  transition: border-color 0.18s ease, box-shadow 0.18s ease;\n}\n\n.ot-input:focus {\n  border-color: color-mix(in srgb, var(--ot-accent) 56%, transparent);\n  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ot-accent) 15%, transparent);\n}\n\n.ot-input-num {\n  width: 74px;\n  flex: none;\n  text-align: center;\n  font-variant-numeric: tabular-nums;\n}\n\n/* ---------------------------------------------------------------- timeline */\n\n.ot-daybar {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  margin-bottom: 12px;\n}\n\n.ot-daylist {\n  display: flex;\n  gap: 6px;\n  overflow-x: auto;\n  padding-bottom: 2px;\n  scrollbar-width: none;\n}\n\n.ot-daylist::-webkit-scrollbar { display: none; }\n\n.ot-daychip {\n  flex: none;\n  min-width: 46px;\n  padding: 6px 8px;\n  border: 1px solid var(--ot-border);\n  border-radius: 10px;\n  background: transparent;\n  color: var(--ot-text-dim);\n  cursor: pointer;\n  text-align: center;\n  transition: all 0.2s cubic-bezier(0.2, 0.9, 0.25, 1);\n}\n\n.ot-daychip:hover {\n  transform: translateY(-1px);\n  color: var(--ot-text);\n  border-color: var(--ot-border-strong);\n}\n\n.ot-daychip[data-active=\"true\"] {\n  border-color: transparent;\n  background: linear-gradient(140deg, color-mix(in srgb, var(--ot-accent) 26%, transparent), color-mix(in srgb, var(--ot-accent-2) 20%, transparent));\n  color: var(--ot-text);\n  font-weight: 600;\n}\n\n.ot-daychip b {\n  display: block;\n  font-size: 14px;\n  font-variant-numeric: tabular-nums;\n}\n\n.ot-daychip span {\n  font-size: 10.5px;\n}\n\n.ot-daychip i {\n  display: inline-block;\n  width: 4px;\n  height: 4px;\n  margin-top: 3px;\n  border-radius: 50%;\n  background: var(--ot-accent);\n}\n\n.ot-tl {\n  position: relative;\n  padding-left: 14px;\n}\n\n.ot-tl::before {\n  content: \"\";\n  position: absolute;\n  left: 3px;\n  top: 6px;\n  bottom: 6px;\n  width: 1px;\n  background: linear-gradient(180deg, transparent, var(--ot-border-strong) 12%, var(--ot-border-strong) 88%, transparent);\n}\n\n.ot-ev {\n  position: relative;\n  display: flex;\n  gap: 11px;\n  margin-bottom: 9px;\n}\n\n.ot-ev-node {\n  position: absolute;\n  left: -14px;\n  top: 15px;\n  width: 9px;\n  height: 9px;\n  border-radius: 50%;\n  border: 2px solid var(--ot-bg);\n  background: var(--ot-idle);\n  transition: background 0.3s ease, box-shadow 0.3s ease;\n}\n\n.ot-ev[data-phase=\"current\"] .ot-ev-node {\n  background: linear-gradient(120deg, var(--ot-accent), var(--ot-accent-3));\n  box-shadow: 0 0 0 0 color-mix(in srgb, var(--ot-accent) 50%, transparent);\n  animation: ot-pulse 2s ease-out infinite;\n}\n\n.ot-ev[data-phase=\"past\"] .ot-ev-node,\n.ot-ev[data-done=\"true\"] .ot-ev-node {\n  background: var(--ot-success);\n}\n\n.ot-ev-time {\n  flex: none;\n  width: 54px;\n  padding-top: 12px;\n  text-align: right;\n  font-variant-numeric: tabular-nums;\n}\n\n.ot-ev-start {\n  font-size: 13px;\n  font-weight: 620;\n}\n\n.ot-ev-end {\n  color: var(--ot-text-dim);\n  font-size: 10.5px;\n}\n\n.ot-ev-card {\n  flex: 1;\n  min-width: 0;\n  padding: 10px 12px;\n  border: 1px solid var(--ot-border);\n  border-radius: var(--ot-radius-sm);\n  background: color-mix(in srgb, var(--ot-layer-1) 86%, transparent);\n  transition: transform 0.22s cubic-bezier(0.2, 0.9, 0.25, 1), border-color 0.22s ease, background 0.22s ease;\n}\n\n.ot-ev-card:hover {\n  transform: translateX(3px);\n  border-color: color-mix(in srgb, var(--ot-accent) 36%, var(--ot-border));\n}\n\n.ot-ev[data-phase=\"current\"] .ot-ev-card {\n  border-color: color-mix(in srgb, var(--ot-accent) 48%, transparent);\n  background: linear-gradient(120deg, color-mix(in srgb, var(--ot-accent) 13%, var(--ot-layer-1)), color-mix(in srgb, var(--ot-layer-1) 92%, transparent));\n  box-shadow: 0 8px 22px color-mix(in srgb, var(--ot-accent) 15%, transparent);\n}\n\n.ot-ev[data-done=\"true\"] .ot-ev-card {\n  opacity: 0.55;\n}\n\n.ot-ev-head {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n}\n\n.ot-ev-title {\n  min-width: 0;\n  flex: 1;\n  font-size: 13.5px;\n  font-weight: 600;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n.ot-ev[data-done=\"true\"] .ot-ev-title {\n  text-decoration: line-through;\n}\n\n.ot-ev-when {\n  flex: none;\n  color: color-mix(in srgb, var(--ot-accent) 82%, var(--ot-text));\n  font-size: 11.5px;\n  font-weight: 600;\n  font-variant-numeric: tabular-nums;\n}\n\n.ot-ev[data-phase=\"past\"] .ot-ev-when {\n  color: var(--ot-text-dim);\n  font-weight: 500;\n}\n\n.ot-tags {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 6px;\n  margin-top: 5px;\n}\n\n.ot-tag {\n  display: inline-flex;\n  align-items: center;\n  gap: 4px;\n  padding: 1px 7px;\n  border-radius: 6px;\n  background: color-mix(in srgb, var(--ot-text) 7%, transparent);\n  color: var(--ot-text-dim);\n  font-size: 11px;\n}\n\n.ot-tag-owner {\n  background: color-mix(in srgb, var(--ot-accent) 16%, transparent);\n  color: color-mix(in srgb, var(--ot-accent) 86%, var(--ot-text));\n}\n\n.ot-tag-warn {\n  background: color-mix(in srgb, var(--ot-warn) 18%, transparent);\n  color: color-mix(in srgb, var(--ot-warn) 86%, var(--ot-text));\n}\n\n/* A row the user typed in themselves, not one a roster produced. */\n.ot-tag-manual {\n  background: color-mix(in srgb, var(--ot-accent-3) 18%, transparent);\n  color: color-mix(in srgb, var(--ot-accent-3) 82%, var(--ot-text));\n}\n\n.ot-chip-manual {\n  background: color-mix(in srgb, var(--ot-accent-3) 18%, transparent);\n  color: color-mix(in srgb, var(--ot-accent-3) 84%, var(--ot-text));\n}\n\n.ot-ev-notes {\n  margin-top: 5px;\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n  display: -webkit-box;\n  -webkit-line-clamp: 2;\n  -webkit-box-orient: vertical;\n  overflow: hidden;\n}\n\n.ot-ev-actions {\n  display: flex;\n  gap: 6px;\n  margin-top: 9px;\n  opacity: 0;\n  max-height: 0;\n  overflow: hidden;\n  transition: opacity 0.24s ease, max-height 0.24s ease;\n}\n\n.ot-ev:hover .ot-ev-actions,\n.ot-ev[data-phase=\"current\"] .ot-ev-actions,\n.ot-ev:focus-within .ot-ev-actions {\n  opacity: 1;\n  max-height: 40px;\n}\n\n.ot-empty {\n  padding: 34px 16px;\n  border: 1px dashed var(--ot-border-strong);\n  border-radius: var(--ot-radius);\n  color: var(--ot-text-dim);\n  text-align: center;\n}\n\n.ot-empty b {\n  display: block;\n  margin-bottom: 4px;\n  color: var(--ot-text);\n  font-size: 14px;\n}\n\n/* ----------------------------------------------------------------- calendar */\n\n.ot-cal {\n  margin-bottom: 12px;\n  padding: 12px 13px 11px;\n  border: 1px solid var(--ot-border);\n  border-radius: var(--ot-radius);\n  background: linear-gradient(160deg, color-mix(in srgb, var(--ot-layer-1) 96%, transparent), color-mix(in srgb, var(--ot-layer-2) 80%, transparent));\n  box-shadow: var(--ot-shadow);\n  animation: ot-fade-up 0.28s cubic-bezier(0.2, 0.9, 0.25, 1) both;\n}\n\n.ot-cal-head {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  margin-bottom: 10px;\n}\n\n.ot-cal-title {\n  display: flex;\n  align-items: baseline;\n  gap: 7px;\n}\n\n.ot-cal-title b {\n  font-size: 14px;\n  font-weight: 650;\n}\n\n.ot-cal-summary {\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n  font-variant-numeric: tabular-nums;\n}\n\n.ot-cal-flip {\n  padding: 0 4px;\n}\n\n.ot-cal-week {\n  display: grid;\n  grid-template-columns: repeat(7, minmax(0, 1fr));\n  gap: 4px;\n  margin-bottom: 4px;\n}\n\n.ot-cal-week span {\n  text-align: center;\n  color: var(--ot-text-dim);\n  font-size: 10.5px;\n  letter-spacing: 0.06em;\n}\n\n.ot-cal-grid {\n  display: grid;\n  grid-template-columns: repeat(7, minmax(0, 1fr));\n  gap: 4px;\n}\n\n.ot-cal-cell {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  gap: 3px;\n  min-height: 42px;\n  padding: 5px 2px 4px;\n  border: 1px solid transparent;\n  border-radius: 9px;\n  background: transparent;\n  color: var(--ot-text-dim);\n  cursor: pointer;\n  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.18s ease;\n}\n\n.ot-cal-cell:hover {\n  transform: translateY(-1px);\n  border-color: var(--ot-border-strong);\n  background: color-mix(in srgb, var(--ot-text) 6%, transparent);\n  color: var(--ot-text);\n}\n\n/* Days outside the month stay clickable — they are real days with real\n   schedules — but recede so the month itself reads as the subject. */\n.ot-cal-cell[data-outside=\"true\"] {\n  opacity: 0.42;\n}\n\n.ot-cal-cell[data-marked=\"true\"] {\n  color: var(--ot-text);\n}\n\n.ot-cal-cell[data-today=\"true\"] {\n  border-color: color-mix(in srgb, var(--ot-accent) 52%, transparent);\n}\n\n.ot-cal-cell[data-selected=\"true\"] {\n  border-color: transparent;\n  background: linear-gradient(140deg, color-mix(in srgb, var(--ot-accent) 26%, transparent), color-mix(in srgb, var(--ot-accent-2) 20%, transparent));\n  color: var(--ot-text);\n  font-weight: 650;\n}\n\n.ot-cal-daynum {\n  font-size: 12.5px;\n  font-variant-numeric: tabular-nums;\n  line-height: 1.1;\n}\n\n.ot-cal-marks {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  gap: 3px;\n  height: 5px;\n}\n\n.ot-cal-mark {\n  width: 4px;\n  height: 4px;\n  border-radius: 50%;\n  background: var(--ot-accent);\n}\n\n.ot-cal-mark-more {\n  border-radius: 2px;\n}\n\n/* Every schedule on the day is ticked off: the day still counts, it is just\n   done — a hollow dot says that without pretending the day is empty. */\n.ot-cal-mark-done {\n  background: transparent;\n  box-shadow: inset 0 0 0 1px var(--ot-success);\n}\n\n.ot-cal-items {\n  margin-top: 11px;\n  padding-top: 10px;\n  border-top: 1px solid var(--ot-border);\n}\n\n.ot-cal-items-head {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  margin-bottom: 7px;\n  font-size: 12.5px;\n}\n\n.ot-cal-item {\n  display: flex;\n  align-items: baseline;\n  gap: 9px;\n  padding: 4px 0;\n  font-size: 12.5px;\n}\n\n.ot-cal-item-time {\n  flex: none;\n  width: 46px;\n  text-align: right;\n  color: var(--ot-text-dim);\n  font-variant-numeric: tabular-nums;\n}\n\n.ot-cal-item-title {\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n.ot-cal-item-place {\n  flex: none;\n  padding: 1px 7px;\n  border-radius: 6px;\n  background: color-mix(in srgb, var(--ot-text) 7%, transparent);\n  color: var(--ot-text-dim);\n  font-size: 11px;\n}\n\n.ot-cal-item[data-done=\"true\"] {\n  color: var(--ot-text-dim);\n}\n\n.ot-cal-item[data-done=\"true\"] .ot-cal-item-title {\n  text-decoration: line-through;\n}\n\n.ot-cal-item-done {\n  display: inline-flex;\n  align-items: center;\n  gap: 3px;\n  flex: none;\n  color: var(--ot-success);\n  font-size: 11px;\n}\n\n.ot-cal-actions {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  margin-top: 9px;\n}\n\n/* -------------------------------------------------------- add an event */\n\n.ot-add {\n  margin-bottom: 12px;\n  padding: 12px 13px 11px;\n  border: 1px solid color-mix(in srgb, var(--ot-accent-3) 34%, var(--ot-border));\n  border-radius: var(--ot-radius);\n  background: linear-gradient(160deg, color-mix(in srgb, var(--ot-layer-1) 96%, transparent), color-mix(in srgb, var(--ot-accent-3) 9%, transparent));\n  box-shadow: var(--ot-shadow);\n  animation: ot-fade-up 0.28s cubic-bezier(0.2, 0.9, 0.25, 1) both;\n}\n\n.ot-add-head {\n  display: flex;\n  align-items: baseline;\n  gap: 8px;\n  margin-bottom: 10px;\n}\n\n.ot-add-head b {\n  font-size: 13.5px;\n  font-weight: 650;\n}\n\n.ot-add-grid {\n  display: grid;\n  grid-template-columns: minmax(0, 2.2fr) repeat(3, minmax(0, 1fr)) minmax(0, 1.4fr);\n  gap: 8px;\n  align-items: end;\n}\n\n.ot-add-grid label {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  min-width: 0;\n}\n\n.ot-add-grid label > span {\n  color: var(--ot-text-dim);\n  font-size: 11px;\n}\n\n.ot-add-foot {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  margin-top: 10px;\n}\n\n@media (max-width: 860px) {\n  .ot-add-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }\n  .ot-add-title { grid-column: 1 / -1; }\n}\n\n@media (max-width: 460px) {\n  .ot-add-grid { grid-template-columns: minmax(0, 1fr); }\n}\n\n@media (max-width: 620px) {\n  .ot-cal-item-place { display: none; }\n}\n\n/* --------------------------------------------------------------- companion */\n\n.ot-comp {\n  display: flex;\n  flex-direction: column;\n  gap: 10px;\n  height: 100%;\n  min-height: 0;\n}\n\n.ot-comp-head {\n  display: flex;\n  align-items: center;\n  gap: 11px;\n}\n\n.ot-avatar {\n  position: relative;\n  width: 44px;\n  height: 44px;\n  flex: none;\n  border-radius: 14px;\n  background: linear-gradient(140deg, var(--ot-accent), var(--ot-accent-2) 60%, var(--ot-accent-3));\n  box-shadow: 0 8px 20px color-mix(in srgb, var(--ot-accent) 32%, transparent);\n  animation: ot-float 5s ease-in-out infinite;\n}\n\n.ot-avatar::after {\n  content: \"\";\n  position: absolute;\n  inset: 7px 9px auto 9px;\n  height: 8px;\n  border-radius: 999px;\n  background: rgba(255, 255, 255, 0.9);\n  box-shadow: 0 12px 0 -1px rgba(255, 255, 255, 0.9);\n  opacity: 0.92;\n}\n\n.ot-avatar[data-busy=\"true\"]::after {\n  animation: ot-blink 1.1s steps(2, end) infinite;\n}\n\n@keyframes ot-float {\n  0%, 100% { transform: translateY(0) rotate(-1deg); }\n  50% { transform: translateY(-4px) rotate(1deg); }\n}\n\n@keyframes ot-blink {\n  50% { opacity: 0.35; }\n}\n\n.ot-comp-name {\n  font-size: 14px;\n  font-weight: 640;\n}\n\n.ot-comp-state {\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n}\n\n.ot-msgs {\n  flex: 1;\n  min-height: 180px;\n  max-height: 46vh;\n  overflow-y: auto;\n  display: flex;\n  flex-direction: column;\n  gap: 9px;\n  padding-right: 3px;\n  scrollbar-width: thin;\n}\n\n.ot-msg {\n  max-width: 88%;\n  padding: 9px 12px;\n  border-radius: 13px;\n  font-size: 12.5px;\n  animation: ot-pop 0.3s cubic-bezier(0.2, 0.9, 0.25, 1);\n}\n\n@keyframes ot-pop {\n  from { opacity: 0; transform: translateY(7px) scale(0.98); }\n  to { opacity: 1; transform: none; }\n}\n\n.ot-msg-ai {\n  align-self: flex-start;\n  border: 1px solid var(--ot-border);\n  border-bottom-left-radius: 5px;\n  background: color-mix(in srgb, var(--ot-layer-1) 92%, transparent);\n}\n\n.ot-msg-user {\n  align-self: flex-end;\n  border-bottom-right-radius: 5px;\n  background: linear-gradient(120deg, color-mix(in srgb, var(--ot-accent) 88%, transparent), color-mix(in srgb, var(--ot-accent-2) 82%, transparent));\n  color: #fff;\n}\n\n.ot-msg-speak {\n  font-weight: 600;\n}\n\n.ot-msg-detail {\n  margin-top: 4px;\n  color: var(--ot-text-dim);\n  font-size: 12px;\n  white-space: pre-wrap;\n}\n\n.ot-msg-user .ot-msg-detail {\n  color: rgba(255, 255, 255, 0.86);\n}\n\n.ot-msg-trace {\n  margin-top: 6px;\n  padding-top: 5px;\n  border-top: 1px dashed color-mix(in srgb, var(--ot-text) 14%, transparent);\n  color: var(--ot-text-dim);\n  font-size: 10.5px;\n}\n\n/* Capability chip beside the companion name: which brain is answering. */\n.ot-model-chip {\n  display: inline-block;\n  margin-left: 7px;\n  padding: 1px 6px;\n  border-radius: 999px;\n  font-size: 10px;\n  font-weight: 600;\n  vertical-align: 1px;\n}\n\n.ot-model-chip-live {\n  background: color-mix(in srgb, var(--ot-success) 20%, transparent);\n  color: color-mix(in srgb, var(--ot-success) 88%, var(--ot-text));\n}\n\n.ot-model-chip-live::before {\n  content: \"\";\n  display: inline-block;\n  width: 5px;\n  height: 5px;\n  margin-right: 4px;\n  border-radius: 50%;\n  background: currentColor;\n  animation: ot-pulse 2.4s ease-out infinite;\n}\n\n.ot-model-chip-local {\n  background: color-mix(in srgb, var(--ot-text) 10%, transparent);\n  color: var(--ot-text-dim);\n}\n\n.ot-chips {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 6px;\n  margin-top: 8px;\n}\n\n.ot-chipbtn {\n  padding: 3px 9px;\n  border: 1px solid color-mix(in srgb, var(--ot-accent) 32%, transparent);\n  border-radius: 999px;\n  background: color-mix(in srgb, var(--ot-accent) 10%, transparent);\n  color: color-mix(in srgb, var(--ot-accent) 88%, var(--ot-text));\n  font-size: 11.5px;\n  cursor: pointer;\n  transition: all 0.18s ease;\n}\n\n.ot-chipbtn:hover {\n  transform: translateY(-1px);\n  background: color-mix(in srgb, var(--ot-accent) 22%, transparent);\n}\n\n.ot-typing {\n  display: inline-flex;\n  gap: 4px;\n  align-items: center;\n}\n\n.ot-typing i {\n  width: 5px;\n  height: 5px;\n  border-radius: 50%;\n  background: var(--ot-text-dim);\n  animation: ot-typing 1.1s ease-in-out infinite;\n}\n\n.ot-typing i:nth-child(2) { animation-delay: 0.16s; }\n.ot-typing i:nth-child(3) { animation-delay: 0.32s; }\n\n@keyframes ot-typing {\n  0%, 100% { transform: translateY(0); opacity: 0.4; }\n  50% { transform: translateY(-3px); opacity: 1; }\n}\n\n.ot-composer {\n  display: flex;\n  gap: 7px;\n  flex: none;\n}\n\n/* ------------------------------------------------------------------ import */\n\n/*\n * The import page is a form, so the controls follow form rules: a control and\n * the button that acts on it sit on one line, labels align in a column, and\n * nothing floats in the middle of a row. `.ot-inline-form` is that line.\n */\n.ot-gap {\n  height: 12px;\n}\n\n.ot-inline-form {\n  display: flex;\n  align-items: center;\n  /* A row of controls in a narrow column has to wrap; without this the last\n     control is painted past the card's right edge, which is what produced the\n     horizontal scrollbar pills and the cut-off sentence in the import page. */\n  flex-wrap: wrap;\n  gap: 8px;\n  min-width: 0;\n}\n\n/* The import page is a single column of forms; keep it from stretching. */\n.ot-import {\n  width: 100%;\n  max-width: 980px;\n  min-width: 0;\n}\n\n/* ---- the confirmation step ---------------------------------------------- */\n\n/* Reading a sheet produces a decision, so the decision stays on screen: sticky at\n   the top of the import page, above the cards it is about. `top: -1px` hides the\n   hairline seam that a sticky block otherwise leaves while scrolling. */\n.ot-confirm {\n  position: sticky;\n  top: -1px;\n  z-index: 3;\n  margin-bottom: 12px;\n  padding: 13px 14px;\n  border: 1px solid color-mix(in srgb, var(--ot-accent) 45%, var(--ot-border));\n  border-radius: var(--ot-radius);\n  background: linear-gradient(160deg, color-mix(in srgb, var(--ot-accent) 16%, var(--ot-layer-1)), color-mix(in srgb, var(--ot-layer-2) 92%, transparent));\n  box-shadow: 0 14px 32px color-mix(in srgb, #000 32%, transparent);\n  backdrop-filter: blur(12px);\n  animation: ot-fade-up 0.3s cubic-bezier(0.2, 0.85, 0.25, 1);\n}\n\n.ot-confirm[data-tone=\"done\"] {\n  border-color: color-mix(in srgb, var(--ot-success) 48%, var(--ot-border));\n  background: linear-gradient(160deg, color-mix(in srgb, var(--ot-success) 14%, var(--ot-layer-1)), color-mix(in srgb, var(--ot-layer-2) 92%, transparent));\n}\n\n.ot-confirm[data-tone=\"error\"] {\n  border-color: color-mix(in srgb, var(--ot-danger) 52%, var(--ot-border));\n  background: linear-gradient(160deg, color-mix(in srgb, var(--ot-danger) 14%, var(--ot-layer-1)), color-mix(in srgb, var(--ot-layer-2) 92%, transparent));\n}\n\n.ot-confirm[data-tone=\"busy\"] {\n  border-color: var(--ot-border-strong);\n  background: color-mix(in srgb, var(--ot-layer-1) 96%, transparent);\n}\n\n.ot-confirm-head {\n  display: flex;\n  align-items: center;\n  flex-wrap: wrap;\n  gap: 8px;\n  min-width: 0;\n}\n\n.ot-confirm-title {\n  font-size: 13.5px;\n  font-weight: 650;\n  /* A long file name must wrap instead of pushing the confidence pill off the\n     card — the toast this replaced did exactly that, and then got clipped by the\n     window edge on top of it. */\n  min-width: 0;\n  overflow-wrap: anywhere;\n}\n\n.ot-confirm-hint {\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n}\n\n.ot-confirm-lines {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  margin-top: 8px;\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n}\n\n.ot-confirm-line {\n  display: flex;\n  align-items: flex-start;\n  gap: 6px;\n  min-width: 0;\n  overflow-wrap: anywhere;\n}\n\n.ot-confirm-line > svg {\n  margin-top: 2px;\n}\n\n.ot-confirm-actions {\n  display: flex;\n  align-items: center;\n  flex-wrap: wrap;\n  gap: 8px;\n  margin-top: 11px;\n}\n\n.ot-inline-form > .ot-input {\n  flex: 1 1 auto;\n  min-width: 0;\n}\n\n.ot-inline-form > .ot-btn {\n  flex: none;\n}\n\n.ot-headspace {\n  flex: 1 1 auto;\n  min-width: 0;\n}\n\n.ot-warn-text {\n  color: color-mix(in srgb, var(--ot-warn) 80%, var(--ot-text));\n}\n\n.ot-drop {\n  padding: 16px;\n  border: 1px dashed var(--ot-border-strong);\n  border-radius: var(--ot-radius);\n  background: color-mix(in srgb, var(--ot-layer-1) 70%, transparent);\n  text-align: center;\n  cursor: pointer;\n  transition: border-color 0.2s ease, background 0.2s ease;\n}\n\n.ot-drop:hover,\n.ot-drop-active {\n  border-color: color-mix(in srgb, var(--ot-accent) 52%, transparent);\n  background: color-mix(in srgb, var(--ot-accent) 8%, var(--ot-layer-1));\n}\n\n.ot-drop-active {\n  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ot-accent) 14%, transparent);\n}\n\n.ot-drop-title {\n  font-size: 13px;\n  font-weight: 600;\n  color: var(--ot-text);\n}\n\n.ot-drop-sub {\n  margin-top: 4px;\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n}\n\n.ot-drop-actions {\n  display: flex;\n  justify-content: center;\n  flex-wrap: wrap;\n  gap: 8px;\n  margin-top: 12px;\n}\n\n/* The real input stays in the tree so its click() is trusted, but never shown. */\n.ot-file-hidden {\n  display: none;\n}\n\n.ot-details {\n  margin-top: 10px;\n}\n\n.ot-details > summary {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  padding: 6px 2px;\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n  cursor: pointer;\n  list-style: none;\n}\n\n.ot-details > summary::-webkit-details-marker {\n  display: none;\n}\n\n.ot-details > summary::before {\n  content: \"▸\";\n  font-size: 10px;\n  transition: transform 0.18s ease;\n}\n\n.ot-details[open] > summary::before {\n  transform: rotate(90deg);\n}\n\n.ot-details > summary:hover {\n  color: var(--ot-text);\n}\n\n.ot-details code {\n  max-width: 46ch;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n  padding: 1px 6px;\n  border-radius: 6px;\n  background: color-mix(in srgb, var(--ot-text) 8%, transparent);\n  font-size: 11px;\n}\n\n/* ---- analysis verdict ---- */\n\n.ot-verdict {\n  margin-top: 10px;\n  padding: 12px;\n  border: 1px solid var(--ot-border);\n  border-radius: var(--ot-radius-sm);\n  background: color-mix(in srgb, var(--ot-layer-1) 82%, transparent);\n}\n\n.ot-verdict[data-tone=\"high\"] {\n  border-color: color-mix(in srgb, var(--ot-success) 34%, var(--ot-border));\n}\n\n.ot-verdict[data-tone=\"low\"] {\n  border-color: color-mix(in srgb, var(--ot-warn) 34%, var(--ot-border));\n}\n\n.ot-verdict-head {\n  display: flex;\n  align-items: center;\n  flex-wrap: wrap;\n  gap: 8px;\n}\n\n.ot-verdict-model {\n  color: var(--ot-text-dim);\n  font-size: 11px;\n}\n\n.ot-verdict-body {\n  margin-top: 8px;\n  font-size: 13px;\n  line-height: 1.6;\n}\n\n.ot-verdict-hints {\n  margin: 8px 0 0;\n  padding-left: 18px;\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n  line-height: 1.7;\n}\n\n.ot-verdict-tags {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 6px;\n  margin-top: 10px;\n}\n\n.ot-tag {\n  padding: 2px 8px;\n  border: 1px solid var(--ot-border);\n  border-radius: 999px;\n  background: color-mix(in srgb, var(--ot-text) 5%, transparent);\n  color: var(--ot-text-dim);\n  font-size: 11px;\n  white-space: nowrap;\n}\n\n.ot-pill {\n  padding: 2px 9px;\n  border-radius: 999px;\n  font-size: 11px;\n  font-weight: 600;\n}\n\n.ot-pill[data-tone=\"high\"] {\n  background: color-mix(in srgb, var(--ot-success) 18%, transparent);\n  color: color-mix(in srgb, var(--ot-success) 78%, var(--ot-text));\n}\n\n.ot-pill[data-tone=\"mid\"] {\n  background: color-mix(in srgb, var(--ot-accent) 16%, transparent);\n  color: color-mix(in srgb, var(--ot-accent) 82%, var(--ot-text));\n}\n\n.ot-pill[data-tone=\"low\"] {\n  background: color-mix(in srgb, var(--ot-warn) 18%, transparent);\n  color: color-mix(in srgb, var(--ot-warn) 80%, var(--ot-text));\n}\n\n.ot-verdict-actions {\n  display: flex;\n  align-items: center;\n  flex-wrap: wrap;\n  gap: 8px;\n  margin-top: 12px;\n  padding-top: 10px;\n  border-top: 1px solid var(--ot-border);\n}\n\n.ot-linkbtn {\n  padding: 0;\n  border: 0;\n  background: none;\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n  text-decoration: underline;\n  text-underline-offset: 2px;\n  cursor: pointer;\n}\n\n.ot-linkbtn:hover {\n  color: var(--ot-text);\n}\n\n.ot-working {\n  display: flex;\n  align-items: center;\n  gap: 9px;\n  padding: 9px 11px;\n  border: 1px solid color-mix(in srgb, var(--ot-accent) 26%, var(--ot-border));\n  border-radius: 9px;\n  background: color-mix(in srgb, var(--ot-accent) 7%, transparent);\n  color: var(--ot-text-dim);\n  font-size: 12px;\n}\n\n.ot-advanced {\n  margin-top: 12px;\n  padding: 12px;\n  border: 1px solid var(--ot-border);\n  border-radius: var(--ot-radius-sm);\n  background: color-mix(in srgb, var(--ot-layer-2) 42%, transparent);\n}\n\n.ot-advanced-head {\n  margin-bottom: 4px;\n}\n\n.ot-table-wrap {\n  overflow-x: auto;\n  border: 1px solid var(--ot-border);\n  border-radius: var(--ot-radius-sm);\n}\n\n.ot-table {\n  width: 100%;\n  border-collapse: collapse;\n  font-size: 12px;\n  white-space: nowrap;\n}\n\n.ot-table th,\n.ot-table td {\n  padding: 7px 10px;\n  border-bottom: 1px solid var(--ot-border);\n  text-align: left;\n}\n\n.ot-table th {\n  position: sticky;\n  top: 0;\n  background: var(--ot-layer-2);\n  color: var(--ot-text-dim);\n  font-weight: 600;\n  z-index: 1;\n}\n\n.ot-table tr:last-child td {\n  border-bottom: 0;\n}\n\n.ot-table tr[data-match=\"true\"] {\n  background: color-mix(in srgb, var(--ot-accent) 9%, transparent);\n}\n\n.ot-table tr[data-match=\"false\"] {\n  opacity: 0.5;\n}\n\n.ot-maprow {\n  display: grid;\n  grid-template-columns: minmax(88px, 0.7fr) minmax(0, 1fr) minmax(0, 1.1fr);\n  gap: 8px;\n  align-items: center;\n}\n\n.ot-map-label {\n  color: var(--ot-text-dim);\n  font-size: 12px;\n}\n\n.ot-map-hint {\n  color: var(--ot-text-dim);\n  font-size: 11px;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n@media (max-width: 640px) {\n  .ot-maprow {\n    grid-template-columns: minmax(80px, 0.6fr) minmax(0, 1fr);\n  }\n\n  .ot-map-hint {\n    display: none;\n  }\n}\n\n\n.ot-note {\n  padding: 9px 11px;\n  border-radius: 9px;\n  border: 1px solid var(--ot-border);\n  background: color-mix(in srgb, var(--ot-layer-2) 60%, transparent);\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n}\n\n.ot-note-warn {\n  border-color: color-mix(in srgb, var(--ot-warn) 40%, transparent);\n  background: color-mix(in srgb, var(--ot-warn) 12%, transparent);\n  color: color-mix(in srgb, var(--ot-warn) 82%, var(--ot-text));\n}\n\n.ot-note-error {\n  border-color: color-mix(in srgb, var(--ot-danger) 42%, transparent);\n  background: color-mix(in srgb, var(--ot-danger) 12%, transparent);\n  color: color-mix(in srgb, var(--ot-danger) 82%, var(--ot-text));\n}\n\n.ot-note-ok {\n  border-color: color-mix(in srgb, var(--ot-success) 40%, transparent);\n  background: color-mix(in srgb, var(--ot-success) 12%, transparent);\n  color: color-mix(in srgb, var(--ot-success) 82%, var(--ot-text));\n}\n\n.ot-switch {\n  display: inline-flex;\n  align-items: center;\n  gap: 8px;\n  cursor: pointer;\n}\n\n.ot-switch input {\n  appearance: none;\n  position: relative;\n  width: 36px;\n  height: 20px;\n  border-radius: 999px;\n  background: color-mix(in srgb, var(--ot-text) 18%, transparent);\n  cursor: pointer;\n  transition: background 0.22s ease;\n}\n\n.ot-switch input::after {\n  content: \"\";\n  position: absolute;\n  top: 2px;\n  left: 2px;\n  width: 16px;\n  height: 16px;\n  border-radius: 50%;\n  background: #fff;\n  transition: transform 0.22s cubic-bezier(0.3, 0.9, 0.3, 1);\n}\n\n.ot-switch input:checked {\n  background: linear-gradient(120deg, var(--ot-accent), var(--ot-accent-2));\n}\n\n.ot-switch input:checked::after {\n  transform: translateX(16px);\n}\n\n.ot-mapping-list {\n  display: flex;\n  flex-direction: column;\n  gap: 7px;\n}\n\n.ot-sub {\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n}\n\n.ot-mono {\n  font-variant-numeric: tabular-nums;\n}\n\n.ot-feed {\n  display: flex;\n  flex-direction: column;\n  gap: 7px;\n  max-height: 320px;\n  overflow-y: auto;\n}\n\n.ot-feed-item {\n  display: flex;\n  gap: 9px;\n  padding: 8px 10px;\n  border: 1px solid var(--ot-border);\n  border-radius: 9px;\n  background: color-mix(in srgb, var(--ot-layer-1) 70%, transparent);\n}\n\n.ot-feed-item[data-level=\"urgent\"] {\n  border-color: color-mix(in srgb, var(--ot-danger) 40%, transparent);\n}\n\n.ot-feed-time {\n  flex: none;\n  color: var(--ot-text-dim);\n  font-size: 11px;\n  font-variant-numeric: tabular-nums;\n}\n\n.ot-feed-title {\n  font-weight: 600;\n  font-size: 12.5px;\n}\n\n.ot-feed-body {\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n}\n\n.ot-enter {\n  animation: ot-fade-up 0.4s cubic-bezier(0.2, 0.85, 0.25, 1) both;\n}\n\n/* ---------------------------------------------------------------- notices */\n\n/* `shell.overlay` entries are click-through until they opt back in, so every\n   interactive surface in this layer declares `pointer-events: auto` explicitly.\n   The notice STACK stays inert — a full-width transparent box that swallowed\n   clicks would break the app underneath — and each notice re-enables itself. */\n\n/* The stack fills its containing block and aligns its cards to the bottom-right\n   corner instead of positioning itself with `bottom: 18px`.\n\n   `bottom` looked equivalent and is not: if anything between the overlay layer\n   and the document establishes a containing block for `position: fixed` (a\n   transform, a filter, `contain`, a zoomed ancestor), `bottom` is measured\n   against *that* box. The cards then land wherever that box ends — in the app\n   this put an import confirmation under the window's caption buttons, clipped by\n   the title bar. With `inset: 0` the stack can only ever be as large as that\n   containing block, so its cards stay inside it whatever it turns out to be, and\n   a stack of several notices can never run off the top: it scrolls instead. */\n.ot-notices {\n  position: fixed;\n  inset: 0;\n  z-index: 40;\n  display: flex;\n  flex-direction: column;\n  align-items: flex-end;\n  justify-content: flex-end;\n  gap: 9px;\n  padding: 18px;\n  overflow: hidden;\n  pointer-events: none;\n}\n\n.ot-notice-stack {\n  display: flex;\n  flex-direction: column;\n  align-items: flex-end;\n  gap: 9px;\n  width: min(330px, 100%);\n  max-height: 100%;\n  overflow-y: auto;\n  overflow-x: hidden;\n  scrollbar-width: thin;\n  scrollbar-color: var(--ot-border-strong) transparent;\n}\n\n/* The floating card and the mini pill are each their own overlay root. The\n   harness turns an overlay entry into a hit target with\n   `overlayLayer > * { pointer-events: auto }`, but relying on that alone means a\n   nested wrapper silently kills every click, so each root also asks for pointer\n   events itself. */\n.ot-float-shell,\n.ot-float-mini {\n  pointer-events: auto;\n  /* The card is dragged with pointer events, so the browser must not claim the\n     gesture for scrolling or text selection first. */\n  touch-action: none;\n  user-select: none;\n}\n\n.ot-float-shell.is-dragging,\n.ot-float-mini.is-dragging {\n  /* A 40 ms transition would trail the pointer; while dragging there is none. */\n  transition: none;\n}\n\n/* Controls inside a draggable card must keep their own click. */\n.ot-float-shell button,\n.ot-float-mini button {\n  cursor: pointer;\n}\n\n/* The grip is the *only* place a drag starts — see the drag behaviour notes in\n   `drag.js`. Everything else on the card keeps its own click, which is what\n   \"clicking a button sometimes starts a drag instead\" needed. */\n.ot-grip {\n  cursor: grab;\n  flex: none;\n  opacity: 0.55;\n}\n\n.ot-grip:hover {\n  opacity: 0.9;\n}\n\n.is-dragging .ot-grip,\n.ot-grip:active {\n  cursor: grabbing;\n  opacity: 1;\n}\n\n.ot-notice {\n  position: relative;\n  padding: 11px 13px 11px 15px;\n  border: 1px solid var(--ot-border-strong);\n  border-radius: 12px;\n  background: var(--ot-overlay);\n  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);\n  backdrop-filter: blur(14px);\n  pointer-events: auto;\n  animation: ot-slide-in 0.36s cubic-bezier(0.2, 0.9, 0.25, 1);\n  overflow: hidden;\n}\n\n.ot-notice::before {\n  content: \"\";\n  position: absolute;\n  left: 0;\n  top: 0;\n  bottom: 0;\n  width: 3px;\n  background: linear-gradient(180deg, var(--ot-accent), var(--ot-accent-2));\n}\n\n.ot-notice[data-level=\"urgent\"]::before {\n  background: linear-gradient(180deg, var(--ot-danger), var(--ot-warn));\n}\n\n.ot-notice[data-level=\"warn\"]::before {\n  background: linear-gradient(180deg, var(--ot-warn), var(--ot-accent));\n}\n\n.ot-notice.leaving {\n  animation: ot-slide-out 0.26s ease forwards;\n}\n\n@keyframes ot-slide-in {\n  from { opacity: 0; transform: translateX(28px) scale(0.97); }\n  to { opacity: 1; transform: none; }\n}\n\n@keyframes ot-slide-out {\n  to { opacity: 0; transform: translateX(24px) scale(0.97); }\n}\n\n.ot-notice-title {\n  font-size: 12.5px;\n  font-weight: 640;\n}\n\n.ot-notice-body {\n  margin-top: 2px;\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n}\n\n.ot-notice-actions {\n  display: flex;\n  gap: 6px;\n  margin-top: 8px;\n}\n\n/* ------------------------------------------------------------------- float */\n\n.ot-float-root {\n  position: relative;\n  width: 100%;\n  height: 100%;\n  padding: 10px;\n  background: transparent;\n}\n\n.ot-float-shell {\n  position: relative;\n  display: flex;\n  flex-direction: column;\n  gap: 9px;\n  height: 100%;\n  padding: 12px;\n  border: 1px solid var(--ot-border-strong);\n  border-radius: 18px;\n  background: var(--ot-overlay);\n  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.45);\n  backdrop-filter: blur(18px);\n  /* Opt back in: an overlay entry is click-through until it does. */\n  pointer-events: auto;\n  overflow: hidden;\n  animation: ot-pop 0.34s cubic-bezier(0.2, 0.9, 0.25, 1);\n}\n\n.ot-float-grip {\n  position: absolute;\n  top: 0;\n  left: 0;\n  right: 0;\n  height: 26px;\n  cursor: grab;\n  background: linear-gradient(180deg, color-mix(in srgb, var(--ot-text) 6%, transparent), transparent);\n}\n\n.ot-float-grip:active {\n  cursor: grabbing;\n}\n\n.ot-float-head {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  padding-top: 2px;\n}\n\n/* The grip inside the expanded header: a small hit target that reads as one. */\n.ot-float-head .ot-grip {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  width: 22px;\n  height: 24px;\n  margin-left: -4px;\n  padding: 0;\n  border: 0;\n  border-radius: 6px;\n  background: transparent;\n  color: var(--ot-text-dim);\n  line-height: 0;\n}\n\n.ot-float-title {\n  font-size: 11.5px;\n  font-weight: 620;\n  letter-spacing: 0.05em;\n  color: var(--ot-text-dim);\n  text-transform: uppercase;\n}\n\n.ot-float-ring {\n  position: relative;\n  width: 142px;\n  height: 142px;\n  margin: 2px auto 0;\n}\n\n.ot-float-time {\n  font-size: 30px;\n}\n\n.ot-float-next {\n  padding: 9px 11px;\n  border: 1px solid var(--ot-border);\n  border-radius: 11px;\n  background: color-mix(in srgb, var(--ot-layer-1) 80%, transparent);\n}\n\n.ot-float-next-title {\n  font-size: 12.5px;\n  font-weight: 620;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n.ot-float-next-meta {\n  color: var(--ot-text-dim);\n  font-size: 11px;\n  margin-top: 2px;\n}\n\n.ot-float-list {\n  flex: 1;\n  min-height: 0;\n  overflow-y: auto;\n  display: flex;\n  flex-direction: column;\n  gap: 5px;\n  scrollbar-width: thin;\n}\n\n.ot-float-row {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  padding: 6px 8px;\n  border-radius: 8px;\n  background: color-mix(in srgb, var(--ot-text) 5%, transparent);\n  font-size: 12px;\n}\n\n.ot-float-row[data-phase=\"current\"] {\n  background: color-mix(in srgb, var(--ot-accent) 18%, transparent);\n}\n\n.ot-float-row-time {\n  flex: none;\n  color: var(--ot-text-dim);\n  font-variant-numeric: tabular-nums;\n  font-size: 11px;\n}\n\n.ot-float-row-title {\n  min-width: 0;\n  flex: 1;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n.ot-float-foot {\n  display: flex;\n  gap: 6px;\n  justify-content: center;\n}\n\n/* The mini card is a four-lane row, and the lanes are declared rather than left\n   to flex.\n   \n   Flex used to distribute this: the grip, the ring, the text and the two buttons\n   all competed for 248 px, and with the text able to shrink to nothing the two\n   buttons ended up *left of the grip* with the clock running under them — which\n   is exactly what \"按钮和数字有重叠\" looks like on screen. Declaring the columns\n   makes the geometry a fact instead of an outcome: 30 px of grip, 34 px of ring,\n   the buttons at their natural width, and the text taking whatever is left.\n   `scripts/../.tools/browser-click.mjs` measures every lane and fails if two of\n   them overlap, so this cannot quietly come back. */\n.ot-float-mini {\n  /* The inline style carries the position; these are the same values restated\n     so a styling regression cannot leave the pill laid out in flow. */\n  position: fixed;\n  right: 18px;\n  bottom: 18px;\n  z-index: 30;\n  display: grid;\n  grid-template-columns: 30px 34px minmax(0, 1fr) auto;\n  align-items: center;\n  column-gap: 8px;\n  height: 60px;\n  padding: 0 10px;\n  border: 1px solid var(--ot-border-strong);\n  border-radius: 999px;\n  background: var(--ot-overlay);\n  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.4);\n  backdrop-filter: blur(16px);\n  /* Opt back in: an overlay entry is click-through until it does. */\n  pointer-events: auto;\n  cursor: default;\n  overflow: hidden;\n  animation: ot-pop 0.3s cubic-bezier(0.2, 0.9, 0.25, 1);\n}\n\n/* The card's own header text is not a hit target for selection, so a drag that\n   starts on the clock keeps moving the card instead of highlighting digits. */\n.ot-float-mini-time,\n.ot-float-mini-meta,\n.ot-float-title {\n  user-select: none;\n}\n\n/* The mini card's grip: a 30 px lane on the left edge, the size of a thumb. */\n.ot-float-mini .ot-grip {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  width: 30px;\n  height: 42px;\n  margin-left: -4px;\n  padding: 0;\n  border: 0;\n  border-radius: 10px;\n  background: transparent;\n  color: var(--ot-text-dim);\n  line-height: 0;\n}\n\n.ot-float-mini .ot-grip:hover {\n  background: color-mix(in srgb, var(--ot-text) 8%, transparent);\n}\n\n/* Grow and close, side by side at the right edge — the same pair the expanded\n   card carries, so \"收起\" is one click from either state. */\n.ot-float-mini-actions {\n  display: flex;\n  align-items: center;\n  gap: 2px;\n  flex: none;\n}\n\n.ot-float-mini-actions .ot-btn {\n  height: 26px;\n  min-width: 26px;\n  padding: 0 5px;\n}\n\n.ot-float-mini-ring {\n  width: 38px;\n  height: 38px;\n  flex: none;\n}\n\n.ot-float-mini-time {\n  font-size: 18px;\n  font-weight: 700;\n  font-variant-numeric: tabular-nums;\n}\n\n.ot-float-mini-meta {\n  color: var(--ot-text-dim);\n  font-size: 10.5px;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n.ot-float-mini-body {\n  min-width: 0;\n  flex: 1;\n}\n\n/* -------------------------------------------------------- layout hardening */\n\n/* The panel is rendered into whatever column the host gives it, and that column\n   can be much narrower than the design width (a right sidebar open, a resized\n   window, a DPI change the renderer has not caught up with). Nothing in here may\n   then paint past the panel: a card that overflows is clipped mid-sentence and\n   grows a horizontal scrollbar, which is what the import page did. So every\n   container is allowed to shrink, every flex row wraps, and long unbroken text\n   (a pasted path, a workbook name) wraps instead of stretching its row. */\n.ot-root,\n.ot-body,\n.ot-view,\n.ot-card,\n.ot-card-pad,\n.ot-field,\n.ot-inline-form,\n.ot-row,\n.ot-verdict,\n.ot-note,\n.ot-drop {\n  min-width: 0;\n  max-width: 100%;\n}\n\n.ot-row,\n.ot-field,\n.ot-drop-actions,\n.ot-verdict-actions,\n.ot-notice-actions {\n  flex-wrap: wrap;\n}\n\n.ot-field > .ot-input,\n.ot-field > .ot-input-num {\n  min-width: 0;\n  max-width: 100%;\n}\n\n.ot-sub,\n.ot-note,\n.ot-verdict-body,\n.ot-verdict-hints,\n.ot-feed-body,\n.ot-drop-sub,\n.ot-confirm-line,\n.ot-card-title,\n.ot-tag,\n.ot-pill {\n  overflow-wrap: anywhere;\n  word-break: break-word;\n}\n\n.ot-body {\n  /* Belt and braces: if a child still overflows, clip it rather than let the\n     panel grow a scrollbar in the horizontal direction. */\n  overflow-x: hidden;\n}\n\n/* -------------------------------------------------------- reduced motion */\n\n@media (prefers-reduced-motion: reduce) {\n  .ot-root *,\n  .ot-root *::before,\n  .ot-root *::after {\n    animation-duration: 0.001ms !important;\n    animation-iteration-count: 1 !important;\n    transition-duration: 0.001ms !important;\n  }\n\n  .ot-aurora { animation: none; }\n}\n";
+		var CSS = "/** Orbit Time â€” dashboard styles.\n   Every colour resolves through a --dsw-alias-* theme token when the harness\n   provides one, and falls back to a self-contained palette otherwise, so the\n   panel reads correctly in both light and dark themes. */\n\n.ot-root {\n  --ot-accent: var(--dsw-alias-brand-primary, #4d8dff);\n  --ot-accent-2: #a970ff;\n  --ot-accent-3: #38d6c4;\n  --ot-bg: var(--dsw-alias-bg-base, #0f1116);\n  --ot-layer-1: var(--dsw-alias-bg-layer-1, #171a21);\n  --ot-layer-2: var(--dsw-alias-bg-layer-2, #1e222b);\n  --ot-overlay: var(--dsw-alias-bg-overlay, rgba(22, 25, 33, 0.86));\n  --ot-border: var(--dsw-alias-border-l1, rgba(255, 255, 255, 0.09));\n  --ot-border-strong: var(--dsw-alias-border-l2, rgba(255, 255, 255, 0.16));\n  --ot-text: var(--dsw-alias-label-primary, #f2f4f8);\n  --ot-text-dim: var(--dsw-alias-label-secondary, #b9c0cd);\n  --ot-warn: var(--dsw-alias-state-warn-primary, #f0a83c);\n  --ot-danger: var(--dsw-alias-state-error-primary, #ff6b6b);\n  --ot-success: var(--dsw-alias-state-success-primary, #3fd18b);\n  --ot-idle: var(--dsw-alias-state-idle-primary, #6b7280);\n  --ot-shadow: 0 12px 34px rgba(0, 0, 0, 0.28);\n  --ot-radius: 14px;\n  --ot-radius-sm: 10px;\n\n  position: relative;\n  display: flex;\n  flex-direction: column;\n  height: 100%;\n  min-height: 0;\n  overflow: hidden;\n  color: var(--ot-text);\n  background: var(--ot-bg);\n  font-family: \"Segoe UI Variable Text\", \"Segoe UI\", \"Microsoft YaHei UI\", system-ui, -apple-system, sans-serif;\n  font-size: 13px;\n  line-height: 1.5;\n}\n\n.ot-root *,\n.ot-root *::before,\n.ot-root *::after {\n  box-sizing: border-box;\n}\n\n.ot-root button {\n  font-family: inherit;\n  font-size: inherit;\n  color: inherit;\n}\n\n.ot-root input,\n.ot-root select,\n.ot-root textarea {\n  font-family: inherit;\n  font-size: inherit;\n}\n\n/* ---------------------------------------------------------------- ambience */\n\n.ot-aurora {\n  position: absolute;\n  inset: -40% -20% auto -20%;\n  height: 70%;\n  pointer-events: none;\n  opacity: 0.5;\n  filter: blur(60px);\n  background:\n    radial-gradient(38% 60% at 18% 30%, color-mix(in srgb, var(--ot-accent) 55%, transparent), transparent 70%),\n    radial-gradient(34% 55% at 62% 20%, color-mix(in srgb, var(--ot-accent-2) 48%, transparent), transparent 72%),\n    radial-gradient(30% 50% at 88% 44%, color-mix(in srgb, var(--ot-accent-3) 40%, transparent), transparent 70%);\n  animation: ot-drift 26s ease-in-out infinite alternate;\n  z-index: 0;\n}\n\n@keyframes ot-drift {\n  0% { transform: translate3d(-3%, -2%, 0) scale(1); }\n  50% { transform: translate3d(3%, 2%, 0) scale(1.08); }\n  100% { transform: translate3d(-2%, 3%, 0) scale(1.03); }\n}\n\n/* ------------------------------------------------------------------ header */\n\n.ot-header {\n  position: relative;\n  z-index: 2;\n  flex: none;\n  padding: 14px 18px 10px;\n  border-bottom: 1px solid var(--ot-border);\n}\n\n.ot-headrow {\n  display: flex;\n  align-items: baseline;\n  gap: 10px;\n}\n\n.ot-title {\n  margin: 0;\n  font-size: 16px;\n  font-weight: 650;\n  letter-spacing: 0.01em;\n  background: linear-gradient(96deg, var(--ot-text) 12%, var(--ot-accent) 60%, var(--ot-accent-2) 96%);\n  -webkit-background-clip: text;\n  background-clip: text;\n  color: transparent;\n}\n\n.ot-subtitle {\n  color: var(--ot-text-dim);\n  font-size: 12px;\n}\n\n.ot-headspace {\n  flex: 1;\n}\n\n.ot-headmeta {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n}\n\n.ot-chip {\n  display: inline-flex;\n  align-items: center;\n  gap: 5px;\n  height: 24px;\n  padding: 0 9px;\n  border: 1px solid var(--ot-border);\n  border-radius: 999px;\n  background: color-mix(in srgb, var(--ot-layer-2) 72%, transparent);\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n  white-space: nowrap;\n}\n\n.ot-chip strong {\n  color: var(--ot-text);\n  font-weight: 600;\n}\n\n.ot-chip-owner {\n  border-color: color-mix(in srgb, var(--ot-accent) 42%, transparent);\n  color: color-mix(in srgb, var(--ot-accent) 82%, var(--ot-text));\n}\n\n.ot-chip-live::before {\n  content: \"\";\n  width: 6px;\n  height: 6px;\n  border-radius: 50%;\n  background: var(--ot-success);\n  box-shadow: 0 0 0 0 color-mix(in srgb, var(--ot-success) 60%, transparent);\n  animation: ot-pulse 2.4s ease-out infinite;\n}\n\n.ot-chip-warn::before {\n  background: var(--ot-warn);\n  animation: none;\n}\n\n/* --------------------------------------------------------- segmented control */\n\n/* Three mutually exclusive choices (å®Œæ•´èƒ¶å›Š / æœ€å°åœ†ç‚¹ / å…³é—­) read better as one\n   control than as three unrelated buttons, and the sliding highlight makes the\n   current state obvious at a glance. */\n.ot-seg {\n  position: relative;\n  display: grid;\n  grid-auto-flow: column;\n  grid-auto-columns: 1fr;\n  gap: 4px;\n  padding: 3px;\n  border: 1px solid var(--ot-border);\n  border-radius: 11px;\n  background: color-mix(in srgb, var(--ot-layer-2) 70%, transparent);\n}\n\n.ot-seg-item {\n  appearance: none;\n  border: 0;\n  border-radius: 8px;\n  padding: 7px 10px;\n  background: transparent;\n  color: var(--ot-text-dim);\n  font-size: 12.5px;\n  font-weight: 600;\n  cursor: pointer;\n  transition:\n    background 0.22s cubic-bezier(0.2, 0.9, 0.25, 1),\n    color 0.22s ease,\n    transform 0.22s cubic-bezier(0.2, 0.9, 0.25, 1);\n}\n\n.ot-seg-item:hover:not(:disabled) {\n  color: var(--ot-text);\n  background: color-mix(in srgb, var(--ot-text) 6%, transparent);\n}\n\n.ot-seg-item:active:not(:disabled) {\n  transform: scale(0.97);\n}\n\n.ot-seg-item.is-active {\n  color: #fff;\n  background: linear-gradient(135deg, var(--ot-accent), var(--ot-accent-2));\n  box-shadow: 0 4px 14px color-mix(in srgb, var(--ot-accent) 35%, transparent);\n}\n\n.ot-seg-item:disabled {\n  cursor: default;\n  opacity: 0.6;\n}\n\n.ot-seg-item:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ot-accent) 60%, transparent);\n  outline-offset: 1px;\n}\n\n@keyframes ot-pulse {\n  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ot-success) 55%, transparent); }\n  70% { box-shadow: 0 0 0 7px transparent; }\n  100% { box-shadow: 0 0 0 0 transparent; }\n}\n\n/* -------------------------------------------------------------------- tabs */\n\n.ot-tabs {\n  position: relative;\n  z-index: 2;\n  flex: none;\n  display: flex;\n  gap: 4px;\n  padding: 10px 14px 0;\n}\n\n.ot-tab {\n  position: relative;\n  border: 0;\n  background: transparent;\n  padding: 7px 12px 9px;\n  border-radius: 9px 9px 0 0;\n  color: var(--ot-text-dim);\n  cursor: pointer;\n  transition: color 0.18s ease, background 0.18s ease, transform 0.18s ease;\n}\n\n.ot-tab:hover {\n  color: var(--ot-text);\n  background: color-mix(in srgb, var(--ot-layer-2) 60%, transparent);\n}\n\n.ot-tab:active {\n  transform: translateY(1px);\n}\n\n.ot-tab[data-active=\"true\"] {\n  color: var(--ot-text);\n  font-weight: 600;\n}\n\n.ot-tab[data-active=\"true\"]::after {\n  content: \"\";\n  position: absolute;\n  left: 8px;\n  right: 8px;\n  bottom: 1px;\n  height: 2px;\n  border-radius: 2px;\n  background: linear-gradient(90deg, var(--ot-accent), var(--ot-accent-2));\n  animation: ot-grow 0.32s cubic-bezier(0.2, 0.9, 0.2, 1);\n}\n\n@keyframes ot-grow {\n  from { transform: scaleX(0.2); opacity: 0; }\n  to { transform: scaleX(1); opacity: 1; }\n}\n\n.ot-badge {\n  display: inline-block;\n  min-width: 17px;\n  margin-left: 6px;\n  padding: 0 5px;\n  border-radius: 999px;\n  background: color-mix(in srgb, var(--ot-accent) 24%, transparent);\n  color: color-mix(in srgb, var(--ot-accent) 88%, var(--ot-text));\n  font-size: 10.5px;\n  font-weight: 600;\n  text-align: center;\n}\n\n/* ------------------------------------------------------------------- body */\n\n.ot-body {\n  position: relative;\n  z-index: 1;\n  flex: 1;\n  min-height: 0;\n  overflow-y: auto;\n  overflow-x: hidden;\n  padding: 14px 16px 22px;\n  scrollbar-width: thin;\n  scrollbar-color: var(--ot-border-strong) transparent;\n}\n\n.ot-body::-webkit-scrollbar {\n  width: 9px;\n}\n\n.ot-body::-webkit-scrollbar-thumb {\n  background: var(--ot-border-strong);\n  border-radius: 999px;\n  border: 2px solid transparent;\n  background-clip: content-box;\n}\n\n.ot-view {\n  animation: ot-fade-up 0.28s cubic-bezier(0.2, 0.85, 0.25, 1);\n}\n\n@keyframes ot-fade-up {\n  from { opacity: 0; transform: translateY(8px); }\n  to { opacity: 1; transform: none; }\n}\n\n/* -------------------------------------------------------------- crash card */\n\n/* Shown in place of a surface whose render threw. Deliberately loud: the\n   alternative is a blank window and a console nobody opens. */\n.ot-crash {\n  display: grid;\n  place-items: center;\n  padding: 24px;\n}\n\n.ot-crash-card {\n  position: relative;\n  z-index: 1;\n  max-width: 560px;\n  padding: 18px;\n  border: 1px solid color-mix(in srgb, var(--ot-danger) 42%, var(--ot-border));\n  border-radius: var(--ot-radius);\n  background: linear-gradient(160deg, color-mix(in srgb, var(--ot-layer-1) 96%, transparent), color-mix(in srgb, var(--ot-danger) 12%, transparent));\n  box-shadow: var(--ot-shadow);\n}\n\n.ot-crash-card h2 {\n  margin: 0 0 6px;\n  font-size: 15px;\n  font-weight: 650;\n}\n\n.ot-crash-msg {\n  margin: 10px 0 0;\n  padding: 9px 11px;\n  border-radius: 9px;\n  background: color-mix(in srgb, #000 34%, transparent);\n  color: color-mix(in srgb, var(--ot-danger) 80%, var(--ot-text));\n  font-family: Consolas, \"Cascadia Mono\", monospace;\n  font-size: 11.5px;\n  line-height: 1.55;\n  white-space: pre-wrap;\n  overflow-x: auto;\n}\n\n.ot-crash-actions {\n  display: flex;\n  gap: 8px;\n  margin-top: 12px;\n}\n\n.ot-crash details {\n  margin-top: 10px;\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n}\n\n.ot-crash summary {\n  cursor: pointer;\n}\n\n/* ---------------------------------------------------------------- surfaces */\n\n.ot-card {\n  position: relative;\n  border: 1px solid var(--ot-border);\n  border-radius: var(--ot-radius);\n  background: linear-gradient(160deg, color-mix(in srgb, var(--ot-layer-1) 96%, transparent), color-mix(in srgb, var(--ot-layer-2) 80%, transparent));\n  box-shadow: var(--ot-shadow);\n  overflow: hidden;\n}\n\n.ot-card-pad {\n  padding: 14px;\n}\n\n.ot-card-title {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  margin: 0 0 10px;\n  font-size: 12px;\n  font-weight: 650;\n  letter-spacing: 0.04em;\n  text-transform: uppercase;\n  color: var(--ot-text-dim);\n}\n\n.ot-dot {\n  width: 7px;\n  height: 7px;\n  border-radius: 50%;\n  background: linear-gradient(120deg, var(--ot-accent), var(--ot-accent-2));\n}\n\n.ot-grid {\n  display: grid;\n  gap: 12px;\n}\n\n.ot-grid-2 {\n  grid-template-columns: repeat(2, minmax(0, 1fr));\n}\n\n.ot-grid-4 {\n  grid-template-columns: repeat(4, minmax(0, 1fr));\n}\n\n@media (max-width: 720px) {\n  .ot-grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }\n}\n\n@media (max-width: 460px) {\n  .ot-grid-2, .ot-grid-4 { grid-template-columns: minmax(0, 1fr); }\n}\n\n/* -------------------------------------------------------------- stat chips */\n\n.ot-stat {\n  position: relative;\n  padding: 12px 13px;\n  border: 1px solid var(--ot-border);\n  border-radius: var(--ot-radius-sm);\n  background: color-mix(in srgb, var(--ot-layer-1) 88%, transparent);\n  overflow: hidden;\n  transition: transform 0.22s cubic-bezier(0.2, 0.9, 0.25, 1), border-color 0.22s ease;\n}\n\n.ot-stat:hover {\n  transform: translateY(-2px);\n  border-color: color-mix(in srgb, var(--ot-accent) 34%, var(--ot-border));\n}\n\n.ot-stat::after {\n  content: \"\";\n  position: absolute;\n  right: -30px;\n  top: -30px;\n  width: 76px;\n  height: 76px;\n  border-radius: 50%;\n  background: radial-gradient(circle, color-mix(in srgb, var(--ot-accent) 26%, transparent), transparent 68%);\n  pointer-events: none;\n}\n\n.ot-stat-label {\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n}\n\n.ot-stat-value {\n  margin-top: 3px;\n  font-size: 21px;\n  font-weight: 660;\n  letter-spacing: -0.01em;\n  font-variant-numeric: tabular-nums;\n}\n\n.ot-stat-foot {\n  margin-top: 2px;\n  color: var(--ot-text-dim);\n  font-size: 11px;\n}\n\n/* ------------------------------------------------------------------- next */\n\n.ot-next {\n  display: flex;\n  align-items: center;\n  gap: 14px;\n  padding: 15px 16px;\n}\n\n.ot-next-main {\n  min-width: 0;\n  flex: 1;\n}\n\n.ot-next-time {\n  display: flex;\n  align-items: baseline;\n  gap: 8px;\n  font-variant-numeric: tabular-nums;\n}\n\n.ot-next-start {\n  font-size: 24px;\n  font-weight: 680;\n  letter-spacing: -0.02em;\n}\n\n.ot-next-count {\n  color: color-mix(in srgb, var(--ot-accent) 84%, var(--ot-text));\n  font-size: 12.5px;\n  font-weight: 600;\n}\n\n.ot-next-title {\n  margin-top: 2px;\n  font-size: 14.5px;\n  font-weight: 600;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n.ot-next-meta {\n  margin-top: 3px;\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n.ot-countdown {\n  flex: none;\n  text-align: right;\n}\n\n.ot-countdown-value {\n  font-size: 26px;\n  font-weight: 700;\n  font-variant-numeric: tabular-nums;\n  letter-spacing: -0.02em;\n  background: linear-gradient(120deg, var(--ot-accent), var(--ot-accent-3));\n  -webkit-background-clip: text;\n  background-clip: text;\n  color: transparent;\n}\n\n.ot-countdown-label {\n  color: var(--ot-text-dim);\n  font-size: 11px;\n}\n\n.ot-progress {\n  position: relative;\n  height: 3px;\n  margin-top: 10px;\n  border-radius: 999px;\n  background: color-mix(in srgb, var(--ot-text) 10%, transparent);\n  overflow: hidden;\n}\n\n.ot-progress > i {\n  position: absolute;\n  inset: 0 auto 0 0;\n  border-radius: inherit;\n  background: linear-gradient(90deg, var(--ot-accent), var(--ot-accent-2));\n  transition: width 0.6s cubic-bezier(0.25, 0.9, 0.3, 1);\n}\n\n/* ---------------------------------------------------------------- pomodoro */\n\n.ot-pomo {\n  display: grid;\n  grid-template-columns: minmax(0, 220px) minmax(0, 1fr);\n  gap: 18px;\n  align-items: center;\n}\n\n@media (max-width: 620px) {\n  .ot-pomo { grid-template-columns: minmax(0, 1fr); justify-items: center; }\n}\n\n.ot-ring {\n  position: relative;\n  width: 208px;\n  height: 208px;\n  flex: none;\n}\n\n.ot-ring-svg {\n  width: 100%;\n  height: 100%;\n  transform: rotate(-90deg);\n}\n\n.ot-ring-track {\n  fill: none;\n  stroke: color-mix(in srgb, var(--ot-text) 9%, transparent);\n  stroke-width: 10;\n}\n\n.ot-ring-arc {\n  fill: none;\n  stroke: url(#ot-ring-gradient);\n  stroke-width: 10;\n  stroke-linecap: round;\n  transition: stroke-dashoffset 0.95s linear;\n  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--ot-accent) 45%, transparent));\n}\n\n.ot-ring-break .ot-ring-arc {\n  stroke: url(#ot-ring-gradient-break);\n}\n\n.ot-ring-center {\n  position: absolute;\n  inset: 0;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  gap: 2px;\n}\n\n.ot-ring-time {\n  font-size: 40px;\n  font-weight: 700;\n  font-variant-numeric: tabular-nums;\n  letter-spacing: -0.03em;\n}\n\n.ot-ring-phase {\n  color: var(--ot-text-dim);\n  font-size: 12px;\n  letter-spacing: 0.08em;\n  text-transform: uppercase;\n}\n\n.ot-ring-subject {\n  max-width: 150px;\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n  text-align: center;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n.ot-ring.running .ot-ring-center::after {\n  content: \"\";\n  position: absolute;\n  inset: 26px;\n  border-radius: 50%;\n  border: 1px solid color-mix(in srgb, var(--ot-accent) 26%, transparent);\n  animation: ot-breathe 3.6s ease-in-out infinite;\n  pointer-events: none;\n}\n\n@keyframes ot-breathe {\n  0%, 100% { transform: scale(0.97); opacity: 0.35; }\n  50% { transform: scale(1.04); opacity: 0.85; }\n}\n\n.ot-pomo-side {\n  display: flex;\n  flex-direction: column;\n  gap: 12px;\n  min-width: 0;\n}\n\n.ot-row {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  flex-wrap: wrap;\n}\n\n.ot-btn {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  gap: 6px;\n  height: 32px;\n  padding: 0 13px;\n  border: 1px solid var(--ot-border);\n  border-radius: 9px;\n  background: color-mix(in srgb, var(--ot-layer-2) 78%, transparent);\n  color: var(--ot-text);\n  cursor: pointer;\n  white-space: nowrap;\n  transition: transform 0.16s cubic-bezier(0.2, 0.9, 0.25, 1), background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;\n}\n\n.ot-btn:hover:not(:disabled) {\n  transform: translateY(-1px);\n  border-color: color-mix(in srgb, var(--ot-accent) 40%, var(--ot-border));\n  background: color-mix(in srgb, var(--ot-accent) 14%, var(--ot-layer-2));\n  box-shadow: 0 6px 16px color-mix(in srgb, var(--ot-accent) 16%, transparent);\n}\n\n.ot-btn:active:not(:disabled) {\n  transform: translateY(0) scale(0.985);\n}\n\n.ot-btn:disabled {\n  opacity: 0.45;\n  cursor: not-allowed;\n}\n\n.ot-btn-primary {\n  border-color: transparent;\n  background: linear-gradient(120deg, var(--ot-accent), var(--ot-accent-2));\n  color: #fff;\n  font-weight: 600;\n}\n\n.ot-btn-primary:hover:not(:disabled) {\n  background: linear-gradient(120deg, var(--ot-accent), var(--ot-accent-2));\n  box-shadow: 0 8px 22px color-mix(in srgb, var(--ot-accent) 34%, transparent);\n}\n\n.ot-btn-ghost {\n  border-color: transparent;\n  background: transparent;\n  color: var(--ot-text-dim);\n}\n\n.ot-btn-ghost:hover:not(:disabled) {\n  background: color-mix(in srgb, var(--ot-text) 8%, transparent);\n  color: var(--ot-text);\n  box-shadow: none;\n}\n\n.ot-btn-sm {\n  height: 26px;\n  padding: 0 9px;\n  font-size: 11.5px;\n  border-radius: 7px;\n}\n\n.ot-btn-icon {\n  width: 30px;\n  padding: 0;\n}\n\n.ot-rounds {\n  display: flex;\n  align-items: center;\n  gap: 6px;\n}\n\n.ot-round {\n  width: 11px;\n  height: 11px;\n  border-radius: 50%;\n  border: 1px solid var(--ot-border-strong);\n  transition: background 0.3s ease, transform 0.3s ease, border-color 0.3s ease;\n}\n\n.ot-round[data-done=\"true\"] {\n  border-color: transparent;\n  background: linear-gradient(120deg, var(--ot-accent), var(--ot-accent-2));\n  transform: scale(1.12);\n}\n\n.ot-round[data-current=\"true\"] {\n  border-color: color-mix(in srgb, var(--ot-accent) 70%, transparent);\n  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ot-accent) 18%, transparent);\n}\n\n.ot-field {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n}\n\n.ot-field-label {\n  min-width: 92px;\n  color: var(--ot-text-dim);\n  font-size: 12px;\n}\n\n.ot-input {\n  flex: 1;\n  min-width: 0;\n  height: 32px;\n  padding: 0 10px;\n  border: 1px solid var(--ot-border);\n  border-radius: 9px;\n  background: color-mix(in srgb, var(--ot-bg) 60%, transparent);\n  color: var(--ot-text);\n  outline: none;\n  transition: border-color 0.18s ease, box-shadow 0.18s ease;\n}\n\n.ot-input:focus {\n  border-color: color-mix(in srgb, var(--ot-accent) 56%, transparent);\n  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ot-accent) 15%, transparent);\n}\n\n.ot-input-num {\n  width: 74px;\n  flex: none;\n  text-align: center;\n  font-variant-numeric: tabular-nums;\n}\n\n/* ---------------------------------------------------------------- timeline */\n\n.ot-daybar {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  margin-bottom: 12px;\n}\n\n.ot-daylist {\n  display: flex;\n  gap: 6px;\n  overflow-x: auto;\n  padding-bottom: 2px;\n  scrollbar-width: none;\n}\n\n.ot-daylist::-webkit-scrollbar { display: none; }\n\n.ot-daychip {\n  flex: none;\n  min-width: 46px;\n  padding: 6px 8px;\n  border: 1px solid var(--ot-border);\n  border-radius: 10px;\n  background: transparent;\n  color: var(--ot-text-dim);\n  cursor: pointer;\n  text-align: center;\n  transition: all 0.2s cubic-bezier(0.2, 0.9, 0.25, 1);\n}\n\n.ot-daychip:hover {\n  transform: translateY(-1px);\n  color: var(--ot-text);\n  border-color: var(--ot-border-strong);\n}\n\n.ot-daychip[data-active=\"true\"] {\n  border-color: transparent;\n  background: linear-gradient(140deg, color-mix(in srgb, var(--ot-accent) 26%, transparent), color-mix(in srgb, var(--ot-accent-2) 20%, transparent));\n  color: var(--ot-text);\n  font-weight: 600;\n}\n\n.ot-daychip b {\n  display: block;\n  font-size: 14px;\n  font-variant-numeric: tabular-nums;\n}\n\n.ot-daychip span {\n  font-size: 10.5px;\n}\n\n.ot-daychip i {\n  display: inline-block;\n  width: 4px;\n  height: 4px;\n  margin-top: 3px;\n  border-radius: 50%;\n  background: var(--ot-accent);\n}\n\n.ot-tl {\n  position: relative;\n  padding-left: 14px;\n}\n\n.ot-tl::before {\n  content: \"\";\n  position: absolute;\n  left: 3px;\n  top: 6px;\n  bottom: 6px;\n  width: 1px;\n  background: linear-gradient(180deg, transparent, var(--ot-border-strong) 12%, var(--ot-border-strong) 88%, transparent);\n}\n\n.ot-ev {\n  position: relative;\n  display: flex;\n  gap: 11px;\n  margin-bottom: 9px;\n}\n\n.ot-ev-node {\n  position: absolute;\n  left: -14px;\n  top: 15px;\n  width: 9px;\n  height: 9px;\n  border-radius: 50%;\n  border: 2px solid var(--ot-bg);\n  background: var(--ot-idle);\n  transition: background 0.3s ease, box-shadow 0.3s ease;\n}\n\n.ot-ev[data-phase=\"current\"] .ot-ev-node {\n  background: linear-gradient(120deg, var(--ot-accent), var(--ot-accent-3));\n  box-shadow: 0 0 0 0 color-mix(in srgb, var(--ot-accent) 50%, transparent);\n  animation: ot-pulse 2s ease-out infinite;\n}\n\n.ot-ev[data-phase=\"past\"] .ot-ev-node,\n.ot-ev[data-done=\"true\"] .ot-ev-node {\n  background: var(--ot-success);\n}\n\n.ot-ev-time {\n  flex: none;\n  width: 54px;\n  padding-top: 12px;\n  text-align: right;\n  font-variant-numeric: tabular-nums;\n}\n\n.ot-ev-start {\n  font-size: 13px;\n  font-weight: 620;\n}\n\n.ot-ev-end {\n  color: var(--ot-text-dim);\n  font-size: 10.5px;\n}\n\n.ot-ev-card {\n  flex: 1;\n  min-width: 0;\n  padding: 10px 12px;\n  border: 1px solid var(--ot-border);\n  border-radius: var(--ot-radius-sm);\n  background: color-mix(in srgb, var(--ot-layer-1) 86%, transparent);\n  transition: transform 0.22s cubic-bezier(0.2, 0.9, 0.25, 1), border-color 0.22s ease, background 0.22s ease;\n}\n\n.ot-ev-card:hover {\n  transform: translateX(3px);\n  border-color: color-mix(in srgb, var(--ot-accent) 36%, var(--ot-border));\n}\n\n.ot-ev[data-phase=\"current\"] .ot-ev-card {\n  border-color: color-mix(in srgb, var(--ot-accent) 48%, transparent);\n  background: linear-gradient(120deg, color-mix(in srgb, var(--ot-accent) 13%, var(--ot-layer-1)), color-mix(in srgb, var(--ot-layer-1) 92%, transparent));\n  box-shadow: 0 8px 22px color-mix(in srgb, var(--ot-accent) 15%, transparent);\n}\n\n.ot-ev[data-done=\"true\"] .ot-ev-card {\n  opacity: 0.55;\n}\n\n.ot-ev-head {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n}\n\n.ot-ev-title {\n  min-width: 0;\n  flex: 1;\n  font-size: 13.5px;\n  font-weight: 600;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n.ot-ev[data-done=\"true\"] .ot-ev-title {\n  text-decoration: line-through;\n}\n\n.ot-ev-when {\n  flex: none;\n  color: color-mix(in srgb, var(--ot-accent) 82%, var(--ot-text));\n  font-size: 11.5px;\n  font-weight: 600;\n  font-variant-numeric: tabular-nums;\n}\n\n.ot-ev[data-phase=\"past\"] .ot-ev-when {\n  color: var(--ot-text-dim);\n  font-weight: 500;\n}\n\n.ot-tags {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 6px;\n  margin-top: 5px;\n}\n\n.ot-tag {\n  display: inline-flex;\n  align-items: center;\n  gap: 4px;\n  padding: 1px 7px;\n  border-radius: 6px;\n  background: color-mix(in srgb, var(--ot-text) 7%, transparent);\n  color: var(--ot-text-dim);\n  font-size: 11px;\n}\n\n.ot-tag-owner {\n  background: color-mix(in srgb, var(--ot-accent) 16%, transparent);\n  color: color-mix(in srgb, var(--ot-accent) 86%, var(--ot-text));\n}\n\n.ot-tag-warn {\n  background: color-mix(in srgb, var(--ot-warn) 18%, transparent);\n  color: color-mix(in srgb, var(--ot-warn) 86%, var(--ot-text));\n}\n\n/* A row the user typed in themselves, not one a roster produced. */\n.ot-tag-manual {\n  background: color-mix(in srgb, var(--ot-accent-3) 18%, transparent);\n  color: color-mix(in srgb, var(--ot-accent-3) 82%, var(--ot-text));\n}\n\n.ot-chip-manual {\n  background: color-mix(in srgb, var(--ot-accent-3) 18%, transparent);\n  color: color-mix(in srgb, var(--ot-accent-3) 84%, var(--ot-text));\n}\n\n.ot-ev-notes {\n  margin-top: 5px;\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n  display: -webkit-box;\n  -webkit-line-clamp: 2;\n  -webkit-box-orient: vertical;\n  overflow: hidden;\n}\n\n.ot-ev-actions {\n  display: flex;\n  gap: 6px;\n  margin-top: 9px;\n  opacity: 0;\n  max-height: 0;\n  overflow: hidden;\n  transition: opacity 0.24s ease, max-height 0.24s ease;\n}\n\n.ot-ev:hover .ot-ev-actions,\n.ot-ev[data-phase=\"current\"] .ot-ev-actions,\n.ot-ev:focus-within .ot-ev-actions {\n  opacity: 1;\n  max-height: 40px;\n}\n\n.ot-empty {\n  padding: 34px 16px;\n  border: 1px dashed var(--ot-border-strong);\n  border-radius: var(--ot-radius);\n  color: var(--ot-text-dim);\n  text-align: center;\n}\n\n.ot-empty b {\n  display: block;\n  margin-bottom: 4px;\n  color: var(--ot-text);\n  font-size: 14px;\n}\n\n/* ----------------------------------------------------------------- calendar */\n\n.ot-cal {\n  margin-bottom: 12px;\n  padding: 12px 13px 11px;\n  border: 1px solid var(--ot-border);\n  border-radius: var(--ot-radius);\n  background: linear-gradient(160deg, color-mix(in srgb, var(--ot-layer-1) 96%, transparent), color-mix(in srgb, var(--ot-layer-2) 80%, transparent));\n  box-shadow: var(--ot-shadow);\n  animation: ot-fade-up 0.28s cubic-bezier(0.2, 0.9, 0.25, 1) both;\n}\n\n.ot-cal-head {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  margin-bottom: 10px;\n}\n\n.ot-cal-title {\n  display: flex;\n  align-items: baseline;\n  gap: 7px;\n}\n\n.ot-cal-title b {\n  font-size: 14px;\n  font-weight: 650;\n}\n\n.ot-cal-summary {\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n  font-variant-numeric: tabular-nums;\n}\n\n.ot-cal-flip {\n  padding: 0 4px;\n}\n\n.ot-cal-week {\n  display: grid;\n  grid-template-columns: repeat(7, minmax(0, 1fr));\n  gap: 4px;\n  margin-bottom: 4px;\n}\n\n.ot-cal-week span {\n  text-align: center;\n  color: var(--ot-text-dim);\n  font-size: 10.5px;\n  letter-spacing: 0.06em;\n}\n\n.ot-cal-grid {\n  display: grid;\n  grid-template-columns: repeat(7, minmax(0, 1fr));\n  gap: 4px;\n}\n\n.ot-cal-cell {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  gap: 3px;\n  min-height: 42px;\n  padding: 5px 2px 4px;\n  border: 1px solid transparent;\n  border-radius: 9px;\n  background: transparent;\n  color: var(--ot-text-dim);\n  cursor: pointer;\n  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.18s ease;\n}\n\n.ot-cal-cell:hover {\n  transform: translateY(-1px);\n  border-color: var(--ot-border-strong);\n  background: color-mix(in srgb, var(--ot-text) 6%, transparent);\n  color: var(--ot-text);\n}\n\n/* Days outside the month stay clickable â€” they are real days with real\n   schedules â€” but recede so the month itself reads as the subject. */\n.ot-cal-cell[data-outside=\"true\"] {\n  opacity: 0.42;\n}\n\n.ot-cal-cell[data-marked=\"true\"] {\n  color: var(--ot-text);\n}\n\n.ot-cal-cell[data-today=\"true\"] {\n  border-color: color-mix(in srgb, var(--ot-accent) 52%, transparent);\n}\n\n.ot-cal-cell[data-selected=\"true\"] {\n  border-color: transparent;\n  background: linear-gradient(140deg, color-mix(in srgb, var(--ot-accent) 26%, transparent), color-mix(in srgb, var(--ot-accent-2) 20%, transparent));\n  color: var(--ot-text);\n  font-weight: 650;\n}\n\n.ot-cal-daynum {\n  font-size: 12.5px;\n  font-variant-numeric: tabular-nums;\n  line-height: 1.1;\n}\n\n.ot-cal-marks {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  gap: 3px;\n  height: 5px;\n}\n\n.ot-cal-mark {\n  width: 4px;\n  height: 4px;\n  border-radius: 50%;\n  background: var(--ot-accent);\n}\n\n.ot-cal-mark-more {\n  border-radius: 2px;\n}\n\n/* Every schedule on the day is ticked off: the day still counts, it is just\n   done â€” a hollow dot says that without pretending the day is empty. */\n.ot-cal-mark-done {\n  background: transparent;\n  box-shadow: inset 0 0 0 1px var(--ot-success);\n}\n\n.ot-cal-items {\n  margin-top: 11px;\n  padding-top: 10px;\n  border-top: 1px solid var(--ot-border);\n}\n\n.ot-cal-items-head {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  margin-bottom: 7px;\n  font-size: 12.5px;\n}\n\n.ot-cal-item {\n  display: flex;\n  align-items: baseline;\n  gap: 9px;\n  padding: 4px 0;\n  font-size: 12.5px;\n}\n\n.ot-cal-item-time {\n  flex: none;\n  width: 46px;\n  text-align: right;\n  color: var(--ot-text-dim);\n  font-variant-numeric: tabular-nums;\n}\n\n.ot-cal-item-title {\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n.ot-cal-item-place {\n  flex: none;\n  padding: 1px 7px;\n  border-radius: 6px;\n  background: color-mix(in srgb, var(--ot-text) 7%, transparent);\n  color: var(--ot-text-dim);\n  font-size: 11px;\n}\n\n.ot-cal-item[data-done=\"true\"] {\n  color: var(--ot-text-dim);\n}\n\n.ot-cal-item[data-done=\"true\"] .ot-cal-item-title {\n  text-decoration: line-through;\n}\n\n.ot-cal-item-done {\n  display: inline-flex;\n  align-items: center;\n  gap: 3px;\n  flex: none;\n  color: var(--ot-success);\n  font-size: 11px;\n}\n\n.ot-cal-actions {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  margin-top: 9px;\n}\n\n/* -------------------------------------------------------- add an event */\n\n.ot-add {\n  margin-bottom: 12px;\n  padding: 12px 13px 11px;\n  border: 1px solid color-mix(in srgb, var(--ot-accent-3) 34%, var(--ot-border));\n  border-radius: var(--ot-radius);\n  background: linear-gradient(160deg, color-mix(in srgb, var(--ot-layer-1) 96%, transparent), color-mix(in srgb, var(--ot-accent-3) 9%, transparent));\n  box-shadow: var(--ot-shadow);\n  animation: ot-fade-up 0.28s cubic-bezier(0.2, 0.9, 0.25, 1) both;\n}\n\n.ot-add-head {\n  display: flex;\n  align-items: baseline;\n  gap: 8px;\n  margin-bottom: 10px;\n}\n\n.ot-add-head b {\n  font-size: 13.5px;\n  font-weight: 650;\n}\n\n.ot-add-grid {\n  display: grid;\n  grid-template-columns: minmax(0, 2.2fr) repeat(3, minmax(0, 1fr)) minmax(0, 1.4fr);\n  gap: 8px;\n  align-items: end;\n}\n\n.ot-add-grid label {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  min-width: 0;\n}\n\n.ot-add-grid label > span {\n  color: var(--ot-text-dim);\n  font-size: 11px;\n}\n\n.ot-add-foot {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  margin-top: 10px;\n}\n\n@media (max-width: 860px) {\n  .ot-add-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }\n  .ot-add-title { grid-column: 1 / -1; }\n}\n\n@media (max-width: 460px) {\n  .ot-add-grid { grid-template-columns: minmax(0, 1fr); }\n}\n\n@media (max-width: 620px) {\n  .ot-cal-item-place { display: none; }\n}\n\n/* --------------------------------------------------------------- companion */\n\n.ot-comp {\n  display: flex;\n  flex-direction: column;\n  gap: 10px;\n  height: 100%;\n  min-height: 0;\n}\n\n.ot-comp-head {\n  display: flex;\n  align-items: center;\n  gap: 11px;\n}\n\n.ot-avatar {\n  position: relative;\n  width: 44px;\n  height: 44px;\n  flex: none;\n  border-radius: 14px;\n  background: linear-gradient(140deg, var(--ot-accent), var(--ot-accent-2) 60%, var(--ot-accent-3));\n  box-shadow: 0 8px 20px color-mix(in srgb, var(--ot-accent) 32%, transparent);\n  animation: ot-float 5s ease-in-out infinite;\n}\n\n.ot-avatar::after {\n  content: \"\";\n  position: absolute;\n  inset: 7px 9px auto 9px;\n  height: 8px;\n  border-radius: 999px;\n  background: rgba(255, 255, 255, 0.9);\n  box-shadow: 0 12px 0 -1px rgba(255, 255, 255, 0.9);\n  opacity: 0.92;\n}\n\n.ot-avatar[data-busy=\"true\"]::after {\n  animation: ot-blink 1.1s steps(2, end) infinite;\n}\n\n@keyframes ot-float {\n  0%, 100% { transform: translateY(0) rotate(-1deg); }\n  50% { transform: translateY(-4px) rotate(1deg); }\n}\n\n@keyframes ot-blink {\n  50% { opacity: 0.35; }\n}\n\n.ot-comp-name {\n  font-size: 14px;\n  font-weight: 640;\n}\n\n.ot-comp-state {\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n}\n\n.ot-msgs {\n  flex: 1;\n  min-height: 180px;\n  max-height: 46vh;\n  overflow-y: auto;\n  display: flex;\n  flex-direction: column;\n  gap: 9px;\n  padding-right: 3px;\n  scrollbar-width: thin;\n}\n\n.ot-msg {\n  max-width: 88%;\n  padding: 9px 12px;\n  border-radius: 13px;\n  font-size: 12.5px;\n  animation: ot-pop 0.3s cubic-bezier(0.2, 0.9, 0.25, 1);\n}\n\n@keyframes ot-pop {\n  from { opacity: 0; transform: translateY(7px) scale(0.98); }\n  to { opacity: 1; transform: none; }\n}\n\n.ot-msg-ai {\n  align-self: flex-start;\n  border: 1px solid var(--ot-border);\n  border-bottom-left-radius: 5px;\n  background: color-mix(in srgb, var(--ot-layer-1) 92%, transparent);\n}\n\n.ot-msg-user {\n  align-self: flex-end;\n  border-bottom-right-radius: 5px;\n  background: linear-gradient(120deg, color-mix(in srgb, var(--ot-accent) 88%, transparent), color-mix(in srgb, var(--ot-accent-2) 82%, transparent));\n  color: #fff;\n}\n\n.ot-msg-speak {\n  font-weight: 600;\n}\n\n.ot-msg-detail {\n  margin-top: 4px;\n  color: var(--ot-text-dim);\n  font-size: 12px;\n  white-space: pre-wrap;\n}\n\n.ot-msg-user .ot-msg-detail {\n  color: rgba(255, 255, 255, 0.86);\n}\n\n.ot-msg-trace {\n  margin-top: 6px;\n  padding-top: 5px;\n  border-top: 1px dashed color-mix(in srgb, var(--ot-text) 14%, transparent);\n  color: var(--ot-text-dim);\n  font-size: 10.5px;\n}\n\n/* Capability chip beside the companion name: which brain is answering. */\n.ot-model-chip {\n  display: inline-block;\n  margin-left: 7px;\n  padding: 1px 6px;\n  border-radius: 999px;\n  font-size: 10px;\n  font-weight: 600;\n  vertical-align: 1px;\n}\n\n.ot-model-chip-live {\n  background: color-mix(in srgb, var(--ot-success) 20%, transparent);\n  color: color-mix(in srgb, var(--ot-success) 88%, var(--ot-text));\n}\n\n.ot-model-chip-live::before {\n  content: \"\";\n  display: inline-block;\n  width: 5px;\n  height: 5px;\n  margin-right: 4px;\n  border-radius: 50%;\n  background: currentColor;\n  animation: ot-pulse 2.4s ease-out infinite;\n}\n\n.ot-model-chip-local {\n  background: color-mix(in srgb, var(--ot-text) 10%, transparent);\n  color: var(--ot-text-dim);\n}\n\n.ot-chips {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 6px;\n  margin-top: 8px;\n}\n\n.ot-chipbtn {\n  padding: 3px 9px;\n  border: 1px solid color-mix(in srgb, var(--ot-accent) 32%, transparent);\n  border-radius: 999px;\n  background: color-mix(in srgb, var(--ot-accent) 10%, transparent);\n  color: color-mix(in srgb, var(--ot-accent) 88%, var(--ot-text));\n  font-size: 11.5px;\n  cursor: pointer;\n  transition: all 0.18s ease;\n}\n\n.ot-chipbtn:hover {\n  transform: translateY(-1px);\n  background: color-mix(in srgb, var(--ot-accent) 22%, transparent);\n}\n\n.ot-typing {\n  display: inline-flex;\n  gap: 4px;\n  align-items: center;\n}\n\n.ot-typing i {\n  width: 5px;\n  height: 5px;\n  border-radius: 50%;\n  background: var(--ot-text-dim);\n  animation: ot-typing 1.1s ease-in-out infinite;\n}\n\n.ot-typing i:nth-child(2) { animation-delay: 0.16s; }\n.ot-typing i:nth-child(3) { animation-delay: 0.32s; }\n\n@keyframes ot-typing {\n  0%, 100% { transform: translateY(0); opacity: 0.4; }\n  50% { transform: translateY(-3px); opacity: 1; }\n}\n\n.ot-composer {\n  display: flex;\n  gap: 7px;\n  flex: none;\n}\n\n/* ------------------------------------------------------------------ import */\n\n/*\n * The import page is a form, so the controls follow form rules: a control and\n * the button that acts on it sit on one line, labels align in a column, and\n * nothing floats in the middle of a row. `.ot-inline-form` is that line.\n */\n.ot-gap {\n  height: 12px;\n}\n\n.ot-inline-form {\n  display: flex;\n  align-items: center;\n  /* A row of controls in a narrow column has to wrap; without this the last\n     control is painted past the card's right edge, which is what produced the\n     horizontal scrollbar pills and the cut-off sentence in the import page. */\n  flex-wrap: wrap;\n  gap: 8px;\n  min-width: 0;\n}\n\n/* The import page is a single column of forms; keep it from stretching. */\n.ot-import {\n  width: 100%;\n  max-width: 980px;\n  min-width: 0;\n}\n\n/* ---- the confirmation step ---------------------------------------------- */\n\n/* Reading a sheet produces a decision, so the decision stays on screen: sticky at\n   the top of the import page, above the cards it is about. `top: -1px` hides the\n   hairline seam that a sticky block otherwise leaves while scrolling. */\n.ot-confirm {\n  position: sticky;\n  top: -1px;\n  z-index: 3;\n  margin-bottom: 12px;\n  padding: 13px 14px;\n  border: 1px solid color-mix(in srgb, var(--ot-accent) 45%, var(--ot-border));\n  border-radius: var(--ot-radius);\n  background: linear-gradient(160deg, color-mix(in srgb, var(--ot-accent) 16%, var(--ot-layer-1)), color-mix(in srgb, var(--ot-layer-2) 92%, transparent));\n  box-shadow: 0 14px 32px color-mix(in srgb, #000 32%, transparent);\n  backdrop-filter: blur(12px);\n  animation: ot-fade-up 0.3s cubic-bezier(0.2, 0.85, 0.25, 1);\n}\n\n.ot-confirm[data-tone=\"done\"] {\n  border-color: color-mix(in srgb, var(--ot-success) 48%, var(--ot-border));\n  background: linear-gradient(160deg, color-mix(in srgb, var(--ot-success) 14%, var(--ot-layer-1)), color-mix(in srgb, var(--ot-layer-2) 92%, transparent));\n}\n\n.ot-confirm[data-tone=\"error\"] {\n  border-color: color-mix(in srgb, var(--ot-danger) 52%, var(--ot-border));\n  background: linear-gradient(160deg, color-mix(in srgb, var(--ot-danger) 14%, var(--ot-layer-1)), color-mix(in srgb, var(--ot-layer-2) 92%, transparent));\n}\n\n.ot-confirm[data-tone=\"busy\"] {\n  border-color: var(--ot-border-strong);\n  background: color-mix(in srgb, var(--ot-layer-1) 96%, transparent);\n}\n\n.ot-confirm-head {\n  display: flex;\n  align-items: center;\n  flex-wrap: wrap;\n  gap: 8px;\n  min-width: 0;\n}\n\n.ot-confirm-title {\n  font-size: 13.5px;\n  font-weight: 650;\n  /* A long file name must wrap instead of pushing the confidence pill off the\n     card â€” the toast this replaced did exactly that, and then got clipped by the\n     window edge on top of it. */\n  min-width: 0;\n  overflow-wrap: anywhere;\n}\n\n.ot-confirm-hint {\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n}\n\n.ot-confirm-lines {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  margin-top: 8px;\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n}\n\n.ot-confirm-line {\n  display: flex;\n  align-items: flex-start;\n  gap: 6px;\n  min-width: 0;\n  overflow-wrap: anywhere;\n}\n\n.ot-confirm-line > svg {\n  margin-top: 2px;\n}\n\n.ot-confirm-actions {\n  display: flex;\n  align-items: center;\n  flex-wrap: wrap;\n  gap: 8px;\n  margin-top: 11px;\n}\n\n.ot-inline-form > .ot-input {\n  flex: 1 1 auto;\n  min-width: 0;\n}\n\n.ot-inline-form > .ot-btn {\n  flex: none;\n}\n\n.ot-headspace {\n  flex: 1 1 auto;\n  min-width: 0;\n}\n\n.ot-warn-text {\n  color: color-mix(in srgb, var(--ot-warn) 80%, var(--ot-text));\n}\n\n.ot-drop {\n  padding: 16px;\n  border: 1px dashed var(--ot-border-strong);\n  border-radius: var(--ot-radius);\n  background: color-mix(in srgb, var(--ot-layer-1) 70%, transparent);\n  text-align: center;\n  cursor: pointer;\n  transition: border-color 0.2s ease, background 0.2s ease;\n}\n\n.ot-drop:hover,\n.ot-drop-active {\n  border-color: color-mix(in srgb, var(--ot-accent) 52%, transparent);\n  background: color-mix(in srgb, var(--ot-accent) 8%, var(--ot-layer-1));\n}\n\n.ot-drop-active {\n  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ot-accent) 14%, transparent);\n}\n\n.ot-drop-title {\n  font-size: 13px;\n  font-weight: 600;\n  color: var(--ot-text);\n}\n\n.ot-drop-sub {\n  margin-top: 4px;\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n}\n\n.ot-drop-actions {\n  display: flex;\n  justify-content: center;\n  flex-wrap: wrap;\n  gap: 8px;\n  margin-top: 12px;\n}\n\n/* The real input stays in the tree so its click() is trusted, but never shown. */\n.ot-file-hidden {\n  display: none;\n}\n\n.ot-details {\n  margin-top: 10px;\n}\n\n.ot-details > summary {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  padding: 6px 2px;\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n  cursor: pointer;\n  list-style: none;\n}\n\n.ot-details > summary::-webkit-details-marker {\n  display: none;\n}\n\n.ot-details > summary::before {\n  content: \"â–¸\";\n  font-size: 10px;\n  transition: transform 0.18s ease;\n}\n\n.ot-details[open] > summary::before {\n  transform: rotate(90deg);\n}\n\n.ot-details > summary:hover {\n  color: var(--ot-text);\n}\n\n.ot-details code {\n  max-width: 46ch;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n  padding: 1px 6px;\n  border-radius: 6px;\n  background: color-mix(in srgb, var(--ot-text) 8%, transparent);\n  font-size: 11px;\n}\n\n/* ---- analysis verdict ---- */\n\n.ot-verdict {\n  margin-top: 10px;\n  padding: 12px;\n  border: 1px solid var(--ot-border);\n  border-radius: var(--ot-radius-sm);\n  background: color-mix(in srgb, var(--ot-layer-1) 82%, transparent);\n}\n\n.ot-verdict[data-tone=\"high\"] {\n  border-color: color-mix(in srgb, var(--ot-success) 34%, var(--ot-border));\n}\n\n.ot-verdict[data-tone=\"low\"] {\n  border-color: color-mix(in srgb, var(--ot-warn) 34%, var(--ot-border));\n}\n\n.ot-verdict-head {\n  display: flex;\n  align-items: center;\n  flex-wrap: wrap;\n  gap: 8px;\n}\n\n.ot-verdict-model {\n  color: var(--ot-text-dim);\n  font-size: 11px;\n}\n\n.ot-verdict-body {\n  margin-top: 8px;\n  font-size: 13px;\n  line-height: 1.6;\n}\n\n.ot-verdict-hints {\n  margin: 8px 0 0;\n  padding-left: 18px;\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n  line-height: 1.7;\n}\n\n.ot-verdict-tags {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 6px;\n  margin-top: 10px;\n}\n\n.ot-tag {\n  padding: 2px 8px;\n  border: 1px solid var(--ot-border);\n  border-radius: 999px;\n  background: color-mix(in srgb, var(--ot-text) 5%, transparent);\n  color: var(--ot-text-dim);\n  font-size: 11px;\n  white-space: nowrap;\n}\n\n.ot-pill {\n  padding: 2px 9px;\n  border-radius: 999px;\n  font-size: 11px;\n  font-weight: 600;\n}\n\n.ot-pill[data-tone=\"high\"] {\n  background: color-mix(in srgb, var(--ot-success) 18%, transparent);\n  color: color-mix(in srgb, var(--ot-success) 78%, var(--ot-text));\n}\n\n.ot-pill[data-tone=\"mid\"] {\n  background: color-mix(in srgb, var(--ot-accent) 16%, transparent);\n  color: color-mix(in srgb, var(--ot-accent) 82%, var(--ot-text));\n}\n\n.ot-pill[data-tone=\"low\"] {\n  background: color-mix(in srgb, var(--ot-warn) 18%, transparent);\n  color: color-mix(in srgb, var(--ot-warn) 80%, var(--ot-text));\n}\n\n.ot-verdict-actions {\n  display: flex;\n  align-items: center;\n  flex-wrap: wrap;\n  gap: 8px;\n  margin-top: 12px;\n  padding-top: 10px;\n  border-top: 1px solid var(--ot-border);\n}\n\n.ot-linkbtn {\n  padding: 0;\n  border: 0;\n  background: none;\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n  text-decoration: underline;\n  text-underline-offset: 2px;\n  cursor: pointer;\n}\n\n.ot-linkbtn:hover {\n  color: var(--ot-text);\n}\n\n.ot-working {\n  display: flex;\n  align-items: center;\n  gap: 9px;\n  padding: 9px 11px;\n  border: 1px solid color-mix(in srgb, var(--ot-accent) 26%, var(--ot-border));\n  border-radius: 9px;\n  background: color-mix(in srgb, var(--ot-accent) 7%, transparent);\n  color: var(--ot-text-dim);\n  font-size: 12px;\n}\n\n.ot-advanced {\n  margin-top: 12px;\n  padding: 12px;\n  border: 1px solid var(--ot-border);\n  border-radius: var(--ot-radius-sm);\n  background: color-mix(in srgb, var(--ot-layer-2) 42%, transparent);\n}\n\n.ot-advanced-head {\n  margin-bottom: 4px;\n}\n\n.ot-table-wrap {\n  overflow-x: auto;\n  border: 1px solid var(--ot-border);\n  border-radius: var(--ot-radius-sm);\n}\n\n.ot-table {\n  width: 100%;\n  border-collapse: collapse;\n  font-size: 12px;\n  white-space: nowrap;\n}\n\n.ot-table th,\n.ot-table td {\n  padding: 7px 10px;\n  border-bottom: 1px solid var(--ot-border);\n  text-align: left;\n}\n\n.ot-table th {\n  position: sticky;\n  top: 0;\n  background: var(--ot-layer-2);\n  color: var(--ot-text-dim);\n  font-weight: 600;\n  z-index: 1;\n}\n\n.ot-table tr:last-child td {\n  border-bottom: 0;\n}\n\n.ot-table tr[data-match=\"true\"] {\n  background: color-mix(in srgb, var(--ot-accent) 9%, transparent);\n}\n\n.ot-table tr[data-match=\"false\"] {\n  opacity: 0.5;\n}\n\n.ot-maprow {\n  display: grid;\n  grid-template-columns: minmax(88px, 0.7fr) minmax(0, 1fr) minmax(0, 1.1fr);\n  gap: 8px;\n  align-items: center;\n}\n\n.ot-map-label {\n  color: var(--ot-text-dim);\n  font-size: 12px;\n}\n\n.ot-map-hint {\n  color: var(--ot-text-dim);\n  font-size: 11px;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n@media (max-width: 640px) {\n  .ot-maprow {\n    grid-template-columns: minmax(80px, 0.6fr) minmax(0, 1fr);\n  }\n\n  .ot-map-hint {\n    display: none;\n  }\n}\n\n\n.ot-note {\n  padding: 9px 11px;\n  border-radius: 9px;\n  border: 1px solid var(--ot-border);\n  background: color-mix(in srgb, var(--ot-layer-2) 60%, transparent);\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n}\n\n.ot-note-warn {\n  border-color: color-mix(in srgb, var(--ot-warn) 40%, transparent);\n  background: color-mix(in srgb, var(--ot-warn) 12%, transparent);\n  color: color-mix(in srgb, var(--ot-warn) 82%, var(--ot-text));\n}\n\n.ot-note-error {\n  border-color: color-mix(in srgb, var(--ot-danger) 42%, transparent);\n  background: color-mix(in srgb, var(--ot-danger) 12%, transparent);\n  color: color-mix(in srgb, var(--ot-danger) 82%, var(--ot-text));\n}\n\n.ot-note-ok {\n  border-color: color-mix(in srgb, var(--ot-success) 40%, transparent);\n  background: color-mix(in srgb, var(--ot-success) 12%, transparent);\n  color: color-mix(in srgb, var(--ot-success) 82%, var(--ot-text));\n}\n\n.ot-switch {\n  display: inline-flex;\n  align-items: center;\n  gap: 8px;\n  cursor: pointer;\n}\n\n.ot-switch input {\n  appearance: none;\n  position: relative;\n  width: 36px;\n  height: 20px;\n  border-radius: 999px;\n  background: color-mix(in srgb, var(--ot-text) 18%, transparent);\n  cursor: pointer;\n  transition: background 0.22s ease;\n}\n\n.ot-switch input::after {\n  content: \"\";\n  position: absolute;\n  top: 2px;\n  left: 2px;\n  width: 16px;\n  height: 16px;\n  border-radius: 50%;\n  background: #fff;\n  transition: transform 0.22s cubic-bezier(0.3, 0.9, 0.3, 1);\n}\n\n.ot-switch input:checked {\n  background: linear-gradient(120deg, var(--ot-accent), var(--ot-accent-2));\n}\n\n.ot-switch input:checked::after {\n  transform: translateX(16px);\n}\n\n.ot-mapping-list {\n  display: flex;\n  flex-direction: column;\n  gap: 7px;\n}\n\n.ot-sub {\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n}\n\n.ot-mono {\n  font-variant-numeric: tabular-nums;\n}\n\n.ot-feed {\n  display: flex;\n  flex-direction: column;\n  gap: 7px;\n  max-height: 320px;\n  overflow-y: auto;\n}\n\n.ot-feed-item {\n  display: flex;\n  gap: 9px;\n  padding: 8px 10px;\n  border: 1px solid var(--ot-border);\n  border-radius: 9px;\n  background: color-mix(in srgb, var(--ot-layer-1) 70%, transparent);\n}\n\n.ot-feed-item[data-level=\"urgent\"] {\n  border-color: color-mix(in srgb, var(--ot-danger) 40%, transparent);\n}\n\n.ot-feed-time {\n  flex: none;\n  color: var(--ot-text-dim);\n  font-size: 11px;\n  font-variant-numeric: tabular-nums;\n}\n\n.ot-feed-title {\n  font-weight: 600;\n  font-size: 12.5px;\n}\n\n.ot-feed-body {\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n}\n\n.ot-enter {\n  animation: ot-fade-up 0.4s cubic-bezier(0.2, 0.85, 0.25, 1) both;\n}\n\n/* ---------------------------------------------------------------- notices */\n\n/* `shell.overlay` entries are click-through until they opt back in, so every\n   interactive surface in this layer declares `pointer-events: auto` explicitly.\n   The notice STACK stays inert â€” a full-width transparent box that swallowed\n   clicks would break the app underneath â€” and each notice re-enables itself. */\n\n/* The stack fills its containing block and aligns its cards to the bottom-right\n   corner instead of positioning itself with `bottom: 18px`.\n\n   `bottom` looked equivalent and is not: if anything between the overlay layer\n   and the document establishes a containing block for `position: fixed` (a\n   transform, a filter, `contain`, a zoomed ancestor), `bottom` is measured\n   against *that* box. The cards then land wherever that box ends â€” in the app\n   this put an import confirmation under the window's caption buttons, clipped by\n   the title bar. With `inset: 0` the stack can only ever be as large as that\n   containing block, so its cards stay inside it whatever it turns out to be, and\n   a stack of several notices can never run off the top: it scrolls instead. */\n.ot-notices {\n  position: fixed;\n  inset: 0;\n  z-index: 40;\n  display: flex;\n  flex-direction: column;\n  align-items: flex-end;\n  justify-content: flex-end;\n  gap: 9px;\n  padding: 18px;\n  overflow: hidden;\n  pointer-events: none;\n}\n\n.ot-notice-stack {\n  display: flex;\n  flex-direction: column;\n  align-items: flex-end;\n  gap: 9px;\n  width: min(330px, 100%);\n  max-height: 100%;\n  overflow-y: auto;\n  overflow-x: hidden;\n  scrollbar-width: thin;\n  scrollbar-color: var(--ot-border-strong) transparent;\n}\n\n/* The floating card and the mini pill are each their own overlay root. The\n   harness turns an overlay entry into a hit target with\n   `overlayLayer > * { pointer-events: auto }`, but relying on that alone means a\n   nested wrapper silently kills every click, so each root also asks for pointer\n   events itself. */\n.ot-float-shell,\n.ot-float-mini {\n  pointer-events: auto;\n  /* The card is dragged with pointer events, so the browser must not claim the\n     gesture for scrolling or text selection first. */\n  touch-action: none;\n  user-select: none;\n}\n\n.ot-float-shell.is-dragging,\n.ot-float-mini.is-dragging {\n  /* A 40 ms transition would trail the pointer; while dragging there is none. */\n  transition: none;\n}\n\n/* Controls inside a draggable card must keep their own click. */\n.ot-float-shell button,\n.ot-float-mini button {\n  cursor: pointer;\n}\n\n/* The grip is the *only* place a drag starts â€” see the drag behaviour notes in\n   `drag.js`. Everything else on the card keeps its own click, which is what\n   \"clicking a button sometimes starts a drag instead\" needed. */\n.ot-grip {\n  cursor: grab;\n  flex: none;\n  opacity: 0.55;\n}\n\n.ot-grip:hover {\n  opacity: 0.9;\n}\n\n.is-dragging .ot-grip,\n.ot-grip:active {\n  cursor: grabbing;\n  opacity: 1;\n}\n\n.ot-notice {\n  position: relative;\n  padding: 11px 13px 11px 15px;\n  border: 1px solid var(--ot-border-strong);\n  border-radius: 12px;\n  background: var(--ot-overlay);\n  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);\n  backdrop-filter: blur(14px);\n  pointer-events: auto;\n  animation: ot-slide-in 0.36s cubic-bezier(0.2, 0.9, 0.25, 1);\n  overflow: hidden;\n}\n\n.ot-notice::before {\n  content: \"\";\n  position: absolute;\n  left: 0;\n  top: 0;\n  bottom: 0;\n  width: 3px;\n  background: linear-gradient(180deg, var(--ot-accent), var(--ot-accent-2));\n}\n\n.ot-notice[data-level=\"urgent\"]::before {\n  background: linear-gradient(180deg, var(--ot-danger), var(--ot-warn));\n}\n\n.ot-notice[data-level=\"warn\"]::before {\n  background: linear-gradient(180deg, var(--ot-warn), var(--ot-accent));\n}\n\n.ot-notice.leaving {\n  animation: ot-slide-out 0.26s ease forwards;\n}\n\n@keyframes ot-slide-in {\n  from { opacity: 0; transform: translateX(28px) scale(0.97); }\n  to { opacity: 1; transform: none; }\n}\n\n@keyframes ot-slide-out {\n  to { opacity: 0; transform: translateX(24px) scale(0.97); }\n}\n\n.ot-notice-title {\n  font-size: 12.5px;\n  font-weight: 640;\n}\n\n.ot-notice-body {\n  margin-top: 2px;\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n}\n\n.ot-notice-actions {\n  display: flex;\n  gap: 6px;\n  margin-top: 8px;\n}\n\n/* ------------------------------------------------------------------- float */\n\n.ot-float-root {\n  position: relative;\n  width: 100%;\n  height: 100%;\n  padding: 10px;\n  background: transparent;\n}\n\n.ot-float-shell {\n  position: relative;\n  display: flex;\n  flex-direction: column;\n  gap: 9px;\n  height: 100%;\n  padding: 12px;\n  border: 1px solid var(--ot-border-strong);\n  border-radius: 18px;\n  background: var(--ot-overlay);\n  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.45);\n  backdrop-filter: blur(18px);\n  /* Opt back in: an overlay entry is click-through until it does. */\n  pointer-events: auto;\n  overflow: hidden;\n  animation: ot-pop 0.34s cubic-bezier(0.2, 0.9, 0.25, 1);\n}\n\n.ot-float-grip {\n  position: absolute;\n  top: 0;\n  left: 0;\n  right: 0;\n  height: 26px;\n  cursor: grab;\n  background: linear-gradient(180deg, color-mix(in srgb, var(--ot-text) 6%, transparent), transparent);\n}\n\n.ot-float-grip:active {\n  cursor: grabbing;\n}\n\n.ot-float-head {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  padding-top: 2px;\n}\n\n/* The grip inside the expanded header: a small hit target that reads as one. */\n.ot-float-head .ot-grip {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  width: 22px;\n  height: 24px;\n  margin-left: -4px;\n  padding: 0;\n  border: 0;\n  border-radius: 6px;\n  background: transparent;\n  color: var(--ot-text-dim);\n  line-height: 0;\n}\n\n.ot-float-title {\n  font-size: 11.5px;\n  font-weight: 620;\n  letter-spacing: 0.05em;\n  color: var(--ot-text-dim);\n  text-transform: uppercase;\n}\n\n.ot-float-ring {\n  position: relative;\n  width: 142px;\n  height: 142px;\n  margin: 2px auto 0;\n}\n\n.ot-float-time {\n  font-size: 30px;\n}\n\n.ot-float-next {\n  padding: 9px 11px;\n  border: 1px solid var(--ot-border);\n  border-radius: 11px;\n  background: color-mix(in srgb, var(--ot-layer-1) 80%, transparent);\n}\n\n.ot-float-next-title {\n  font-size: 12.5px;\n  font-weight: 620;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n.ot-float-next-meta {\n  color: var(--ot-text-dim);\n  font-size: 11px;\n  margin-top: 2px;\n}\n\n.ot-float-list {\n  flex: 1;\n  min-height: 0;\n  overflow-y: auto;\n  display: flex;\n  flex-direction: column;\n  gap: 5px;\n  scrollbar-width: thin;\n}\n\n.ot-float-row {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  padding: 6px 8px;\n  border-radius: 8px;\n  background: color-mix(in srgb, var(--ot-text) 5%, transparent);\n  font-size: 12px;\n}\n\n.ot-float-row[data-phase=\"current\"] {\n  background: color-mix(in srgb, var(--ot-accent) 18%, transparent);\n}\n\n.ot-float-row-time {\n  flex: none;\n  color: var(--ot-text-dim);\n  font-variant-numeric: tabular-nums;\n  font-size: 11px;\n}\n\n.ot-float-row-title {\n  min-width: 0;\n  flex: 1;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n.ot-float-foot {\n  display: flex;\n  gap: 6px;\n  justify-content: center;\n}\n\n/* The mini card is a four-lane row, and the lanes are declared rather than left\n   to flex.\n   \n   Flex used to distribute this: the grip, the ring, the text and the two buttons\n   all competed for 248 px, and with the text able to shrink to nothing the two\n   buttons ended up *left of the grip* with the clock running under them â€” which\n   is exactly what \"æŒ‰é’®å’Œæ•°å­—æœ‰é‡å \" looks like on screen. Declaring the columns\n   makes the geometry a fact instead of an outcome: 30 px of grip, 34 px of ring,\n   the buttons at their natural width, and the text taking whatever is left.\n   `scripts/../.tools/browser-click.mjs` measures every lane and fails if two of\n   them overlap, so this cannot quietly come back. */\n.ot-float-mini {\n  /* The inline style carries the position; these are the same values restated\n     so a styling regression cannot leave the pill laid out in flow. */\n  position: fixed;\n  right: 18px;\n  bottom: 18px;\n  z-index: 30;\n  display: grid;\n  grid-template-columns: 30px 34px minmax(0, 1fr) auto;\n  align-items: center;\n  column-gap: 8px;\n  height: 60px;\n  padding: 0 10px;\n  border: 1px solid var(--ot-border-strong);\n  border-radius: 999px;\n  background: var(--ot-overlay);\n  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.4);\n  backdrop-filter: blur(16px);\n  /* Opt back in: an overlay entry is click-through until it does. */\n  pointer-events: auto;\n  cursor: default;\n  overflow: hidden;\n  animation: ot-pop 0.3s cubic-bezier(0.2, 0.9, 0.25, 1);\n}\n\n/* The card's own header text is not a hit target for selection, so a drag that\n   starts on the clock keeps moving the card instead of highlighting digits. */\n.ot-float-mini-time,\n.ot-float-mini-meta,\n.ot-float-title {\n  user-select: none;\n}\n\n/* The mini card's grip: a 30 px lane on the left edge, the size of a thumb. */\n.ot-float-mini .ot-grip {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  width: 30px;\n  height: 42px;\n  margin-left: -4px;\n  padding: 0;\n  border: 0;\n  border-radius: 10px;\n  background: transparent;\n  color: var(--ot-text-dim);\n  line-height: 0;\n}\n\n.ot-float-mini .ot-grip:hover {\n  background: color-mix(in srgb, var(--ot-text) 8%, transparent);\n}\n\n/* Grow and close, side by side at the right edge â€” the same pair the expanded\n   card carries, so \"æ”¶èµ·\" is one click from either state. */\n.ot-float-mini-actions {\n  display: flex;\n  align-items: center;\n  gap: 2px;\n  flex: none;\n}\n\n.ot-float-mini-actions .ot-btn {\n  height: 26px;\n  min-width: 26px;\n  padding: 0 5px;\n}\n\n.ot-float-mini-ring {\n  width: 38px;\n  height: 38px;\n  flex: none;\n}\n\n.ot-float-mini-time {\n  font-size: 18px;\n  font-weight: 700;\n  font-variant-numeric: tabular-nums;\n}\n\n.ot-float-mini-meta {\n  color: var(--ot-text-dim);\n  font-size: 10.5px;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n.ot-float-mini-body {\n  min-width: 0;\n  flex: 1;\n}\n\n/* -------------------------------------------------------- layout hardening */\n\n/* The panel is rendered into whatever column the host gives it, and that column\n   can be much narrower than the design width (a right sidebar open, a resized\n   window, a DPI change the renderer has not caught up with). Nothing in here may\n   then paint past the panel: a card that overflows is clipped mid-sentence and\n   grows a horizontal scrollbar, which is what the import page did. So every\n   container is allowed to shrink, every flex row wraps, and long unbroken text\n   (a pasted path, a workbook name) wraps instead of stretching its row. */\n.ot-root,\n.ot-body,\n.ot-view,\n.ot-card,\n.ot-card-pad,\n.ot-field,\n.ot-inline-form,\n.ot-row,\n.ot-verdict,\n.ot-note,\n.ot-drop {\n  min-width: 0;\n  max-width: 100%;\n}\n\n.ot-row,\n.ot-field,\n.ot-drop-actions,\n.ot-verdict-actions,\n.ot-notice-actions {\n  flex-wrap: wrap;\n}\n\n.ot-field > .ot-input,\n.ot-field > .ot-input-num {\n  min-width: 0;\n  max-width: 100%;\n}\n\n.ot-sub,\n.ot-note,\n.ot-verdict-body,\n.ot-verdict-hints,\n.ot-feed-body,\n.ot-drop-sub,\n.ot-confirm-line,\n.ot-card-title,\n.ot-tag,\n.ot-pill {\n  overflow-wrap: anywhere;\n  word-break: break-word;\n}\n\n.ot-body {\n  /* Belt and braces: if a child still overflows, clip it rather than let the\n     panel grow a scrollbar in the horizontal direction. */\n  overflow-x: hidden;\n}\n\n/* ------------------------------------------------- reading documents â†’ events */\n\n/* A row read out of a document: same timeline as any other row, different origin. */\n.ot-tag-ai {\n  background: color-mix(in srgb, var(--ot-accent-2) 18%, transparent);\n  color: color-mix(in srgb, var(--ot-accent-2) 84%, var(--ot-text));\n}\n\n.ot-chip-ai {\n  background: color-mix(in srgb, var(--ot-accent-2) 18%, transparent);\n  color: color-mix(in srgb, var(--ot-accent-2) 84%, var(--ot-text));\n}\n\n.ot-textarea {\n  margin-top: 8px;\n  width: 100%;\n  min-height: 84px;\n  resize: vertical;\n  line-height: 1.55;\n  font: inherit;\n}\n\n.ot-extract-source {\n  display: flex;\n  align-items: flex-start;\n  gap: 8px;\n  padding: 8px 10px;\n  border-radius: 10px;\n  background: color-mix(in srgb, var(--ot-layer-2) 72%, transparent);\n  border: 1px solid var(--ot-border);\n  color: var(--ot-text-dim);\n}\n\n.ot-extract-source strong {\n  color: var(--ot-text);\n  font-size: 12.5px;\n  font-weight: 620;\n  overflow-wrap: anywhere;\n}\n\n.ot-extract {\n  margin-top: 12px;\n}\n\n.ot-extract-head {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  margin-bottom: 8px;\n  font-size: 12px;\n  color: var(--ot-text-dim);\n}\n\n.ot-extract-list {\n  display: flex;\n  flex-direction: column;\n  gap: 8px;\n  /* A reading can be twenty rows; the page keeps its scroll position and the\n     list scrolls inside its own box instead of pushing the reminders card away. */\n  max-height: 420px;\n  overflow-y: auto;\n  padding-right: 2px;\n}\n\n.ot-extract-row {\n  display: flex;\n  gap: 10px;\n  padding: 10px;\n  border-radius: 12px;\n  border: 1px solid var(--ot-border);\n  background: color-mix(in srgb, var(--ot-layer-2) 62%, transparent);\n  transition: opacity 0.2s ease, border-color 0.2s ease;\n}\n\n.ot-extract-row[data-included=\"false\"] {\n  opacity: 0.5;\n  border-style: dashed;\n}\n\n.ot-extract-check {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  gap: 6px;\n  flex: none;\n  padding-top: 3px;\n  cursor: pointer;\n}\n\n.ot-extract-check input {\n  width: 16px;\n  height: 16px;\n  accent-color: var(--ot-accent);\n  cursor: pointer;\n}\n\n.ot-extract-check .ot-pill {\n  font-size: 9.5px;\n  padding: 1px 5px;\n  white-space: nowrap;\n}\n\n.ot-extract-body {\n  display: flex;\n  flex-direction: column;\n  gap: 6px;\n  flex: 1 1 auto;\n  min-width: 0;\n}\n\n.ot-extract-title {\n  font-weight: 580;\n}\n\n.ot-extract-when {\n  display: flex;\n  align-items: center;\n  gap: 6px;\n}\n\n.ot-extract-when .ot-input {\n  min-width: 0;\n}\n\n.ot-extract-date {\n  flex: 1 1 46%;\n}\n\n.ot-extract-time {\n  flex: 1 1 22%;\n  padding-left: 6px;\n  padding-right: 4px;\n}\n\n.ot-extract-place {\n  font-size: 12px;\n}\n\n.ot-extract-note {\n  font-size: 11.5px;\n  line-height: 1.5;\n  color: var(--ot-text-dim);\n  display: -webkit-box;\n  -webkit-line-clamp: 2;\n  -webkit-box-orient: vertical;\n  overflow: hidden;\n}\n\n.ot-extract-foot {\n  display: flex;\n  align-items: center;\n  gap: 10px;\n  flex-wrap: wrap;\n  margin-top: 10px;\n}\n\n/* -------------------------------------------------------- reduced motion */\n\n@media (prefers-reduced-motion: reduce) {\n  .ot-root *,\n  .ot-root *::before,\n  .ot-root *::after {\n    animation-duration: 0.001ms !important;\n    animation-iteration-count: 1 !important;\n    transition-duration: 0.001ms !important;\n  }\n\n  .ot-aurora { animation: none; }\n}\n";
 		var __otStyleDisposer = null;
 		function __otEnsureStyles() {
 			if (__otStyleDisposer !== null) return;
@@ -267,6 +267,15 @@ window.__ModuleLoader__.load({
 		      h('rect', { key: 'r', x: 4.5, y: 7.5, width: 15, height: 11, rx: 3 }),
 		      h('path', { key: 'p', d: 'M12 3.5v4M8.5 12.5v1.5M15.5 12.5v1.5' }),
 		    ],
+		    file: [
+		      h('path', { key: 'p', d: 'M6.5 3.5h7L18 8v12.5H6.5z' }),
+		      h('path', { key: 'q', d: 'M13.5 3.5V8H18' }),
+		    ],
+		    image: [
+		      h('rect', { key: 'r', x: 3.5, y: 4.5, width: 17, height: 15, rx: 2.5 }),
+		      h('circle', { key: 'c', cx: 8.6, cy: 9.6, r: 1.6 }),
+		      h('path', { key: 'p', d: 'M4 17.2 9 12.6l3.8 3.4 2.8-2.4 4.4 3.8' }),
+		    ],
 		    close: [h('path', { key: 'p', d: 'M6.5 6.5 17.5 17.5M17.5 6.5 6.5 17.5' })],
 		    expand: [h('path', { key: 'p', d: 'M14 4.5h5.5V10M10 19.5H4.5V14M19.5 4.5 13 11M4.5 19.5 11 13' })],
 		    minus: [h('path', { key: 'p', d: 'M6 12h12' })],
@@ -389,6 +398,10 @@ window.__ModuleLoader__.load({
 		   * `ref` mean what every caller already assumed it meant.
 		   */
 		  if (props.ref !== undefined && props.ref !== null) extra.ref = props.ref
+		  // Same reason as `ref`: this is a plain function call, so React never sees the
+		  // config object. Without copying `key` every button inside a `.map` — and every
+		  // fixed action row built as an array — logs a missing-key warning.
+		  if (props.key !== undefined && props.key !== null) extra.key = props.key
 		  var label = children === undefined || children === null ? props.children : children
 		  return h(
 		    'button',
@@ -1028,6 +1041,25 @@ window.__ModuleLoader__.load({
 		    /** Why the last analysis did not use the model, when it did not. */
 		    modelNote: '',
 		  },
+		  /**
+		   * The "read anything" draft: a document, a picture or pasted text that the
+		   * host turned into candidate events.
+		   *
+		   * Separate from `importState` because the two flows answer different
+		   * questions. An Excel read produces a *mapping* and a verified count ("这些行
+		   * 属于你"); a document read produces *events* that may need editing one by one.
+		   * Sharing one blob made the confirmation bar describe the wrong thing.
+		   */
+		  extractState: {
+		    status: 'idle', // idle | reading | ready | saving | done | error
+		    message: '',
+		    source: null,
+		    analysis: null,
+		    plan: null,
+		    /** The candidate events, as edited by the user, each with `key` + `include`. */
+		    draft: [],
+		    error: null,
+		  },
 		  notices: [],
 		  floatOpen: false,
 		  /**
@@ -1052,8 +1084,8 @@ window.__ModuleLoader__.load({
 		        // The greeting is UI copy, not a model turn: sending it back would make
 		        // the provider read it as something Orbyt actually said.
 		        greeting: true,
-		        speak: '我是 Orbyt，你的日程副驾。先导入 Excel，或者直接问我今天的安排。',
-		        detail: '我可以帮你：把 Excel 里属于你的日程抓出来、在开始前 30/10/5 分钟提醒、陪你跑番茄钟。',
+		        speak: '我是 Orbyt，你的日程副驾。拖一份 Excel、通知、截图给我，或者直接问我今天的安排。',
+		        detail: '我可以帮你：从 Excel / 文档 / 图片里读出属于你的日程、在开始前 30/10/5 分钟提醒、陪你跑番茄钟。',
 		        chips: ['生成今日简报', '分析我的空档', '提醒是怎么设置的？'],
 		      },
 		    ],
@@ -1209,6 +1241,9 @@ window.__ModuleLoader__.load({
 		 * click or correct field by field.
 		 */
 		async function analyzeWorkbook(options) {
+		  // A workbook read and a document read are two pending confirmations for the
+		  // same schedule; only one may be on screen at a time.
+		  if (state.extractState.status !== 'idle') resetExtraction()
 		  set({
 		    importState: Object.assign({}, state.importState, {
 		      status: 'analyzing',
@@ -1302,6 +1337,165 @@ window.__ModuleLoader__.load({
 		    return payload.excel
 		  } catch (error) {
 		    set({ importState: Object.assign({}, state.importState, { status: 'error', error: String((error && error.message) || error) }) })
+		    throw error
+		  }
+		}
+		
+		function idleExtraction() {
+		  return { status: 'idle', message: '', source: null, analysis: null, plan: null, draft: [], error: null }
+		}
+		
+		function resetExtraction() {
+		  set({ extractState: idleExtraction() })
+		}
+		
+		/**
+		 * Read a document, a picture or pasted text into candidate events.
+		 *
+		 * This is a *reading*, not an import: nothing lands on the timeline until
+		 * `commitExtraction`. An open workbook draft is dropped first so the page only
+		 * ever shows one pending confirmation.
+		 */
+		async function extractSource(options) {
+		  if (state.importState.status !== 'idle') resetImport()
+		  set({
+		    extractState: Object.assign(idleExtraction(), {
+		      status: 'reading',
+		      message: '正在读这份资料，找里面的日期和时间…',
+		    }),
+		  })
+		  try {
+		    var payload = await request('/extract', { method: 'POST', body: JSON.stringify(options || {}) })
+		    var analysis = payload.analysis || {}
+		    var draft = util.safeArray(analysis.events).map(function (event, index) {
+		      return Object.assign({}, event, { key: 'x' + index, include: true })
+		    })
+		    set({
+		      extractState: {
+		        status: 'ready',
+		        message: analysis.summary || '',
+		        source: payload.source || null,
+		        analysis: analysis,
+		        plan: payload.plan || null,
+		        draft: draft,
+		        error: null,
+		      },
+		    })
+		    return payload
+		  } catch (error) {
+		    var reason = String((error && error.message) || error)
+		    /**
+		     * A host that predates this feature has no `/extract` route, while the page
+		     * is the half that can be refreshed independently. Ask the host what it can
+		     * do before blaming the file: `/health` carries a capability list in this
+		     * build, and an older one does not.
+		     */
+		    try {
+		      var health = await request('/health')
+		      if (!(health && Array.isArray(health.capabilities) && health.capabilities.indexOf('read-documents') >= 0)) {
+		        reason = '宿主进程还不认识「读资料」这个动作，它还是启动时加载的旧版本。关掉 DeepSeek Harness（托盘退出）再打开，然后刷新页面。'
+		      }
+		    } catch (probeError) {
+		      /* the original failure is the one worth showing */
+		    }
+		    set({
+		      extractState: Object.assign(idleExtraction(), {
+		        status: 'error',
+		        error: reason,
+		      }),
+		    })
+		    throw error
+		  }
+		}
+		
+		/** Replace one draft row's fields as the user edits it. */
+		function updateExtraction(key, patch) {
+		  var draft = state.extractState.draft.map(function (event) {
+		    return event.key === key ? Object.assign({}, event, patch) : event
+		  })
+		  set({ extractState: Object.assign({}, state.extractState, { draft: draft }) })
+		}
+		
+		function toggleExtraction(key) {
+		  var draft = state.extractState.draft.map(function (event) {
+		    return event.key === key ? Object.assign({}, event, { include: event.include === false }) : event
+		  })
+		  set({ extractState: Object.assign({}, state.extractState, { draft: draft }) })
+		}
+		
+		function selectAllExtraction(include) {
+		  var draft = state.extractState.draft.map(function (event) {
+		    return Object.assign({}, event, { include: include === true })
+		  })
+		  set({ extractState: Object.assign({}, state.extractState, { draft: draft }) })
+		}
+		
+		/**
+		 * Put the ticked rows on the schedule, and open the day they land on.
+		 *
+		 * The day comes from the rows themselves: a notice read on Thursday for next
+		 * Monday should not leave the user staring at an unchanged Thursday timeline
+		 * wondering whether it worked.
+		 */
+		async function commitExtraction() {
+		  var current = state.extractState
+		  var included = current.draft.filter(function (event) {
+		    return event.include !== false
+		  })
+		  if (included.length === 0) throw new Error('先勾选至少一条日程。')
+		  var source = current.source || {}
+		  var events = included.map(function (event) {
+		    return {
+		      date: event.date,
+		      start: event.start,
+		      end: event.end,
+		      title: event.title,
+		      location: event.location,
+		      notes: event.notes,
+		      person: event.person,
+		      confidence: event.confidence,
+		    }
+		  })
+		  var dates = events
+		    .map(function (event) {
+		      return event.date
+		    })
+		    .filter(function (date) {
+		      return typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)
+		    })
+		    .sort()
+		  var day = dates.length > 0 ? dates[0] : state.day
+		  set({ extractState: Object.assign({}, current, { status: 'saving', message: '正在把勾选的日程写进时间轴…', error: null }) })
+		  try {
+		    var query = '/extract/commit?day=' + encodeURIComponent(day) + '&month=' + encodeURIComponent(day.slice(0, 7))
+		    var payload = await request(query, {
+		      method: 'POST',
+		      body: JSON.stringify({ file: source.file, path: source.path, events: events }),
+		    })
+		    var skipped = util.safeArray(payload.skipped)
+		    set({
+		      day: day,
+		      month: day.slice(0, 7),
+		      snapshot: payload.snapshot || state.snapshot,
+		      extractState: Object.assign({}, state.extractState, {
+		        status: 'done',
+		        message:
+		          '已加入 ' +
+		          (payload.added || 0) +
+		          ' 条日程' +
+		          (skipped.length > 0 ? '；另外 ' + skipped.length + ' 条已经在日程里，没有重复添加' : '') +
+		          '。',
+		        draft: [],
+		      }),
+		    })
+		    return payload
+		  } catch (error) {
+		    set({
+		      extractState: Object.assign({}, state.extractState, {
+		        status: 'ready',
+		        error: String((error && error.message) || error),
+		      }),
+		    })
 		    throw error
 		  }
 		}
@@ -1680,6 +1874,12 @@ window.__ModuleLoader__.load({
 		  analyzeWorkbook: analyzeWorkbook,
 		  resetImport: resetImport,
 		  runImport: runImport,
+		  extractSource: extractSource,
+		  resetExtraction: resetExtraction,
+		  updateExtraction: updateExtraction,
+		  toggleExtraction: toggleExtraction,
+		  selectAllExtraction: selectAllExtraction,
+		  commitExtraction: commitExtraction,
 		  eventAction: eventAction,
 		  addEvent: addEvent,
 		  removeEvent: removeEvent,
@@ -1911,7 +2111,11 @@ window.__ModuleLoader__.load({
 		              { key: item.id, className: 'ot-cal-item', 'data-done': item.done ? 'true' : 'false' },
 		              h('span', { className: 'ot-cal-item-time' }, item.start || '全天'),
 		              h('span', { className: 'ot-cal-item-title', title: item.title }, item.title),
-		              item.manual === true ? h('span', { className: 'ot-tag ot-tag-manual' }, '自己加的') : null,
+		              item.origin === 'ai'
+		                ? h('span', { className: 'ot-tag ot-tag-ai' }, 'AI 读出')
+		                : item.manual === true
+		                  ? h('span', { className: 'ot-tag ot-tag-manual' }, '自己加的')
+		                  : null,
 		              item.place ? h('span', { className: 'ot-cal-item-place' }, item.place) : null,
 		              item.done ? h('span', { className: 'ot-cal-item-done' }, ui.glyph('check', 11), '已完成') : null,
 		            )
@@ -2431,6 +2635,11 @@ window.__ModuleLoader__.load({
 		  // Rows typed in by hand have no roster behind them, and look identical to an
 		  // imported one otherwise — including when the Excel file is later swapped.
 		  if (event.source && event.source.sheet === '手动添加') tags.push(h('span', { className: 'ot-tag ot-tag-manual', key: 'manual' }, '自己加的'))
+		  // Rows the model read out of a document: no file watcher re-reads them, so
+		  // they behave like typed rows — but they are not something the user wrote.
+		  if (event.source && event.source.sheet === 'AI 读资料') {
+		    tags.push(h('span', { className: 'ot-tag ot-tag-ai', key: 'ai', title: 'AI 从资料里读出来的日程' }, 'AI 读出'))
+		  }
 		  if (util.safeArray(event.warnings).length > 0) {
 		    tags.push(
 		      h('span', { className: 'ot-tag ot-tag-warn', key: 'warn', title: util.safeArray(event.warnings).join('\n') }, '⚠ ', util.safeArray(event.warnings)[0]),
@@ -2512,16 +2721,18 @@ window.__ModuleLoader__.load({
 		              '+10 分',
 		            )
 		          : null,
-		        // Only rows added by hand: an imported row deleted here would come back on
+		        // Only self-made rows: an imported row deleted here would come back on
 		        // the next file scan, which is the file doing its job, not a bug to hide.
-		        event.source && event.source.sheet === '手动添加'
+		        // A row the model read off a document has no file behind it either, so it
+		        // is deletable for the same reason.
+		        event.source && (event.source.sheet === '手动添加' || event.source.sheet === 'AI 读资料')
 		          ? h(
 		              'button',
 		              {
 		                type: 'button',
 		                className: 'ot-btn ot-btn-sm ot-btn-ghost',
 		                disabled: busy,
-		                title: '删掉这条自己加的日程',
+		                title: event.source.sheet === 'AI 读资料' ? '删掉这条 AI 读出来的日程' : '删掉这条自己加的日程',
 		                onClick: function () {
 		                  if (typeof props.onDelete === 'function') props.onDelete(event)
 		                },
@@ -3274,6 +3485,299 @@ window.__ModuleLoader__.load({
 		  )
 		}
 		
+		/** Everything the file picker and the drop zone accept. */
+		var ACCEPT = '.xlsx,.xlsm,.xls,.pdf,.docx,.pptx,.txt,.md,.markdown,.csv,.tsv,.json,.ics,.log,.png,.jpg,.jpeg,.webp,.gif,.bmp,.tif,.tiff'
+		
+		function isExcelFile(name) {
+		  return /\.(xlsx|xlsm|xls)$/i.test(String(name || ''))
+		}
+		
+		/**
+		 * Does this path mean "read a roster"?
+		 *
+		 * A folder has no extension and the workbook reader already knows how to pick
+		 * the newest spreadsheet out of one, so "no extension" goes to the roster path.
+		 */
+		function isExcelTarget(path) {
+		  var text = String(path || '').trim()
+		  if (text === '') return true
+		  if (isExcelFile(text)) return true
+		  return !/\.[A-Za-z0-9]+$/.test(text)
+		}
+		
+		function describeExtractPlan(plan) {
+		  if (!plan) return ''
+		  var parts = ['读出 ' + plan.rows + ' 条']
+		  if (plan.importable !== plan.rows) parts.push('可加入 ' + plan.importable + ' 条')
+		  var span = describeSpan(plan)
+		  if (span !== '') parts.push(span)
+		  return parts.join(' · ')
+		}
+		
+		function describeExtractSkips(plan, analysis) {
+		  var notes = []
+		  if (plan && plan.past > 0) notes.push(plan.past + ' 条在今天之前')
+		  if (plan && plan.beyondHorizon > 0) notes.push(plan.beyondHorizon + ' 条超过 ' + plan.horizonDays + ' 天')
+		  var excluded = analysis ? util.safeArray(analysis.excluded).length : 0
+		  if (excluded > 0) notes.push(excluded + ' 条不属于你或没有日期')
+		  if (plan && plan.undated > 0) notes.push(plan.undated + ' 条没有日期')
+		  return notes.length === 0 ? '' : '没读进来：' + notes.join('、')
+		}
+		
+		/**
+		 * The confirmation step for a reading.
+		 *
+		 * Same job as `ConfirmBar`, different object: a workbook produces rows to
+		 * compare against a mapping, a document produces event drafts the user may want
+		 * to fix first. Saying "读出了 6 条，其中 2 条不是你的" before anything is written
+		 * is the whole point — a reading that silently lands on the timeline is a guess
+		 * the user never agreed to.
+		 */
+		function ExtractBar(props) {
+		  var state = props.state
+		  if (!state || state.status === 'idle') return null
+		  var status = state.status
+		  var busy = status === 'reading' || status === 'saving'
+		  var ready = status === 'ready'
+		  var tone = status === 'error' ? 'error' : status === 'done' ? 'done' : busy ? 'busy' : 'ready'
+		  var source = state.source || {}
+		  var analysis = state.analysis || null
+		  var plan = state.plan || null
+		  // `draft` is what the user is looking at — the analysis is only its first
+		  // version. Counting the analysis instead made the bar say "没找到日程" while
+		  // three editable rows sat right below it.
+		  var draft = util.safeArray(state.draft)
+		  var selected = draft.filter(function (event) {
+		    return event.include !== false
+		  }).length
+		  var confidence = analysis ? confidenceLabel(analysis.confidence) : null
+		
+		  var headline
+		  if (busy) headline = state.message || '正在读这份资料…'
+		  else if (status === 'error') headline = '这次没能读完这份资料'
+		  else if (status === 'done') headline = state.message || '已经加入日程'
+		  else if (draft.length === 0) headline = '读完了「' + (source.file || '这份资料') + '」，但没找到日程'
+		  else headline = '读完了「' + (source.file || '这份资料') + '」'
+		
+		  var detail = null
+		  if (ready) {
+		    var lines = []
+		    if (plan) {
+		      lines.push(
+		        h('div', { className: 'ot-confirm-line', key: 'plan' }, ui.glyph('calendar', 12), h('span', null, describeExtractPlan(plan))),
+		      )
+		    }
+		    var skips = describeExtractSkips(plan, analysis)
+		    if (skips !== '') {
+		      lines.push(h('div', { className: 'ot-confirm-line ot-warn-text', key: 'skip' }, ui.glyph('clock', 12), h('span', null, skips)))
+		    }
+		    if (analysis && analysis.mode === 'local') {
+		      lines.push(
+		        h(
+		          'div',
+		          { className: 'ot-confirm-line', key: 'local' },
+		          ui.glyph('spark', 12),
+		          h('span', null, analysis.modelNote || '这是本机按日期和时间读的，不是 AI 读的'),
+		        ),
+		      )
+		    }
+		    detail = h('div', { className: 'ot-confirm-lines' }, lines)
+		  } else if (status === 'done') {
+		    detail = h(
+		      'div',
+		      { className: 'ot-confirm-lines' },
+		      h(
+		        'div',
+		        { className: 'ot-confirm-line' },
+		        ui.glyph('check', 12),
+		        h('span', null, '和导入的排班表一样，提醒、番茄钟、日历都照常管它们；重新导入 Excel 也不会被覆盖。'),
+		      ),
+		    )
+		  } else if (status === 'error' && state.error) {
+		    detail = h('div', { className: 'ot-confirm-lines' }, h('div', { className: 'ot-confirm-line ot-warn-text' }, h('span', null, state.error)))
+		  }
+		
+		  var actions = []
+		  if (ready) {
+		    actions.push(
+		      ui.button(
+		        { key: 'commit', variant: 'primary', icon: 'check', disabled: busy || selected === 0, onClick: props.onCommit },
+		        selected === 0 ? '先勾选日程' : '加入日程（' + selected + ' 条）',
+		      ),
+		      ui.button({ key: 'another', icon: 'refresh', small: true, disabled: busy, onClick: props.onAnother }, '换一份资料'),
+		      ui.button({ key: 'details', variant: 'ghost', small: true, disabled: busy, onClick: props.onDetails }, '看看细节'),
+		    )
+		  } else if (status === 'done') {
+		    actions.push(
+		      ui.button({ key: 'again', variant: 'primary', icon: 'plus', onClick: props.onAnother }, '再读一份'),
+		      props.onOpenTimeline
+		        ? ui.button({ key: 'timeline', icon: 'calendar', small: true, onClick: props.onOpenTimeline }, '查看日程时间轴')
+		        : null,
+		    )
+		  } else if (status === 'error') {
+		    actions.push(
+		      ui.button({ key: 'retry', icon: 'refresh', small: true, onClick: props.onRetry }, '再读一次'),
+		      ui.button({ key: 'reset', variant: 'ghost', small: true, onClick: props.onReset }, '换一份资料'),
+		    )
+		  }
+		
+		  return h(
+		    'div',
+		    { className: 'ot-confirm', 'data-tone': tone, role: 'status', 'aria-live': 'polite' },
+		    h(
+		      'div',
+		      { className: 'ot-confirm-head' },
+		      busy ? h('span', { className: 'ot-typing' }, h('i'), h('i'), h('i')) : ui.glyph(status === 'done' ? 'check' : status === 'error' ? 'close' : 'robot', 15),
+		      h('strong', { className: 'ot-confirm-title' }, headline),
+		      confidence && ready && draft.length > 0 ? h('span', { className: 'ot-pill', 'data-tone': confidence.tone }, confidence.text) : null,
+		      h('div', { className: 'ot-headspace' }),
+		      h('span', { className: 'ot-confirm-hint' }, ready ? '勾选后才会写进日程' : ''),
+		    ),
+		    detail,
+		    actions.filter(Boolean).length > 0 ? h('div', { className: 'ot-confirm-actions' }, actions) : null,
+		  )
+		}
+		
+		/**
+		 * The editable reading.
+		 *
+		 * Rows are vertical rather than a table because the panel is a sidebar: six
+		 * columns of a four-inch-wide panel is a horizontal scrollbar, and the field
+		 * people actually need to fix is the date. Every field here is the same value
+		 * the host will re-validate on commit.
+		 */
+		function ExtractionEditor(props) {
+		  var draft = util.safeArray(props.draft)
+		  if (draft.length === 0) return null
+		  var selected = draft.filter(function (event) {
+		    return event.include !== false
+		  }).length
+		
+		  function edit(key, field, value) {
+		    var patch = {}
+		    patch[field] = value
+		    props.onEdit(key, patch)
+		  }
+		
+		  return h(
+		    'div',
+		    { className: 'ot-extract' },
+		    h(
+		      'div',
+		      { className: 'ot-extract-head' },
+		      h('strong', null, '勾选要加入的，时间和标题都能直接改'),
+		      h('div', { className: 'ot-headspace' }),
+		      h(
+		        'button',
+		        {
+		          type: 'button',
+		          className: 'ot-linkbtn',
+		          onClick: function () {
+		            props.onSelectAll(true)
+		          },
+		        },
+		        '全选',
+		      ),
+		      h(
+		        'button',
+		        {
+		          type: 'button',
+		          className: 'ot-linkbtn',
+		          onClick: function () {
+		            props.onSelectAll(false)
+		          },
+		        },
+		        '全不选',
+		      ),
+		    ),
+		    h(
+		      'div',
+		      { className: 'ot-extract-list' },
+		      draft.map(function (event) {
+		        var confidence = confidenceLabel(event.confidence)
+		        var included = event.include !== false
+		        return h(
+		          'div',
+		          { className: 'ot-extract-row', key: event.key, 'data-included': included ? 'true' : 'false' },
+		          h(
+		            'label',
+		            { className: 'ot-extract-check' },
+		            h('input', {
+		              type: 'checkbox',
+		              checked: included,
+		              onChange: function () {
+		                props.onToggle(event.key)
+		              },
+		            }),
+		            h('span', { className: 'ot-pill', 'data-tone': confidence.tone }, confidence.text),
+		          ),
+		          h(
+		            'div',
+		            { className: 'ot-extract-body' },
+		            h('input', {
+		              className: 'ot-input ot-extract-title',
+		              type: 'text',
+		              value: event.title || '',
+		              placeholder: '这件事叫什么',
+		              onChange: function (input) {
+		                edit(event.key, 'title', input.target.value)
+		              },
+		            }),
+		            h(
+		              'div',
+		              { className: 'ot-extract-when' },
+		              h('input', {
+		                className: 'ot-input ot-extract-date',
+		                type: 'date',
+		                value: event.date || '',
+		                onChange: function (input) {
+		                  edit(event.key, 'date', input.target.value)
+		                },
+		              }),
+		              h('input', {
+		                className: 'ot-input ot-extract-time',
+		                type: 'time',
+		                value: event.start || '',
+		                onChange: function (input) {
+		                  edit(event.key, 'start', input.target.value)
+		                },
+		              }),
+		              h('span', { className: 'ot-sub' }, '–'),
+		              h('input', {
+		                className: 'ot-input ot-extract-time',
+		                type: 'time',
+		                value: event.end || '',
+		                onChange: function (input) {
+		                  edit(event.key, 'end', input.target.value)
+		                },
+		              }),
+		            ),
+		            h('input', {
+		              className: 'ot-input ot-extract-place',
+		              type: 'text',
+		              value: event.location || '',
+		              placeholder: '地点（可不填）',
+		              onChange: function (input) {
+		                edit(event.key, 'location', input.target.value)
+		              },
+		            }),
+		            event.notes ? h('div', { className: 'ot-extract-note', title: event.notes }, event.notes) : null,
+		          ),
+		        )
+		      }),
+		    ),
+		    h(
+		      'div',
+		      { className: 'ot-extract-foot' },
+		      ui.button(
+		        { variant: 'primary', icon: 'check', disabled: props.busy || selected === 0, onClick: props.onCommit },
+		        selected === 0 ? '先勾选日程' : '加入日程（' + selected + ' 条）',
+		      ),
+		      h('span', { className: 'ot-sub' }, '没勾选的不加入；加入之后还能在时间轴上删掉。'),
+		    ),
+		  )
+		}
+		
 		function ImportView(props) {
 		  var store = props.store
 		  var snapshot = props.snapshot
@@ -3281,10 +3785,15 @@ window.__ModuleLoader__.load({
 		  var workbook = settings.workbook
 		  var excel = snapshot.excel
 		  var importState = store.get().importState
+		  var extractState = store.get().extractState
 		
 		  var pair = React.useState(repair.repairPath(workbook.path || ''))
 		  var path = pair[0]
 		  var setPath = pair[1]
+		
+		  var pastePair = React.useState('')
+		  var paste = pastePair[0]
+		  var setPaste = pastePair[1]
 		
 		  var mapPair = React.useState({})
 		  var overrides = mapPair[0]
@@ -3315,7 +3824,11 @@ window.__ModuleLoader__.load({
 		  var analysis = importState.analysis
 		  var preview = importState.preview
 		  var plan = (preview && preview.plan) || null
-		  var busy = importState.status === 'analyzing' || importState.status === 'loading'
+		  var readingIdle = extractState.status === 'idle'
+		  var readingDone = extractState.status === 'done'
+		  var extractBusy = extractState.status === 'reading' || extractState.status === 'saving'
+		  var busy = importState.status === 'analyzing' || importState.status === 'loading' || extractBusy
+		  var extracting = !readingIdle && !readingDone
 		
 		  /**
 		   * What the mapping selects should show. An explicit user override wins, then
@@ -3406,39 +3919,95 @@ window.__ModuleLoader__.load({
 		  }
 		
 		  /** Upload path: the browser has the bytes but never the file path. */
-		  function analyzeFile(file) {
-		    if (!file) return
-		    if (!/\.(xlsx|xlsm|xls)$/i.test(file.name)) {
-		      store.pushNotice({ level: 'warn', title: '这个文件读不了', body: '只支持 .xlsx / .xlsm / .xls，请另存为 xlsx 再拖进来。' })
-		      return
-		    }
-		    setPath(file.name)
-		    clearDraft()
-		    store.set({
-		      importState: Object.assign({}, store.get().importState, {
-		        status: 'analyzing',
-		        message: '正在上传「' + file.name + '」并读表…',
-		        error: null,
-		      }),
+		  function fileBase64(file) {
+		    return new Promise(function (resolvePromise, rejectPromise) {
+		      if (typeof file.arrayBuffer !== 'function') {
+		        rejectPromise(new Error('浏览器不支持读取该文件，请改用「粘贴路径」方式。'))
+		        return
+		      }
+		      file
+		        .arrayBuffer()
+		        .then(function (buffer) {
+		          var bytes = new Uint8Array(buffer)
+		          var chunk = 0x8000
+		          var binary = ''
+		          for (var i = 0; i < bytes.length; i += chunk) {
+		            binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk))
+		          }
+		          resolvePromise(btoa(binary))
+		        })
+		        .catch(rejectPromise)
 		    })
-		    if (typeof file.arrayBuffer !== 'function') {
-		      store.pushNotice({ level: 'warn', title: '浏览器不支持读取该文件', body: '请改用「粘贴路径」方式。' })
+		  }
+		
+		  function readAnotherFile(file) {
+		    if (!file) return
+		    setPath(file.name)
+		    if (isExcelFile(file.name)) {
+		      clearDraft()
+		      store.set({
+		        importState: Object.assign({}, store.get().importState, {
+		          status: 'analyzing',
+		          message: '正在上传「' + file.name + '」并读表…',
+		          error: null,
+		        }),
+		      })
+		      fileBase64(file)
+		        .then(function (base64) {
+		          return store.analyzeWorkbook({ file: { name: file.name, base64: base64 } })
+		        })
+		        .catch(function (error) {
+		          store.pushNotice({ level: 'warn', title: '读表失败', body: String((error && error.message) || error) })
+		        })
 		      return
 		    }
-		    file
-		      .arrayBuffer()
-		      .then(function (buffer) {
-		        var bytes = new Uint8Array(buffer)
-		        var chunk = 0x8000
-		        var binary = ''
-		        for (var i = 0; i < bytes.length; i += chunk) {
-		          binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk))
-		        }
-		        return store.analyzeWorkbook({ file: { name: file.name, base64: btoa(binary) } })
+		    fileBase64(file)
+		      .then(function (base64) {
+		        return store.extractSource({ file: { name: file.name, base64: base64 } })
 		      })
 		      .catch(function (error) {
-		        store.pushNotice({ level: 'warn', title: '读表失败', body: String((error && error.message) || error) })
+		        store.pushNotice({ level: 'warn', title: '读资料失败', body: String((error && error.message) || error) })
 		      })
+		  }
+		
+		  function analyzeFile(file) {
+		    readAnotherFile(file)
+		  }
+		
+		  /** Read a path: a roster goes to the importer, anything else to the reader. */
+		  function readFromPath(pathValue) {
+		    var target = pathValue === undefined ? path : pathValue
+		    var trimmed = String(target || '').trim()
+		    if (trimmed === '') return
+		    if (isExcelTarget(trimmed)) {
+		      analyze(trimmed)
+		      return
+		    }
+		    clearDraft()
+		    void store.extractSource({ path: trimmed }).catch(function (error) {
+		      store.pushNotice({ level: 'warn', title: '读资料失败', body: String((error && error.message) || error) })
+		    })
+		  }
+		
+		  /** Read pasted text — the "I got this in a group chat" path. */
+		  function readPastedText() {
+		    var text = String(paste || '').trim()
+		    if (text === '') return
+		    void store.extractSource({ text: text }).catch(function (error) {
+		      store.pushNotice({ level: 'warn', title: '读文字失败', body: String((error && error.message) || error) })
+		    })
+		  }
+		
+		  function commitReading() {
+		    void store.commitExtraction().catch(function (error) {
+		      store.pushNotice({ level: 'warn', title: '加入日程失败', body: String((error && error.message) || error) })
+		    })
+		  }
+		
+		  /** Back to "pick a file", keeping everything already on the schedule. */
+		  function readAnother() {
+		    store.resetExtraction()
+		    if (fileInput.current) fileInput.current.click()
 		  }
 		
 		  function onDrop(event) {
@@ -3731,6 +4300,130 @@ window.__ModuleLoader__.load({
 		    return ''
 		  })()
 		
+		  /**
+		   * The roster details: what the sheet looked like and how the reader read it.
+		   * This is the card the old page was built around.
+		   */
+		  var rosterDetails = h(
+		    'div',
+		    null,
+		    importState.status === 'error' && importState.error
+		      ? ui.note({ variant: 'error', children: importState.error })
+		      : importState.status === 'analyzing'
+		        ? h(
+		            'div',
+		            { className: 'ot-working' },
+		            h('span', { className: 'ot-typing' }, h('i'), h('i'), h('i')),
+		            h('span', null, importState.message || '正在读表…'),
+		          )
+		        : importState.status === 'done' && importState.message
+		          ? ui.note({ variant: 'ok', children: importState.message })
+		          : analysis
+		            ? null
+		            : ui.note({
+		                children: '拖一个 Excel 进来，或者点「选择文件」；读完会在页面顶部给你一张确认卡，说清楚要导入什么，再让你决定。',
+		              }),
+		    verdict,
+		    advanced,
+		    previewTable,
+		    warnings.length > 0 ? h('div', { className: 'ot-sub', style: { marginTop: 10 } }, '读表提示：' + warnings.slice(0, 4).join('；')) : null,
+		  )
+		
+		  /**
+		   * The reading details: where it came from, what the model said, and the rows
+		   * it proposed — editable, because a misread date is cheaper to fix here than
+		   * to discover on the timeline tomorrow.
+		   */
+		  var readingDetails = (function () {
+		    if (extractState.status === 'reading') {
+		      return h(
+		        'div',
+		        { className: 'ot-working' },
+		        h('span', { className: 'ot-typing' }, h('i'), h('i'), h('i')),
+		        h('span', null, extractState.message || '正在读这份资料…'),
+		      )
+		    }
+		    if (extractState.status === 'error') {
+		      return ui.note({ variant: 'error', children: extractState.error || '这次没能读完这份资料。' })
+		    }
+		    var source = extractState.source
+		    var reading = extractState.analysis
+		    var rows = []
+		    if (source) {
+		      var facts = [source.type || '资料']
+		      if (source.pages > 0) facts.push(source.pages + ' 页')
+		      if (source.chars > 0) facts.push(source.chars + ' 字')
+		      if (source.imageCount > 0) facts.push(source.imageCount + ' 张图')
+		      rows.push(
+		        h(
+		          'div',
+		          { className: 'ot-extract-source', key: 'source' },
+		          ui.glyph(source.kind === 'image' ? 'image' : 'file', 15),
+		          h('div', null, h('strong', null, source.file), h('div', { className: 'ot-sub' }, facts.join(' · '))),
+		        ),
+		      )
+		      if (util.safeArray(source.notes).length > 0) {
+		        rows.push(h('div', { className: 'ot-sub', key: 'notes', style: { marginTop: 6 } }, source.notes.join('；')))
+		      }
+		    }
+		    if (reading) {
+		      var confidence = confidenceLabel(reading.confidence)
+		      rows.push(
+		        h(
+		          'div',
+		          { className: 'ot-verdict', key: 'verdict', 'data-tone': confidence.tone, style: { marginTop: 10 } },
+		          h(
+		            'div',
+		            { className: 'ot-verdict-head' },
+		            ui.glyph(reading.mode === 'model' ? 'robot' : 'spark', 14),
+		            h('strong', null, reading.mode === 'model' ? 'AI 读完了这份资料' : '本机读完了这份资料'),
+		            h('span', { className: 'ot-pill', 'data-tone': confidence.tone }, confidence.text),
+		            reading.model && reading.model.model
+		              ? h('span', { className: 'ot-verdict-model' }, reading.model.provider + ' · ' + reading.model.model)
+		              : null,
+		          ),
+		          h('div', { className: 'ot-verdict-body' }, reading.summary || ''),
+		          util.safeArray(reading.hints).length > 0
+		            ? h(
+		                'ul',
+		                { className: 'ot-verdict-hints' },
+		                util.safeArray(reading.hints).map(function (hint, index) {
+		                  return h('li', { key: 'hint' + index }, hint)
+		                }),
+		              )
+		            : null,
+		          reading.mode === 'local' && reading.modelNote ? h('div', { className: 'ot-sub' }, reading.modelNote) : null,
+		        ),
+		      )
+		    }
+		    if (extractState.status === 'done') {
+		      rows.push(ui.note({ variant: 'ok', key: 'done', children: extractState.message || '已经加入日程。' }))
+		    } else if (util.safeArray(extractState.draft).length > 0) {
+		      rows.push(
+		        h(ExtractionEditor, {
+		          key: 'editor',
+		          draft: extractState.draft,
+		          busy: extractBusy,
+		          onToggle: store.toggleExtraction,
+		          onEdit: store.updateExtraction,
+		          onSelectAll: store.selectAllExtraction,
+		          onCommit: commitReading,
+		        }),
+		      )
+		    } else if (reading) {
+		      rows.push(
+		        ui.note({
+		          key: 'empty',
+		          children:
+		            reading.mode === 'local'
+		              ? '本机规则没有在这份资料里找到「日期 + 时间」都明确的句子。打开模型再读一次，或者把关键句子粘贴进第 2 张卡。'
+		              : '模型没有在这份资料里读到明确的日程。可以换一份更清楚的资料，或者直接把时间地点写进第 2 张卡。',
+		        }),
+		      )
+		    }
+		    return h('div', null, rows)
+		  })()
+		
 		  return h(
 		    'div',
 		    { className: 'ot-view ot-import' },
@@ -3776,6 +4469,36 @@ window.__ModuleLoader__.load({
 		      onOpenTimeline: props.onOpenTimeline || null,
 		    }),
 		
+		    /**
+		     * The reading's own confirmation bar.
+		     *
+		     * A document read and a workbook read ask different questions, so they get
+		     * different bars: this one counts events to add, the one above counts rows to
+		     * match. Only one of them can be active — the store clears the other draft.
+		     */
+		    h(ExtractBar, {
+		      state: extractState,
+		      onCommit: commitReading,
+		      onAnother: readAnother,
+		      onDetails: scrollToDetails,
+		      onRetry: function () {
+		        var source = extractState.source || {}
+		        if (source.pasted) {
+		          readPastedText()
+		          return
+		        }
+		        if (source.path) {
+		          readFromPath(source.path)
+		          return
+		        }
+		        if (fileInput.current) fileInput.current.click()
+		      },
+		      onReset: function () {
+		        store.resetExtraction()
+		      },
+		      onOpenTimeline: props.onOpenTimeline || null,
+		    }),
+		
 		    // ---- 1 · who -----------------------------------------------------------
 		    ui.card({
 		      title: '1 · 关注的人',
@@ -3810,9 +4533,9 @@ window.__ModuleLoader__.load({
 		
 		    h('div', { className: 'ot-gap' }),
 		
-		    // ---- 2 · the file ------------------------------------------------------
+		    // ---- 2 · the material --------------------------------------------------
 		    ui.card({
-		      title: '2 · Excel 文件',
+		      title: '2 · 日程资料',
 		      children: h(
 		        'div',
 		        null,
@@ -3832,11 +4555,11 @@ window.__ModuleLoader__.load({
 		            },
 		            onDrop: onDrop,
 		          },
-		          h('div', { className: 'ot-drop-title' }, busy ? '正在读表…' : '选一个 Excel，AI 直接帮你读'),
+		          h('div', { className: 'ot-drop-title' }, busy ? '正在读…' : '拖一份日程资料进来，AI 读成日程'),
 		          h(
 		            'div',
 		            { className: 'ot-drop-sub' },
-		            '点这里选文件，也可以直接把 .xlsx / .xlsm 拖进来。读完会告诉你这是什么表、认出哪些字段，再让你确认导入。',
+		            'Excel 排班表按列解析；PDF、Word、PPT、图片和一段文字交给 AI 读懂。读完全部先摊开给你看，确认之后才写进时间轴。',
 		          ),
 		          h(
 		            'div',
@@ -3851,20 +4574,20 @@ window.__ModuleLoader__.load({
 		                if (event && typeof event.stopPropagation === 'function') event.stopPropagation()
 		                if (fileInput.current) fileInput.current.click()
 		              },
-		            }, busy ? '正在读表…' : '选择 Excel'),
+		            }, busy ? '正在读…' : '选择文件'),
 		            ui.button({
 		              icon: 'sheet',
 		              disabled: busy || path.trim() === '',
 		              onClick: function (event) {
 		                if (event && typeof event.stopPropagation === 'function') event.stopPropagation()
-		                analyze()
+		                readFromPath()
 		              },
-		            }, '按已填的路径读表'),
+		            }, '按已填的路径读'),
 		          ),
 		          h('input', {
 		            ref: fileInput,
 		            type: 'file',
-		            accept: '.xlsx,.xlsm,.xls',
+		            accept: ACCEPT,
 		            className: 'ot-file-hidden',
 		            onChange: function (event) {
 		              var file = event.target.files && event.target.files[0]
@@ -3886,22 +4609,50 @@ window.__ModuleLoader__.load({
 		              className: 'ot-input',
 		              type: 'text',
 		              value: path,
-		              placeholder: 'C:\\Users\\你的账号\\Desktop\\排班表.xlsx（填文件夹也行，会选最新的那个）',
+		              placeholder: 'C:\\Users\\你的账号\\Desktop\\排班表.xlsx，或一份 PDF / Word / 图片',
 		              onChange: function (event) {
 		                setPath(event.target.value)
 		                // A new path invalidates the column choices made for the old one.
 		                clearDraft()
 		              },
 		              onKeyDown: function (event) {
-		                if (event.key === 'Enter' && path.trim() !== '') analyze()
+		                if (event.key === 'Enter' && path.trim() !== '') readFromPath()
 		              },
 		            }),
-		            ui.button({ icon: 'spark', disabled: busy || path.trim() === '', onClick: function () { analyze() } }, '读这份表'),
+		            ui.button({ icon: 'spark', disabled: busy || path.trim() === '', onClick: function () { readFromPath() } }, '读这份'),
 		          ),
 		          h(
 		            'div',
 		            { className: 'ot-sub', style: { marginTop: 6 } },
 		            '填文件夹时会选其中「最近修改」的那个 Excel；资源管理器里 Shift + 右键文件 →「复制文件地址」可拿到完整路径。',
+		          ),
+		        ),
+		
+		        /**
+		         * Text is a first-class input.
+		         *
+		         * Half the schedules people actually receive are a paragraph in a group
+		         * chat — easier to paste than to save as a file, and the model reads it
+		         * exactly the same way.
+		         */
+		        h(
+		          'details',
+		          { className: 'ot-details' },
+		          h('summary', null, '或者粘贴一段文字（通知、群消息、会议纪要）'),
+		          h('textarea', {
+		            className: 'ot-input ot-textarea',
+		            rows: 4,
+		            value: paste,
+		            placeholder: '例如：11月4日（周三）07:00-07:30 早打卡值班，张三到岗，东区门口查验。',
+		            onChange: function (event) {
+		              setPaste(event.target.value)
+		            },
+		          }),
+		          h(
+		            'div',
+		            { className: 'ot-row', style: { marginTop: 8 } },
+		            ui.button({ variant: 'primary', icon: 'robot', disabled: busy || paste.trim() === '', onClick: readPastedText }, '读这段文字'),
+		            h('span', { className: 'ot-sub' }, '粘贴的文字不会存盘，只用于这一次读取。'),
 		          ),
 		        ),
 		
@@ -3952,43 +4703,19 @@ window.__ModuleLoader__.load({
 		
 		    h('div', { className: 'ot-gap' }),
 		
-		    // ---- 3 · what it is ----------------------------------------------------
+		    // ---- 3 · what it read --------------------------------------------------
 		    //
-		    // The details behind the confirmation: what the sheet looked like, how sure
-		    // the reader was, the sample rows, and the column mapping. The decision itself
-		    // is the bar at the top — this card is where you go to double-check it.
+		    // The details behind the confirmation. For a roster: what the sheet looked
+		    // like, how sure the reader was, the sample rows, the column mapping. For a
+		    // document: the source, what the model said, and the editable event list.
+		    // The decision itself is the bar at the top — this card is where you go to
+		    // double-check it.
 		    h(
 		      'div',
 		      { ref: detailsRef },
 		      ui.card({
-		        title: '3 · 读表细节',
-		        children: h(
-		          'div',
-		          null,
-		          importState.status === 'error' && importState.error
-		            ? ui.note({ variant: 'error', children: importState.error })
-		            : importState.status === 'analyzing'
-		              ? h(
-		                  'div',
-		                  { className: 'ot-working' },
-		                  h('span', { className: 'ot-typing' }, h('i'), h('i'), h('i')),
-		                  h('span', null, importState.message || '正在读表…'),
-		                )
-		              : importState.status === 'done' && importState.message
-		                ? ui.note({ variant: 'ok', children: importState.message })
-		                : analysis
-		                  ? null
-		                  : ui.note({
-		                      children: '拖一个 Excel 进来，或者点「选择 Excel」；读完会在页面顶部给你一张确认卡，说清楚要导入什么，再让你决定。',
-		                    }),
-		
-		          verdict,
-		          advanced,
-		          previewTable,
-		          warnings.length > 0
-		            ? h('div', { className: 'ot-sub', style: { marginTop: 10 } }, '读表提示：' + warnings.slice(0, 4).join('；'))
-		            : null,
-		        ),
+		        title: extracting || readingDone ? '3 · AI 读出来的日程' : '3 · 读表细节',
+		        children: extracting || readingDone ? readingDetails : rosterDetails,
 		      }),
 		    ),
 		
@@ -4748,6 +5475,11 @@ window.__ModuleLoader__.load({
 		          // count would read as if they had been lost.
 		          snapshot.manualCount > 0
 		            ? h('span', { className: 'ot-chip ot-chip-manual', title: '这些是你自己加的，重新导入 Excel 也不会被覆盖' }, ui.glyph('plus', 11), '自己加的 ' + snapshot.manualCount + ' 条')
+		            : null,
+		          // Rows the model read out of a document or a picture. Counted apart
+		          // from typed rows: "读了 6 条" is not "我自己加了 6 条".
+		          snapshot.readCount > 0
+		            ? h('span', { className: 'ot-chip ot-chip-ai', title: '这些是 AI 从资料里读出来的，重新导入 Excel 也不会被覆盖' }, ui.glyph('robot', 11), 'AI 读出 ' + snapshot.readCount + ' 条')
 		            : null,
 		          h('span', { className: 'ot-chip' }, ui.glyph('clock', 11), snapshot.serverTime.label),
 		          ui.button({
