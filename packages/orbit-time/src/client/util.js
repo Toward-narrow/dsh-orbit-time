@@ -57,6 +57,42 @@ function formatClock(ms) {
   return pad2(minutes) + ':' + pad2(seconds)
 }
 
+/**
+ * A countdown sized to its horizon.
+ *
+ * A minutes:seconds clock is right for "23 分钟后" and wrong for "5 天后": the
+ * seconds tick for days without changing anything anyone can act on. Past a day
+ * the answer is days and hours; under a day it becomes the clock people read —
+ * hours:minutes:seconds once there is an hour, minutes:seconds below that.
+ */
+function formatCountdown(ms) {
+  var total = Math.max(0, Math.round(ms / 1000))
+  var days = Math.floor(total / 86400)
+  if (days >= 1) {
+    var dayHours = Math.floor((total % 86400) / 3600)
+    return days + ' 天' + (dayHours > 0 ? ' ' + dayHours + ' 小时' : '')
+  }
+  var hours = Math.floor(total / 3600)
+  var minutes = Math.floor((total % 3600) / 60)
+  var seconds = total % 60
+  if (hours > 0) return pad2(hours) + ':' + pad2(minutes) + ':' + pad2(seconds)
+  return pad2(minutes) + ':' + pad2(seconds)
+}
+
+/**
+ * The same answer in the fewest characters, for the 98 px mini card: days and
+ * hours without the spaces, otherwise the ordinary clock.
+ */
+function formatCountdownShort(ms) {
+  var total = Math.max(0, Math.round(ms / 1000))
+  var days = Math.floor(total / 86400)
+  if (days >= 1) {
+    var dayHours = Math.floor((total % 86400) / 3600)
+    return days + '天' + (dayHours > 0 ? dayHours + '时' : '')
+  }
+  return formatCountdown(total * 1000)
+}
+
 function formatDuration(ms) {
   var total = Math.max(0, Math.round(ms / 1000))
   var hours = Math.floor(total / 3600)
@@ -71,6 +107,13 @@ function formatRelative(minutes) {
   if (minutes < -1) return '已过 ' + Math.abs(minutes) + ' 分钟'
   if (minutes <= 0) return '就是现在'
   if (minutes < 60) return minutes + ' 分钟后'
+  // "141 小时 45 分后" is arithmetically right and useless; a schedule that
+  // reaches into next week should say so in days.
+  if (minutes >= 1440) {
+    var days = Math.floor(minutes / 1440)
+    var dayHours = Math.floor((minutes % 1440) / 60)
+    return days + ' 天' + (dayHours > 0 ? ' ' + dayHours + ' 小时' : '') + '后'
+  }
   var hours = Math.floor(minutes / 60)
   var rest = minutes % 60
   return rest === 0 ? hours + ' 小时后' : hours + ' 小时 ' + rest + ' 分后'
@@ -150,6 +193,8 @@ exports.toMinutes = toMinutes
 exports.fromMinutes = fromMinutes
 exports.addMinutes = addMinutes
 exports.formatClock = formatClock
+exports.formatCountdown = formatCountdown
+exports.formatCountdownShort = formatCountdownShort
 exports.formatDuration = formatDuration
 exports.formatRelative = formatRelative
 exports.formatDay = formatDay

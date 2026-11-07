@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+﻿#!/usr/bin/env node
 /**
  * Render the dashboard to a static HTML preview and (optionally) a PNG.
  *
@@ -165,10 +165,10 @@ const events = [
  * not just "today is busy".
  */
 events.push(
-  makeEvent({ title: '示例支部早打卡值班', date: dayKey(6), startOffsetMinutes: atToday(7, 0) + 6 * 1440, minutes: 30, category: '值班', notes: '查验示例支部早打卡，按表签到。', row: 14 }),
-  makeEvent({ title: '示例支部晚自习考勤点名', date: dayKey(9), startOffsetMinutes: atToday(19, 30) + 9 * 1440, minutes: 80, classroom: 'A101', category: '值班', row: 15 }),
-  makeEvent({ title: '示例支部早打卡值班', date: dayKey(13), startOffsetMinutes: atToday(7, 0) + 13 * 1440, minutes: 30, category: '值班', row: 16 }),
-  makeEvent({ title: '示例支部晚自习考勤点名', date: dayKey(20), startOffsetMinutes: atToday(19, 30) + 20 * 1440, minutes: 80, classroom: 'A102', category: '值班', row: 17 }),
+  makeEvent({ title: '示例部门早打卡值班', date: dayKey(6), startOffsetMinutes: atToday(7, 0) + 6 * 1440, minutes: 30, category: '值班', notes: '查验示例部门早打卡，按表签到。', row: 14 }),
+  makeEvent({ title: '示例部门晚自习考勤点名', date: dayKey(9), startOffsetMinutes: atToday(19, 30) + 9 * 1440, minutes: 80, classroom: 'A101', category: '值班', row: 15 }),
+  makeEvent({ title: '示例部门早打卡值班', date: dayKey(13), startOffsetMinutes: atToday(7, 0) + 13 * 1440, minutes: 30, category: '值班', row: 16 }),
+  makeEvent({ title: '示例部门晚自习考勤点名', date: dayKey(20), startOffsetMinutes: atToday(19, 30) + 20 * 1440, minutes: 80, classroom: 'A102', category: '值班', row: 17 }),
 )
 
 function byTitle(title) {
@@ -195,7 +195,7 @@ events.push(manualEvent)
 // in-flight treatment is only visible when one event really is in flight.
 const currentEvent = events[2]
 const nextEvent = byTitle('数据结构实验')
-const dutyEvent = byTitle('示例支部晚自习考勤点名')
+const dutyEvent = byTitle('示例部门晚自习考勤点名')
 const totalMinutes = events.reduce((sum, event) => sum + (event.endMs - event.startMs) / 60_000, 0)
 const doneMinutes = events
   .filter((event) => event.startMs !== null && event.startMs < nowMinute.getTime())
@@ -537,7 +537,7 @@ if (process.env.OT_PREVIEW_READ === '1') {
 // ------------------------------------------------------------------ markup
 
 const activeTab = process.argv.find((arg) => arg.startsWith('--tab='))?.slice(6) || 'timeline'
-const tabLabels = { timeline: '日程时间轴', calendar: '日程时间轴 · 日历', add: '日程时间轴 · 加一条', pomodoro: '番茄专注', companion: 'AI 助手', settings: '设置 / 导入' }
+const tabLabels = { timeline: '日程时间轴', calendar: '日程时间轴 · 日历', add: '日程时间轴 · 加一条', pomodoro: '番茄专注', companion: 'AI 助手', netddl: '网络 DDL', settings: '设置 / 导入' }
 
 /**
  * The calendar as the user reaches it: inside the timeline, under the day strip,
@@ -632,6 +632,37 @@ function renderTab(tab) {
       ownerNames: snapshot.ownerNames,
     }),
     settings: () => React.createElement(exports_['./settings.js'].SettingsView, { store, snapshot }),
+    netddl: () => {
+      // The tab is a form, so the preview is only meaningful with a filled-in
+      // slice: a real login, two courses, and three rows waiting for a tick.
+      store.set({
+        netddl: {
+          platform: 'icourse163',
+          status: {
+            ok: true,
+            browser: { found: true, label: 'Edge', running: false, headless: false },
+            profileDir: 'C:\\Users\\你\\.dsh\\storages\\orbit-time\\webddl\\browser',
+            credentials: [{ id: 'icourse163', username: 'demo@example.com' }],
+            count: 3,
+          },
+          busy: '',
+          message: '找到 2 门课，正在等你勾。',
+          error: '',
+          courses: [
+            { id: 'a', name: '数据结构', url: 'https://www.icourse163.org/learn/SCHOOL-1000000001?tid=1000000001', checked: true },
+            { id: 'b', name: '操作系统', url: '', checked: false },
+          ],
+          items: [
+            { key: 'wd_1', course: '数据结构', title: '第一章 单元测验', kind: '测验', dueDate: '2026-11-20', dueTime: '23:30', confidence: 0.92, url: 'https://www.icourse163.org/learn/SCHOOL-1000000001', include: true },
+            { key: 'wd_2', course: '数据结构', title: '第二章 作业', kind: '作业', dueDate: '2026-11-28', dueTime: '23:59', confidence: 0.9, include: true },
+            { key: 'wd_3', course: '操作系统', title: '进程调度实验报告', kind: '作业', dueDate: '2026-12-05', dueTime: '22:00', confidence: 0.9, include: false },
+          ],
+          notes: ['操作系统：没有课程页链接，已走课程接口读。'],
+          page: null,
+        },
+      })
+      return React.createElement(exports_['./netddl.js'].NetDdlView, { store, netddl: store.get().netddl })
+    },
   }
   return renderToStaticMarkup(map[tab]())
 }

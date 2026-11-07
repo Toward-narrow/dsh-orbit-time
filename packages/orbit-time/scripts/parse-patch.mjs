@@ -35,7 +35,24 @@ function prepare(text) {
   for (const raw of text.split(/\r?\n/)) {
     const body = stripComment(raw)
     if (body.trim() === '') continue
-    rows.push({ indent: body.length - body.replace(/^\s*/, '').length, body: body.trim() })
+    const indent = body.length - body.replace(/^\s*/, '').length
+    const line = body.trim()
+    /**
+     * A plain or quoted scalar may wrap onto the following lines. A loader patch
+     * writes a long `note:` exactly that way: the wrapped line has no `key:` of
+     * its own and sits deeper than the line it continues.
+     *
+     * Treating it as a node used to swallow everything after it — the second
+     * roster's `timeRules` were parsed as "missing" and its note came back cut at
+     * the wrap, which is a wrong answer rather than a loud one. Fold the line back
+     * into the value it belongs to.
+     */
+    const startsNode = line.startsWith('- ') || /^[^:]+:(\s|$)/.test(line) || line === '---'
+    if (!startsNode && indent > 0 && rows.length > 0) {
+      rows[rows.length - 1].body += ' ' + line
+      continue
+    }
+    rows.push({ indent: indent, body: line })
   }
   return rows
 }

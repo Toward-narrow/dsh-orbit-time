@@ -38,7 +38,7 @@ function read(relative) {
 console.log('installed profile copy')
 console.log(`  path: ${installed}`)
 
-check('the client half carries the overlay interactivity fix', () => {
+check('the client half carries the current UI fixes', () => {
   const client = read('lib/client.js')
   const needed = [
     ['.ot-float-shell,', 'the overlay roots restate pointer-events'],
@@ -49,6 +49,9 @@ check('the client half carries the overlay interactivity fix', () => {
     ['ot-confirm', 'the import confirmation is an in-panel bar, not a toast'],
     ['describePlanSkips', 'the bar says what will not be imported'],
     ['ot-notice-stack', 'the notice stack is clamped inside its containing block'],
+    ['function pushReminder', 'click results never push a corner card'],
+    ['ot-inline-report', 'a failed click reports inside the page'],
+    ['function formatCountdown', 'the countdown speaks in days above a day'],
   ]
   const missing = needed.filter(([needle]) => !client.includes(needle)).map(([, label]) => label)
   if (missing.length > 0) throw new Error(`missing: ${missing.join('; ')}`)
@@ -129,6 +132,34 @@ check('both halves carry the "read anything" path', () => {
   if (!existsSync(join(installed, 'lib', 'read-document.py'))) missing.push('lib/read-document.py was not installed')
   if (missing.length > 0) throw new Error(`missing: ${missing.join('; ')}`)
   return `${hostNeeded.length + clientNeeded.length} markers + the reader script`
+})
+
+check('the network reader landed whole', () => {
+  const host = read('lib/index.js')
+  const client = read('lib/client.js')
+  const hostNeeded = [
+    ["route('/netddl/login'", 'the login route exists'],
+    ["route('/netddl/pull'", 'the pull route exists'],
+    ["route('/netddl/commit'", 'the commit route exists'],
+    ['createWebDdl', 'the host imports the reader'],
+    ['网络 DDL', 'scraped rows carry their own origin'],
+    ['buildWebEvent', 'a scraped deadline becomes a schedule row'],
+  ]
+  const clientNeeded = [
+    ['NetDdlView', 'the tab exists'],
+    ['netDdlLogin', 'the store can open a login window'],
+    ['netDdlPull', 'the store can pull deadlines'],
+    ['网络 DDL', 'the timeline labels scraped rows'],
+  ]
+  const missing = hostNeeded
+    .filter(([needle]) => !host.includes(needle))
+    .map(([, label]) => `host: ${label}`)
+    .concat(clientNeeded.filter(([needle]) => !client.includes(needle)).map(([, label]) => `client: ${label}`))
+  for (const file of ['index.js', 'cdp.js', 'parse.js']) {
+    if (!existsSync(join(installed, 'lib', 'netddl', file))) missing.push(`lib/netddl/${file} was not installed`)
+  }
+  if (missing.length > 0) throw new Error(`missing: ${missing.join('; ')}`)
+  return `${hostNeeded.length + clientNeeded.length} markers + 3 reader modules`
 })
 
 check('both halves are newer than the last build', () => {

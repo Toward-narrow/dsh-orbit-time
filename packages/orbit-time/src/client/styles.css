@@ -542,6 +542,8 @@
   font-size: 26px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+  /* "5 天 3 小时" is one statement; wrapped between 天 and 小时 it reads as two. */
+  white-space: nowrap;
   letter-spacing: -0.02em;
   background: linear-gradient(120deg, var(--ot-accent), var(--ot-accent-3));
   -webkit-background-clip: text;
@@ -2001,6 +2003,52 @@
   color: color-mix(in srgb, var(--ot-success) 82%, var(--ot-text));
 }
 
+/* The in-page result line — what replaced the corner toast for click results.
+   It is a normal block in the panel body: it takes its place in the layout,
+   scrolls with the page, and never fades on a timer. Only a click that could
+   not do what it promised uses it; a success is visible as the changed page. */
+.ot-inline-report {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin-bottom: 10px;
+  padding: 9px 11px;
+  border: 1px solid color-mix(in srgb, var(--ot-danger) 42%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--ot-danger) 10%, transparent);
+  color: color-mix(in srgb, var(--ot-danger) 80%, var(--ot-text));
+  font-size: 11.5px;
+}
+
+.ot-inline-report[data-level="info"] {
+  border-color: color-mix(in srgb, var(--ot-accent) 38%, transparent);
+  background: color-mix(in srgb, var(--ot-accent) 10%, transparent);
+  color: color-mix(in srgb, var(--ot-accent) 78%, var(--ot-text));
+}
+
+.ot-inline-report > svg {
+  margin-top: 1px;
+  flex: none;
+}
+
+.ot-inline-report-text {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ot-inline-report-text strong {
+  color: var(--ot-text);
+  font-size: 12px;
+  font-weight: 640;
+}
+
+.ot-inline-report-text span {
+  color: var(--ot-text-dim);
+}
+
 .ot-switch {
   display: inline-flex;
   align-items: center;
@@ -2486,6 +2534,7 @@
   font-size: 18px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .ot-float-mini-meta {
@@ -2713,6 +2762,239 @@
   gap: 10px;
   flex-wrap: wrap;
   margin-top: 10px;
+}
+
+/* --------------------------------------------------------- network deadlines */
+
+/* The tab is a page of forms, so it stacks cards with the same rhythm as the
+   settings tab rather than inventing a new layout. */
+.ot-netddl {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px 2px 18px;
+}
+
+/* A row the site said was due, not one a roster produced. Same shape as the
+   other origin tags so a scan down the timeline reads consistently. */
+.ot-tag-web {
+  background: color-mix(in srgb, var(--ot-accent-2) 18%, transparent);
+  color: color-mix(in srgb, var(--ot-accent-2) 84%, var(--ot-text));
+}
+
+.ot-chip-web {
+  background: color-mix(in srgb, var(--ot-accent-2) 18%, transparent);
+  color: color-mix(in srgb, var(--ot-accent-2) 84%, var(--ot-text));
+}
+
+.ot-net-tabs {
+  display: inline-flex;
+  gap: 4px;
+  padding: 3px;
+  margin: 8px 0 10px;
+  border: 1px solid var(--ot-border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--ot-layer-2) 55%, transparent);
+  align-self: flex-start;
+}
+
+.ot-net-tab {
+  padding: 5px 14px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--ot-text-dim);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.ot-net-tab:hover {
+  color: var(--ot-text);
+}
+
+.ot-net-tab-on {
+  background: color-mix(in srgb, var(--ot-accent) 20%, transparent);
+  color: color-mix(in srgb, var(--ot-accent) 88%, var(--ot-text));
+  font-weight: 600;
+}
+
+.ot-net-status {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 8px;
+}
+
+.ot-net-path {
+  font-size: 11px;
+  opacity: 0.75;
+  word-break: break-all;
+}
+
+.ot-net-login,
+.ot-net-page {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr);
+  gap: 10px 14px;
+  margin-top: 8px;
+}
+
+.ot-net-page .ot-net-url {
+  grid-column: 1 / -1;
+}
+
+.ot-net-login-foot,
+.ot-net-actions,
+.ot-net-commit {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ot-net-commit {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--ot-border);
+}
+
+.ot-net-notes {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  opacity: 0.85;
+}
+
+.ot-net-pageinfo {
+  margin-top: 6px;
+  font-size: 11px;
+}
+
+.ot-net-courses {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 6px 12px;
+  margin-top: 10px;
+}
+
+.ot-net-course {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border: 1px solid var(--ot-border);
+  border-radius: 9px;
+  cursor: pointer;
+}
+
+.ot-net-course:hover {
+  border-color: var(--ot-border-strong);
+}
+
+.ot-net-course-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The review list: one deadline per row, ticked by default. */
+.ot-net-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+  max-height: 420px;
+  overflow: auto;
+}
+
+.ot-net-row {
+  display: grid;
+  grid-template-columns: auto 132px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--ot-border);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--ot-layer-2) 40%, transparent);
+  cursor: pointer;
+}
+
+.ot-net-row:hover {
+  border-color: var(--ot-border-strong);
+}
+
+.ot-net-row-off {
+  opacity: 0.45;
+}
+
+.ot-net-when {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.ot-net-when b {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ot-net-clock {
+  color: var(--ot-text-dim);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ot-net-count {
+  font-size: 10.5px;
+  font-style: normal;
+  color: var(--ot-warn);
+}
+
+.ot-net-what {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.ot-net-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.ot-net-link {
+  color: var(--ot-accent);
+  font-size: 11px;
+  text-decoration: none;
+  border-bottom: 1px dotted currentColor;
+}
+
+.ot-net-conf {
+  color: var(--ot-text-dim);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 720px) {
+  .ot-net-login,
+  .ot-net-page {
+    grid-template-columns: 1fr;
+  }
+
+  .ot-net-row {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .ot-net-when {
+    grid-column: 2 / 3;
+  }
 }
 
 /* -------------------------------------------------------- reduced motion */

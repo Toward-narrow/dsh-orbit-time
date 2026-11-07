@@ -16,7 +16,7 @@ import { basename, dirname, isAbsolute, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { repairText, normalisePath } from './shared-repair.cjs'
-
+import { createWebDdl } from './netddl/index.js'
 export const name = 'orbit-time'
 /**
  * `webServer` and `timer` are hard requirements. `llm`, `agentDefaultModel`, and
@@ -54,6 +54,16 @@ const MANUAL_SHEET = '手动添加'
  * and deleting one should not look like deleting the other.
  */
 const AI_SHEET = 'AI 读资料'
+
+/**
+ * The marker for a deadline read off the network.
+ *
+ * Same contract as the other two: the row has no spreadsheet behind it, so it
+ * must survive every Excel import. A separate value because "the site said this
+ * is due on the 20th" and "I typed it" are different claims, and the panel shows
+ * which one it is.
+ */
+const WEB_SHEET = '网络 DDL'
 
 /** Formats each pipeline owns. Excel has its own parser; everything else is read as material. */
 const EXCEL_EXTENSIONS = new Set(['.xlsx', '.xlsm', '.xls'])
@@ -393,6 +403,17 @@ function defaultConfig() {
       timeoutMs: 45_000,
       historyTurns: 6,
     },
+    /**
+     * Reading deadlines off course sites.
+     *
+     * Headful by default: the first pull needs the user's real login (captcha,
+     * SMS, QR), and a hidden Chromium is the first thing a course site's
+     * fingerprint checks. `headless: true` is for a machine that has already
+     * logged in and only ever pulls.
+     */
+    netddl: {
+      headless: false,
+    },
     seedDemoData: false,
   }
 }
@@ -608,6 +629,9 @@ export function apply(ctx, rawConfig = {}) {
               feedSeq: runtime.feedSeq,
               lastScanAt: runtime.lastScanAt,
               scanErrors: Array.isArray(runtime.scanErrors) ? runtime.scanErrors.slice(-10) : [],
+              // Which scrape last landed, and how many rows it contributed. The
+              // rows themselves already travel in `manualEvents`.
+              webddl: runtime.webddl ?? null,
             },
             null,
             2,
@@ -768,9 +792,9 @@ export function apply(ctx, rawConfig = {}) {
     return isObject(event) && isSelfMadeSheet(event.source?.sheet)
   }
 
-  /** Rows that have no file behind them: typed in, or read out of a document. */
+  /** Rows that have no file behind them: typed in, read out of a document, or scraped. */
   function isSelfMadeSheet(sheet) {
-    return sheet === MANUAL_SHEET || sheet === AI_SHEET
+    return sheet === MANUAL_SHEET || sheet === AI_SHEET || sheet === WEB_SHEET
   }
 
   function manualRows() {
@@ -781,11 +805,13 @@ export function apply(ctx, rawConfig = {}) {
   function selfMadeCounts() {
     let typed = 0
     let read = 0
+    let web = 0
     for (const row of manualRows()) {
       if (row.source?.sheet === AI_SHEET) read += 1
+      else if (row.source?.sheet === WEB_SHEET) web += 1
       else typed += 1
     }
-    return { typed, read }
+    return { typed, read, web }
   }
 
   function nextManualIndex() {
@@ -1785,7 +1811,7 @@ export function apply(ctx, rawConfig = {}) {
    * Which of two labels to keep for the same roster.
    *
    * The panel's proposal is derived from the file ("晚自习"), the configured one
-   * is what a person wrote down once ("示例支部晚自习考勤点名"). A proposal that
+   * is what a person wrote down once ("示例部门晚自习考勤点名"). A proposal that
    * says *less* than the label already on file must not replace it.
    */
   function betterLabel(proposed, configured) {
@@ -3487,6 +3513,9 @@ export function apply(ctx, rawConfig = {}) {
        */
       manualCount: selfMadeCounts().typed,
       readCount: selfMadeCounts().read,
+      webCount: selfMadeCounts().web,
+      /** What the last scrape found, so the panel can say "12 条 · 14:03" without asking. */
+      webddl: runtime.webddl ?? null,
       day: { dayKey, events: dayEvents, stats: statsFor(dayKey), undated },
       nextEvent: nextEventOf(now),
       upcoming: upcomingEvents(now, 8),
@@ -3651,7 +3680,7 @@ export function apply(ctx, rawConfig = {}) {
        * meet an old host. The panel probes this before blaming the user's file
        * for what is really a missing route.
        */
-      capabilities: ['read-documents'],
+      capabilities: ['read-documents', 'web-ddl'],
     })
   })
 
@@ -3932,7 +3961,7 @@ export function apply(ctx, rawConfig = {}) {
         if (typeof props[key] !== 'string' || props[key].trim() === '') continue
         // `fillOnly` guards a label that already exists: the panel's proposal is
         // derived from the file ("晚自习"), while a configured one is what a
-        // person wrote down ("示例支部晚自习考勤点名"). A guess may fill a gap,
+        // person wrote down ("示例部门晚自习考勤点名"). A guess may fill a gap,
         // never overwrite the answer.
         if (fillOnly && betterLabel('', target[key] ?? '') !== '') continue
         target[key] = props[key]
@@ -4062,6 +4091,190 @@ export function apply(ctx, rawConfig = {}) {
     const result = commitExtraction(body)
     const view = requestedView(req)
     sendJson(res, 200, { ok: true, ...result, snapshot: buildSnapshot(view.day, view.month) })
+  })
+
+  // ---- network deadlines ---------------------------------------------------
+
+  /**
+   * The network reader, created on first use.
+   *
+   * It owns a browser profile on disk, so building it eagerly would start a
+   * browser on every DSH launch for a feature the user may never open.
+   */
+  let webReader = null
+  function netReader() {
+    if (webReader === null) {
+      webReader = createWebDdl({ stateDir, logger: ctx.logger, headless: settings.netddl?.headless === true })
+    }
+    return webReader
+  }
+
+  /**
+   * A scraped deadline, as a schedule row.
+   *
+   * The row goes into the self-made bucket (`WEB_SHEET`), so the next Excel
+   * import cannot erase it, and its id is the scraper's own key — the same site
+   * read twice produces the same id, which is what stops a second pull from
+   * duplicating the first.
+   */
+  function buildWebEvent(raw) {
+    const date = validIsoDate(raw?.dueDate)
+    const title = repairText(String(raw?.title ?? '').trim()).slice(0, 80)
+    if (date === '' || title === '') return null
+    const course = repairText(String(raw?.course ?? '').trim()).slice(0, 40)
+    const start = normaliseClock(raw?.dueTime) || '23:59'
+    const key = typeof raw?.key === 'string' && /^wd_[0-9a-z]+$/.test(raw.key) ? raw.key : shortId('wd', `${course}|${date}|${start}|${title}`)
+    const url = typeof raw?.url === 'string' ? raw.url.slice(0, 400) : ''
+    const evidence = typeof raw?.evidence === 'string' ? repairText(raw.evidence.trim()).slice(0, 160) : ''
+    return {
+      id: key,
+      date,
+      start,
+      // A deadline is a moment, not a meeting: half an hour on the timeline is
+      // enough to see it, and it still ends before the hard stop.
+      end: addMinutes(start, 30),
+      title,
+      course,
+      classroom: '',
+      teacher: '',
+      location: '',
+      category: '',
+      status: '',
+      priority: '',
+      notes: [`截止 ${date} ${start}`, url, evidence].filter((part) => part !== '').join(' · ').slice(0, 400),
+      link: url,
+      contact: '',
+      owner: '',
+      matchedBy: 'web',
+      weekday: '',
+      extras: {
+        readFrom: course !== '' ? course : '网页',
+        readFromPath: url,
+        confidence: Number.isFinite(Number(raw?.confidence)) ? clamp(Number(raw.confidence), 0, 1) : null,
+      },
+      source: { sheet: WEB_SHEET, path: url, row: null },
+      warnings: [],
+    }
+  }
+
+  /** Put the ticked deadlines on the timeline, once each. */
+  function commitWebItems(body) {
+    const incoming = Array.isArray(body.items) ? body.items : []
+    const known = new Set(runtime.events.map((event) => event.id))
+    const committed = []
+    const skipped = []
+    for (const raw of incoming.slice(0, 300)) {
+      if (!isObject(raw)) continue
+      const event = buildWebEvent(raw)
+      if (event === null) {
+        skipped.push({ title: String(raw.title ?? ''), reason: '缺日期或标题' })
+        continue
+      }
+      if (known.has(event.id)) {
+        skipped.push({ title: event.title, reason: '已经在日程里了' })
+        continue
+      }
+      known.add(event.id)
+      committed.push(event)
+    }
+    if (committed.length > 0) {
+      runtime.events = [...runtime.events, ...committed]
+      runtime.manualEvents = [...manualRows(), ...committed]
+      runtime.webddl = {
+        at: new Date().toISOString(),
+        added: committed.length,
+        platform: typeof body.platform === 'string' ? body.platform : '',
+      }
+      const first = committed.slice().sort((left, right) => `${left.date}T${left.start}`.localeCompare(`${right.date}T${right.start}`))[0]
+      pushFeed({
+        kind: 'import',
+        level: 'success',
+        title: `🌐 从网上读到 ${committed.length} 个截止时间`,
+        body: committed
+          .slice(0, 4)
+          .map((event) => `${event.date} ${event.start} ${event.title}`)
+          .join('\n')
+          .slice(0, 400),
+        meta: { web: committed.length, skipped: skipped.length },
+      })
+      persistSoon()
+      broadcast({ type: 'import', count: runtime.events.length, files: 0 })
+      return { added: committed.length, skipped, events: committed, firstDate: first?.date ?? '' }
+    }
+    return { added: 0, skipped, events: [], firstDate: '' }
+  }
+
+  /**
+   * Open a browser window the user can log in through.
+   *
+   * The credentials in the body are used to fill the form and are then offered to
+   * the DPAPI vault. They are never written to `config.json` and never logged.
+   */
+  route('/netddl/login', async (req, res) => {
+    const body = req.method === 'POST' ? await readBody(req) : {}
+    const result = await netReader().login({
+      platform: typeof body.platform === 'string' ? body.platform : 'icourse163',
+      url: typeof body.url === 'string' ? body.url : '',
+      username: typeof body.username === 'string' ? body.username : '',
+      password: typeof body.password === 'string' ? body.password : '',
+      remember: body.remember !== false,
+      timeoutMs: Number(body.timeoutMs) > 0 ? Math.min(Number(body.timeoutMs), 300_000) : 150_000,
+    })
+    sendJson(res, 200, { ok: result.loggedIn === true, ...result })
+  })
+
+  route('/netddl/status', async (req, res) => {
+    const status = await netReader().status()
+    sendJson(res, 200, { ...status, lastCommit: runtime.webddl ?? null, count: selfMadeCounts().web })
+  })
+
+  route('/netddl/check', async (req, res) => {
+    const body = req.method === 'POST' ? await readBody(req) : {}
+    sendJson(res, 200, await netReader().check(body))
+  })
+
+  route('/netddl/courses', async (req, res) => {
+    const body = req.method === 'POST' ? await readBody(req) : {}
+    sendJson(res, 200, await netReader().listCourses(body))
+  })
+
+  route('/netddl/pull', async (req, res) => {
+    const body = req.method === 'POST' ? await readBody(req) : {}
+    const result = await netReader().pull({
+      platform: typeof body.platform === 'string' ? body.platform : 'icourse163',
+      courses: Array.isArray(body.courses) ? body.courses : [],
+      horizonDays: Number(body.horizonDays) > 0 ? Number(body.horizonDays) : 180,
+    })
+    sendJson(res, 200, { ...result, count: selfMadeCounts().web })
+  })
+
+  route('/netddl/page', async (req, res) => {
+    const body = req.method === 'POST' ? await readBody(req) : {}
+    const result = await netReader().readUrl({
+      url: typeof body.url === 'string' ? body.url : '',
+      username: typeof body.username === 'string' ? body.username : '',
+      password: typeof body.password === 'string' ? body.password : '',
+      remember: body.remember !== false,
+      label: typeof body.label === 'string' ? body.label : '',
+      horizonDays: Number(body.horizonDays) > 0 ? Number(body.horizonDays) : 180,
+    })
+    sendJson(res, 200, { ...result, count: selfMadeCounts().web })
+  })
+
+  route('/netddl/commit', async (req, res) => {
+    const body = req.method === 'POST' ? await readBody(req) : {}
+    const result = commitWebItems(body)
+    const view = requestedView(req)
+    sendJson(res, 200, { ok: true, ...result, count: selfMadeCounts().web, snapshot: buildSnapshot(view.day, view.month) })
+  })
+
+  route('/netddl/logout', async (req, res) => {
+    sendJson(res, 200, await netReader().logout())
+  })
+
+  route('/netddl/close', async (req, res) => {
+    await netReader().close()
+    sendJson(res, 200, { ok: true })
   })
 
   route('/events', async (req, res) => {
@@ -5354,6 +5567,18 @@ export function apply(ctx, rawConfig = {}) {
   // Pick up a config.json changed by something other than this panel.
   const stopConfigWatch = ctx.interval(applyExternalConfig, 1500)
   ctx.effect(() => stopConfigWatch, 'orbit-time: config watch')
+
+  /**
+   * The scraper's browser outlives the panel on purpose (its profile is the
+   * login), but it must not outlive the host: a DSH shutdown that leaves an
+   * orphaned Edge holding the profile makes the *next* start fail to open it.
+   */
+  ctx.effect(
+    () => () => {
+      if (webReader !== null) void webReader.close().catch(() => {})
+    },
+    'orbit-time: network reader teardown',
+  )
 
   // Floating HUD: publish state and collect the widget's action requests.
   //

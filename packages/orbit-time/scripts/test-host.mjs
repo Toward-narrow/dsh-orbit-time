@@ -213,6 +213,13 @@ await check('apply() registers the full route table', () => {
     '/api/orbit-time/open-float',
     '/api/orbit-time/export',
     '/api/orbit-time/events-stream',
+    '/api/orbit-time/netddl/status',
+    '/api/orbit-time/netddl/login',
+    '/api/orbit-time/netddl/courses',
+    '/api/orbit-time/netddl/pull',
+    '/api/orbit-time/netddl/page',
+    '/api/orbit-time/netddl/commit',
+    '/api/orbit-time/netddl/logout',
   ]
   for (const path of expected) {
     if (!routes.has(path)) throw new Error(`route missing: ${path}`)
@@ -1402,7 +1409,7 @@ async function bootRosterHost() {
   }
 
   await check('importing one roster brings in exactly that roster', async () => {
-    const result = await rosterHost.post('/import', { path: rosterHost.rosters.a, subject: '示例支部早打卡值班' })
+    const result = await rosterHost.post('/import', { path: rosterHost.rosters.a, subject: '示例部门早打卡值班' })
     if (result.ok !== true) throw new Error(result.error || 'import refused')
     if (result.excel.importedCount !== 2) throw new Error(`imported ${result.excel.importedCount}, expected 2`)
     const titles = (await allTitles()).sort()
@@ -1412,7 +1419,7 @@ async function bootRosterHost() {
   })
 
   await check('importing a second roster keeps the first one', async () => {
-    const result = await rosterHost.post('/import', { path: rosterHost.rosters.b, subject: '示例支部晚自习考勤点名' })
+    const result = await rosterHost.post('/import', { path: rosterHost.rosters.b, subject: '示例部门晚自习考勤点名' })
     if (result.ok !== true) throw new Error(result.error || 'import refused')
     if (result.excel.importedCount !== 3) throw new Error(`imported ${result.excel.importedCount}, expected 3 (2 + 1)`)
     const titles = (await allTitles()).sort()

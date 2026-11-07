@@ -26,16 +26,19 @@
     "lib/hud.ps1",
     "lib/parse-xlsx.py",
     "lib/read-document.py",
-    "lib/shared-repair.cjs"
+    "lib/shared-repair.cjs",
+    "lib/netddl"
   ],
   "scripts": {
     "build": "node scripts/build-host.mjs && node scripts/build-client.mjs",
     "install-profile": "node scripts/sync-profile.mjs",
-    "test": "node scripts/smoke-client.mjs && node scripts/test-patch-parser.mjs && node scripts/test-state-location.mjs && node scripts/test-excel.mjs && node scripts/test-labels.mjs && node scripts/test-hud.mjs && node scripts/test-host.mjs && node scripts/test-extract.mjs",
-    "test:fast": "node scripts/smoke-client.mjs && node scripts/test-patch-parser.mjs && node scripts/test-state-location.mjs && node scripts/test-excel.mjs && node scripts/test-labels.mjs && node scripts/test-hud.mjs && node scripts/test-host.mjs --fast && node scripts/test-extract.mjs",
+    "test": "node scripts/smoke-client.mjs && node scripts/test-patch-parser.mjs && node scripts/test-state-location.mjs && node scripts/test-excel.mjs && node scripts/test-labels.mjs && node scripts/test-hud.mjs && node scripts/test-host.mjs && node scripts/test-extract.mjs && node scripts/test-netddl-host.mjs && node scripts/test-netddl.mjs",
+    "test:fast": "node scripts/smoke-client.mjs && node scripts/test-patch-parser.mjs && node scripts/test-state-location.mjs && node scripts/test-excel.mjs && node scripts/test-labels.mjs && node scripts/test-hud.mjs && node scripts/test-host.mjs --fast && node scripts/test-extract.mjs && node scripts/test-netddl-host.mjs && node scripts/test-netddl.mjs",
     "test:client": "node scripts/smoke-client.mjs",
     "test:analyze": "node scripts/test-analyze.mjs",
     "test:extract": "node scripts/test-extract.mjs",
+    "test:netddl": "node scripts/test-netddl.mjs",
+    "test:netddl-host": "node scripts/test-netddl-host.mjs",
     "test:state": "node scripts/test-state-location.mjs",
     "repair-state": "node scripts/repair-state.mjs",
     "test:excel": "node scripts/test-excel.mjs",
@@ -52,7 +55,8 @@
     "hud": "node scripts/manual-hud.mjs",
     "capture-hud": "node scripts/capture-hud.mjs",
     "debug-live": "node scripts/debug-live.mjs",
-    "verify-installed": "node scripts/verify-installed.mjs"
+    "verify-installed": "node scripts/verify-installed.mjs",
+    "ddl": "node scripts/ddl.mjs"
   },
   "devDependencies": {
     "react": "^18.3.1",

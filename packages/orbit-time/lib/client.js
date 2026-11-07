@@ -27,7 +27,7 @@ window.__ModuleLoader__.load({
 			return mod.exports;
 		}
 
-		var CSS = "/** Orbit Time â€” dashboard styles.\n   Every colour resolves through a --dsw-alias-* theme token when the harness\n   provides one, and falls back to a self-contained palette otherwise, so the\n   panel reads correctly in both light and dark themes. */\n\n.ot-root {\n  --ot-accent: var(--dsw-alias-brand-primary, #4d8dff);\n  --ot-accent-2: #a970ff;\n  --ot-accent-3: #38d6c4;\n  --ot-bg: var(--dsw-alias-bg-base, #0f1116);\n  --ot-layer-1: var(--dsw-alias-bg-layer-1, #171a21);\n  --ot-layer-2: var(--dsw-alias-bg-layer-2, #1e222b);\n  --ot-overlay: var(--dsw-alias-bg-overlay, rgba(22, 25, 33, 0.86));\n  --ot-border: var(--dsw-alias-border-l1, rgba(255, 255, 255, 0.09));\n  --ot-border-strong: var(--dsw-alias-border-l2, rgba(255, 255, 255, 0.16));\n  --ot-text: var(--dsw-alias-label-primary, #f2f4f8);\n  --ot-text-dim: var(--dsw-alias-label-secondary, #b9c0cd);\n  --ot-warn: var(--dsw-alias-state-warn-primary, #f0a83c);\n  --ot-danger: var(--dsw-alias-state-error-primary, #ff6b6b);\n  --ot-success: var(--dsw-alias-state-success-primary, #3fd18b);\n  --ot-idle: var(--dsw-alias-state-idle-primary, #6b7280);\n  --ot-shadow: 0 12px 34px rgba(0, 0, 0, 0.28);\n  --ot-radius: 14px;\n  --ot-radius-sm: 10px;\n\n  position: relative;\n  display: flex;\n  flex-direction: column;\n  height: 100%;\n  min-height: 0;\n  overflow: hidden;\n  color: var(--ot-text);\n  background: var(--ot-bg);\n  font-family: \"Segoe UI Variable Text\", \"Segoe UI\", \"Microsoft YaHei UI\", system-ui, -apple-system, sans-serif;\n  font-size: 13px;\n  line-height: 1.5;\n}\n\n.ot-root *,\n.ot-root *::before,\n.ot-root *::after {\n  box-sizing: border-box;\n}\n\n.ot-root button {\n  font-family: inherit;\n  font-size: inherit;\n  color: inherit;\n}\n\n.ot-root input,\n.ot-root select,\n.ot-root textarea {\n  font-family: inherit;\n  font-size: inherit;\n}\n\n/* ---------------------------------------------------------------- ambience */\n\n.ot-aurora {\n  position: absolute;\n  inset: -40% -20% auto -20%;\n  height: 70%;\n  pointer-events: none;\n  opacity: 0.5;\n  filter: blur(60px);\n  background:\n    radial-gradient(38% 60% at 18% 30%, color-mix(in srgb, var(--ot-accent) 55%, transparent), transparent 70%),\n    radial-gradient(34% 55% at 62% 20%, color-mix(in srgb, var(--ot-accent-2) 48%, transparent), transparent 72%),\n    radial-gradient(30% 50% at 88% 44%, color-mix(in srgb, var(--ot-accent-3) 40%, transparent), transparent 70%);\n  animation: ot-drift 26s ease-in-out infinite alternate;\n  z-index: 0;\n}\n\n@keyframes ot-drift {\n  0% { transform: translate3d(-3%, -2%, 0) scale(1); }\n  50% { transform: translate3d(3%, 2%, 0) scale(1.08); }\n  100% { transform: translate3d(-2%, 3%, 0) scale(1.03); }\n}\n\n/* ------------------------------------------------------------------ header */\n\n.ot-header {\n  position: relative;\n  z-index: 2;\n  flex: none;\n  padding: 14px 18px 10px;\n  border-bottom: 1px solid var(--ot-border);\n}\n\n.ot-headrow {\n  display: flex;\n  align-items: baseline;\n  gap: 10px;\n}\n\n.ot-title {\n  margin: 0;\n  font-size: 16px;\n  font-weight: 650;\n  letter-spacing: 0.01em;\n  background: linear-gradient(96deg, var(--ot-text) 12%, var(--ot-accent) 60%, var(--ot-accent-2) 96%);\n  -webkit-background-clip: text;\n  background-clip: text;\n  color: transparent;\n}\n\n.ot-subtitle {\n  color: var(--ot-text-dim);\n  font-size: 12px;\n}\n\n.ot-headspace {\n  flex: 1;\n}\n\n.ot-headmeta {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n}\n\n.ot-chip {\n  display: inline-flex;\n  align-items: center;\n  gap: 5px;\n  height: 24px;\n  padding: 0 9px;\n  border: 1px solid var(--ot-border);\n  border-radius: 999px;\n  background: color-mix(in srgb, var(--ot-layer-2) 72%, transparent);\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n  white-space: nowrap;\n}\n\n.ot-chip strong {\n  color: var(--ot-text);\n  font-weight: 600;\n}\n\n.ot-chip-owner {\n  border-color: color-mix(in srgb, var(--ot-accent) 42%, transparent);\n  color: color-mix(in srgb, var(--ot-accent) 82%, var(--ot-text));\n}\n\n.ot-chip-live::before {\n  content: \"\";\n  width: 6px;\n  height: 6px;\n  border-radius: 50%;\n  background: var(--ot-success);\n  box-shadow: 0 0 0 0 color-mix(in srgb, var(--ot-success) 60%, transparent);\n  animation: ot-pulse 2.4s ease-out infinite;\n}\n\n.ot-chip-warn::before {\n  background: var(--ot-warn);\n  animation: none;\n}\n\n/* --------------------------------------------------------- segmented control */\n\n/* Three mutually exclusive choices (å®Œæ•´èƒ¶å›Š / æœ€å°åœ†ç‚¹ / å…³é—­) read better as one\n   control than as three unrelated buttons, and the sliding highlight makes the\n   current state obvious at a glance. */\n.ot-seg {\n  position: relative;\n  display: grid;\n  grid-auto-flow: column;\n  grid-auto-columns: 1fr;\n  gap: 4px;\n  padding: 3px;\n  border: 1px solid var(--ot-border);\n  border-radius: 11px;\n  background: color-mix(in srgb, var(--ot-layer-2) 70%, transparent);\n}\n\n.ot-seg-item {\n  appearance: none;\n  border: 0;\n  border-radius: 8px;\n  padding: 7px 10px;\n  background: transparent;\n  color: var(--ot-text-dim);\n  font-size: 12.5px;\n  font-weight: 600;\n  cursor: pointer;\n  transition:\n    background 0.22s cubic-bezier(0.2, 0.9, 0.25, 1),\n    color 0.22s ease,\n    transform 0.22s cubic-bezier(0.2, 0.9, 0.25, 1);\n}\n\n.ot-seg-item:hover:not(:disabled) {\n  color: var(--ot-text);\n  background: color-mix(in srgb, var(--ot-text) 6%, transparent);\n}\n\n.ot-seg-item:active:not(:disabled) {\n  transform: scale(0.97);\n}\n\n.ot-seg-item.is-active {\n  color: #fff;\n  background: linear-gradient(135deg, var(--ot-accent), var(--ot-accent-2));\n  box-shadow: 0 4px 14px color-mix(in srgb, var(--ot-accent) 35%, transparent);\n}\n\n.ot-seg-item:disabled {\n  cursor: default;\n  opacity: 0.6;\n}\n\n.ot-seg-item:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ot-accent) 60%, transparent);\n  outline-offset: 1px;\n}\n\n@keyframes ot-pulse {\n  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ot-success) 55%, transparent); }\n  70% { box-shadow: 0 0 0 7px transparent; }\n  100% { box-shadow: 0 0 0 0 transparent; }\n}\n\n/* -------------------------------------------------------------------- tabs */\n\n.ot-tabs {\n  position: relative;\n  z-index: 2;\n  flex: none;\n  display: flex;\n  gap: 4px;\n  padding: 10px 14px 0;\n}\n\n.ot-tab {\n  position: relative;\n  border: 0;\n  background: transparent;\n  padding: 7px 12px 9px;\n  border-radius: 9px 9px 0 0;\n  color: var(--ot-text-dim);\n  cursor: pointer;\n  transition: color 0.18s ease, background 0.18s ease, transform 0.18s ease;\n}\n\n.ot-tab:hover {\n  color: var(--ot-text);\n  background: color-mix(in srgb, var(--ot-layer-2) 60%, transparent);\n}\n\n.ot-tab:active {\n  transform: translateY(1px);\n}\n\n.ot-tab[data-active=\"true\"] {\n  color: var(--ot-text);\n  font-weight: 600;\n}\n\n.ot-tab[data-active=\"true\"]::after {\n  content: \"\";\n  position: absolute;\n  left: 8px;\n  right: 8px;\n  bottom: 1px;\n  height: 2px;\n  border-radius: 2px;\n  background: linear-gradient(90deg, var(--ot-accent), var(--ot-accent-2));\n  animation: ot-grow 0.32s cubic-bezier(0.2, 0.9, 0.2, 1);\n}\n\n@keyframes ot-grow {\n  from { transform: scaleX(0.2); opacity: 0; }\n  to { transform: scaleX(1); opacity: 1; }\n}\n\n.ot-badge {\n  display: inline-block;\n  min-width: 17px;\n  margin-left: 6px;\n  padding: 0 5px;\n  border-radius: 999px;\n  background: color-mix(in srgb, var(--ot-accent) 24%, transparent);\n  color: color-mix(in srgb, var(--ot-accent) 88%, var(--ot-text));\n  font-size: 10.5px;\n  font-weight: 600;\n  text-align: center;\n}\n\n/* ------------------------------------------------------------------- body */\n\n.ot-body {\n  position: relative;\n  z-index: 1;\n  flex: 1;\n  min-height: 0;\n  overflow-y: auto;\n  overflow-x: hidden;\n  padding: 14px 16px 22px;\n  scrollbar-width: thin;\n  scrollbar-color: var(--ot-border-strong) transparent;\n}\n\n.ot-body::-webkit-scrollbar {\n  width: 9px;\n}\n\n.ot-body::-webkit-scrollbar-thumb {\n  background: var(--ot-border-strong);\n  border-radius: 999px;\n  border: 2px solid transparent;\n  background-clip: content-box;\n}\n\n.ot-view {\n  animation: ot-fade-up 0.28s cubic-bezier(0.2, 0.85, 0.25, 1);\n}\n\n@keyframes ot-fade-up {\n  from { opacity: 0; transform: translateY(8px); }\n  to { opacity: 1; transform: none; }\n}\n\n/* -------------------------------------------------------------- crash card */\n\n/* Shown in place of a surface whose render threw. Deliberately loud: the\n   alternative is a blank window and a console nobody opens. */\n.ot-crash {\n  display: grid;\n  place-items: center;\n  padding: 24px;\n}\n\n.ot-crash-card {\n  position: relative;\n  z-index: 1;\n  max-width: 560px;\n  padding: 18px;\n  border: 1px solid color-mix(in srgb, var(--ot-danger) 42%, var(--ot-border));\n  border-radius: var(--ot-radius);\n  background: linear-gradient(160deg, color-mix(in srgb, var(--ot-layer-1) 96%, transparent), color-mix(in srgb, var(--ot-danger) 12%, transparent));\n  box-shadow: var(--ot-shadow);\n}\n\n.ot-crash-card h2 {\n  margin: 0 0 6px;\n  font-size: 15px;\n  font-weight: 650;\n}\n\n.ot-crash-msg {\n  margin: 10px 0 0;\n  padding: 9px 11px;\n  border-radius: 9px;\n  background: color-mix(in srgb, #000 34%, transparent);\n  color: color-mix(in srgb, var(--ot-danger) 80%, var(--ot-text));\n  font-family: Consolas, \"Cascadia Mono\", monospace;\n  font-size: 11.5px;\n  line-height: 1.55;\n  white-space: pre-wrap;\n  overflow-x: auto;\n}\n\n.ot-crash-actions {\n  display: flex;\n  gap: 8px;\n  margin-top: 12px;\n}\n\n.ot-crash details {\n  margin-top: 10px;\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n}\n\n.ot-crash summary {\n  cursor: pointer;\n}\n\n/* ---------------------------------------------------------------- surfaces */\n\n.ot-card {\n  position: relative;\n  border: 1px solid var(--ot-border);\n  border-radius: var(--ot-radius);\n  background: linear-gradient(160deg, color-mix(in srgb, var(--ot-layer-1) 96%, transparent), color-mix(in srgb, var(--ot-layer-2) 80%, transparent));\n  box-shadow: var(--ot-shadow);\n  overflow: hidden;\n}\n\n.ot-card-pad {\n  padding: 14px;\n}\n\n.ot-card-title {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  margin: 0 0 10px;\n  font-size: 12px;\n  font-weight: 650;\n  letter-spacing: 0.04em;\n  text-transform: uppercase;\n  color: var(--ot-text-dim);\n}\n\n.ot-dot {\n  width: 7px;\n  height: 7px;\n  border-radius: 50%;\n  background: linear-gradient(120deg, var(--ot-accent), var(--ot-accent-2));\n}\n\n.ot-grid {\n  display: grid;\n  gap: 12px;\n}\n\n.ot-grid-2 {\n  grid-template-columns: repeat(2, minmax(0, 1fr));\n}\n\n.ot-grid-4 {\n  grid-template-columns: repeat(4, minmax(0, 1fr));\n}\n\n@media (max-width: 720px) {\n  .ot-grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }\n}\n\n@media (max-width: 460px) {\n  .ot-grid-2, .ot-grid-4 { grid-template-columns: minmax(0, 1fr); }\n}\n\n/* -------------------------------------------------------------- stat chips */\n\n.ot-stat {\n  position: relative;\n  padding: 12px 13px;\n  border: 1px solid var(--ot-border);\n  border-radius: var(--ot-radius-sm);\n  background: color-mix(in srgb, var(--ot-layer-1) 88%, transparent);\n  overflow: hidden;\n  transition: transform 0.22s cubic-bezier(0.2, 0.9, 0.25, 1), border-color 0.22s ease;\n}\n\n.ot-stat:hover {\n  transform: translateY(-2px);\n  border-color: color-mix(in srgb, var(--ot-accent) 34%, var(--ot-border));\n}\n\n.ot-stat::after {\n  content: \"\";\n  position: absolute;\n  right: -30px;\n  top: -30px;\n  width: 76px;\n  height: 76px;\n  border-radius: 50%;\n  background: radial-gradient(circle, color-mix(in srgb, var(--ot-accent) 26%, transparent), transparent 68%);\n  pointer-events: none;\n}\n\n.ot-stat-label {\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n}\n\n.ot-stat-value {\n  margin-top: 3px;\n  font-size: 21px;\n  font-weight: 660;\n  letter-spacing: -0.01em;\n  font-variant-numeric: tabular-nums;\n}\n\n.ot-stat-foot {\n  margin-top: 2px;\n  color: var(--ot-text-dim);\n  font-size: 11px;\n}\n\n/* ------------------------------------------------------------------- next */\n\n.ot-next {\n  display: flex;\n  align-items: center;\n  gap: 14px;\n  padding: 15px 16px;\n}\n\n.ot-next-main {\n  min-width: 0;\n  flex: 1;\n}\n\n.ot-next-time {\n  display: flex;\n  align-items: baseline;\n  gap: 8px;\n  font-variant-numeric: tabular-nums;\n}\n\n.ot-next-start {\n  font-size: 24px;\n  font-weight: 680;\n  letter-spacing: -0.02em;\n}\n\n.ot-next-count {\n  color: color-mix(in srgb, var(--ot-accent) 84%, var(--ot-text));\n  font-size: 12.5px;\n  font-weight: 600;\n}\n\n.ot-next-title {\n  margin-top: 2px;\n  font-size: 14.5px;\n  font-weight: 600;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n.ot-next-meta {\n  margin-top: 3px;\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n.ot-countdown {\n  flex: none;\n  text-align: right;\n}\n\n.ot-countdown-value {\n  font-size: 26px;\n  font-weight: 700;\n  font-variant-numeric: tabular-nums;\n  letter-spacing: -0.02em;\n  background: linear-gradient(120deg, var(--ot-accent), var(--ot-accent-3));\n  -webkit-background-clip: text;\n  background-clip: text;\n  color: transparent;\n}\n\n.ot-countdown-label {\n  color: var(--ot-text-dim);\n  font-size: 11px;\n}\n\n.ot-progress {\n  position: relative;\n  height: 3px;\n  margin-top: 10px;\n  border-radius: 999px;\n  background: color-mix(in srgb, var(--ot-text) 10%, transparent);\n  overflow: hidden;\n}\n\n.ot-progress > i {\n  position: absolute;\n  inset: 0 auto 0 0;\n  border-radius: inherit;\n  background: linear-gradient(90deg, var(--ot-accent), var(--ot-accent-2));\n  transition: width 0.6s cubic-bezier(0.25, 0.9, 0.3, 1);\n}\n\n/* ---------------------------------------------------------------- pomodoro */\n\n.ot-pomo {\n  display: grid;\n  grid-template-columns: minmax(0, 220px) minmax(0, 1fr);\n  gap: 18px;\n  align-items: center;\n}\n\n@media (max-width: 620px) {\n  .ot-pomo { grid-template-columns: minmax(0, 1fr); justify-items: center; }\n}\n\n.ot-ring {\n  position: relative;\n  width: 208px;\n  height: 208px;\n  flex: none;\n}\n\n.ot-ring-svg {\n  width: 100%;\n  height: 100%;\n  transform: rotate(-90deg);\n}\n\n.ot-ring-track {\n  fill: none;\n  stroke: color-mix(in srgb, var(--ot-text) 9%, transparent);\n  stroke-width: 10;\n}\n\n.ot-ring-arc {\n  fill: none;\n  stroke: url(#ot-ring-gradient);\n  stroke-width: 10;\n  stroke-linecap: round;\n  transition: stroke-dashoffset 0.95s linear;\n  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--ot-accent) 45%, transparent));\n}\n\n.ot-ring-break .ot-ring-arc {\n  stroke: url(#ot-ring-gradient-break);\n}\n\n.ot-ring-center {\n  position: absolute;\n  inset: 0;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  gap: 2px;\n}\n\n.ot-ring-time {\n  font-size: 40px;\n  font-weight: 700;\n  font-variant-numeric: tabular-nums;\n  letter-spacing: -0.03em;\n}\n\n.ot-ring-phase {\n  color: var(--ot-text-dim);\n  font-size: 12px;\n  letter-spacing: 0.08em;\n  text-transform: uppercase;\n}\n\n.ot-ring-subject {\n  max-width: 150px;\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n  text-align: center;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n.ot-ring.running .ot-ring-center::after {\n  content: \"\";\n  position: absolute;\n  inset: 26px;\n  border-radius: 50%;\n  border: 1px solid color-mix(in srgb, var(--ot-accent) 26%, transparent);\n  animation: ot-breathe 3.6s ease-in-out infinite;\n  pointer-events: none;\n}\n\n@keyframes ot-breathe {\n  0%, 100% { transform: scale(0.97); opacity: 0.35; }\n  50% { transform: scale(1.04); opacity: 0.85; }\n}\n\n.ot-pomo-side {\n  display: flex;\n  flex-direction: column;\n  gap: 12px;\n  min-width: 0;\n}\n\n.ot-row {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  flex-wrap: wrap;\n}\n\n.ot-btn {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  gap: 6px;\n  height: 32px;\n  padding: 0 13px;\n  border: 1px solid var(--ot-border);\n  border-radius: 9px;\n  background: color-mix(in srgb, var(--ot-layer-2) 78%, transparent);\n  color: var(--ot-text);\n  cursor: pointer;\n  white-space: nowrap;\n  transition: transform 0.16s cubic-bezier(0.2, 0.9, 0.25, 1), background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;\n}\n\n.ot-btn:hover:not(:disabled) {\n  transform: translateY(-1px);\n  border-color: color-mix(in srgb, var(--ot-accent) 40%, var(--ot-border));\n  background: color-mix(in srgb, var(--ot-accent) 14%, var(--ot-layer-2));\n  box-shadow: 0 6px 16px color-mix(in srgb, var(--ot-accent) 16%, transparent);\n}\n\n.ot-btn:active:not(:disabled) {\n  transform: translateY(0) scale(0.985);\n}\n\n.ot-btn:disabled {\n  opacity: 0.45;\n  cursor: not-allowed;\n}\n\n.ot-btn-primary {\n  border-color: transparent;\n  background: linear-gradient(120deg, var(--ot-accent), var(--ot-accent-2));\n  color: #fff;\n  font-weight: 600;\n}\n\n.ot-btn-primary:hover:not(:disabled) {\n  background: linear-gradient(120deg, var(--ot-accent), var(--ot-accent-2));\n  box-shadow: 0 8px 22px color-mix(in srgb, var(--ot-accent) 34%, transparent);\n}\n\n.ot-btn-ghost {\n  border-color: transparent;\n  background: transparent;\n  color: var(--ot-text-dim);\n}\n\n.ot-btn-ghost:hover:not(:disabled) {\n  background: color-mix(in srgb, var(--ot-text) 8%, transparent);\n  color: var(--ot-text);\n  box-shadow: none;\n}\n\n.ot-btn-sm {\n  height: 26px;\n  padding: 0 9px;\n  font-size: 11.5px;\n  border-radius: 7px;\n}\n\n.ot-btn-icon {\n  width: 30px;\n  padding: 0;\n}\n\n.ot-rounds {\n  display: flex;\n  align-items: center;\n  gap: 6px;\n}\n\n.ot-round {\n  width: 11px;\n  height: 11px;\n  border-radius: 50%;\n  border: 1px solid var(--ot-border-strong);\n  transition: background 0.3s ease, transform 0.3s ease, border-color 0.3s ease;\n}\n\n.ot-round[data-done=\"true\"] {\n  border-color: transparent;\n  background: linear-gradient(120deg, var(--ot-accent), var(--ot-accent-2));\n  transform: scale(1.12);\n}\n\n.ot-round[data-current=\"true\"] {\n  border-color: color-mix(in srgb, var(--ot-accent) 70%, transparent);\n  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ot-accent) 18%, transparent);\n}\n\n.ot-field {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n}\n\n.ot-field-label {\n  min-width: 92px;\n  color: var(--ot-text-dim);\n  font-size: 12px;\n}\n\n.ot-input {\n  flex: 1;\n  min-width: 0;\n  height: 32px;\n  padding: 0 10px;\n  border: 1px solid var(--ot-border);\n  border-radius: 9px;\n  background: color-mix(in srgb, var(--ot-bg) 60%, transparent);\n  color: var(--ot-text);\n  outline: none;\n  transition: border-color 0.18s ease, box-shadow 0.18s ease;\n}\n\n.ot-input:focus {\n  border-color: color-mix(in srgb, var(--ot-accent) 56%, transparent);\n  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ot-accent) 15%, transparent);\n}\n\n.ot-input-num {\n  width: 74px;\n  flex: none;\n  text-align: center;\n  font-variant-numeric: tabular-nums;\n}\n\n/* ---------------------------------------------------------------- timeline */\n\n.ot-daybar {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  margin-bottom: 12px;\n}\n\n.ot-daylist {\n  display: flex;\n  gap: 6px;\n  overflow-x: auto;\n  padding-bottom: 2px;\n  scrollbar-width: none;\n}\n\n.ot-daylist::-webkit-scrollbar { display: none; }\n\n.ot-daychip {\n  flex: none;\n  min-width: 46px;\n  padding: 6px 8px;\n  border: 1px solid var(--ot-border);\n  border-radius: 10px;\n  background: transparent;\n  color: var(--ot-text-dim);\n  cursor: pointer;\n  text-align: center;\n  transition: all 0.2s cubic-bezier(0.2, 0.9, 0.25, 1);\n}\n\n.ot-daychip:hover {\n  transform: translateY(-1px);\n  color: var(--ot-text);\n  border-color: var(--ot-border-strong);\n}\n\n.ot-daychip[data-active=\"true\"] {\n  border-color: transparent;\n  background: linear-gradient(140deg, color-mix(in srgb, var(--ot-accent) 26%, transparent), color-mix(in srgb, var(--ot-accent-2) 20%, transparent));\n  color: var(--ot-text);\n  font-weight: 600;\n}\n\n.ot-daychip b {\n  display: block;\n  font-size: 14px;\n  font-variant-numeric: tabular-nums;\n}\n\n.ot-daychip span {\n  font-size: 10.5px;\n}\n\n.ot-daychip i {\n  display: inline-block;\n  width: 4px;\n  height: 4px;\n  margin-top: 3px;\n  border-radius: 50%;\n  background: var(--ot-accent);\n}\n\n.ot-tl {\n  position: relative;\n  padding-left: 14px;\n}\n\n.ot-tl::before {\n  content: \"\";\n  position: absolute;\n  left: 3px;\n  top: 6px;\n  bottom: 6px;\n  width: 1px;\n  background: linear-gradient(180deg, transparent, var(--ot-border-strong) 12%, var(--ot-border-strong) 88%, transparent);\n}\n\n.ot-ev {\n  position: relative;\n  display: flex;\n  gap: 11px;\n  margin-bottom: 9px;\n}\n\n.ot-ev-node {\n  position: absolute;\n  left: -14px;\n  top: 15px;\n  width: 9px;\n  height: 9px;\n  border-radius: 50%;\n  border: 2px solid var(--ot-bg);\n  background: var(--ot-idle);\n  transition: background 0.3s ease, box-shadow 0.3s ease;\n}\n\n.ot-ev[data-phase=\"current\"] .ot-ev-node {\n  background: linear-gradient(120deg, var(--ot-accent), var(--ot-accent-3));\n  box-shadow: 0 0 0 0 color-mix(in srgb, var(--ot-accent) 50%, transparent);\n  animation: ot-pulse 2s ease-out infinite;\n}\n\n.ot-ev[data-phase=\"past\"] .ot-ev-node,\n.ot-ev[data-done=\"true\"] .ot-ev-node {\n  background: var(--ot-success);\n}\n\n.ot-ev-time {\n  flex: none;\n  width: 54px;\n  padding-top: 12px;\n  text-align: right;\n  font-variant-numeric: tabular-nums;\n}\n\n.ot-ev-start {\n  font-size: 13px;\n  font-weight: 620;\n}\n\n.ot-ev-end {\n  color: var(--ot-text-dim);\n  font-size: 10.5px;\n}\n\n.ot-ev-card {\n  flex: 1;\n  min-width: 0;\n  padding: 10px 12px;\n  border: 1px solid var(--ot-border);\n  border-radius: var(--ot-radius-sm);\n  background: color-mix(in srgb, var(--ot-layer-1) 86%, transparent);\n  transition: transform 0.22s cubic-bezier(0.2, 0.9, 0.25, 1), border-color 0.22s ease, background 0.22s ease;\n}\n\n.ot-ev-card:hover {\n  transform: translateX(3px);\n  border-color: color-mix(in srgb, var(--ot-accent) 36%, var(--ot-border));\n}\n\n.ot-ev[data-phase=\"current\"] .ot-ev-card {\n  border-color: color-mix(in srgb, var(--ot-accent) 48%, transparent);\n  background: linear-gradient(120deg, color-mix(in srgb, var(--ot-accent) 13%, var(--ot-layer-1)), color-mix(in srgb, var(--ot-layer-1) 92%, transparent));\n  box-shadow: 0 8px 22px color-mix(in srgb, var(--ot-accent) 15%, transparent);\n}\n\n.ot-ev[data-done=\"true\"] .ot-ev-card {\n  opacity: 0.55;\n}\n\n.ot-ev-head {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n}\n\n.ot-ev-title {\n  min-width: 0;\n  flex: 1;\n  font-size: 13.5px;\n  font-weight: 600;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n.ot-ev[data-done=\"true\"] .ot-ev-title {\n  text-decoration: line-through;\n}\n\n.ot-ev-when {\n  flex: none;\n  color: color-mix(in srgb, var(--ot-accent) 82%, var(--ot-text));\n  font-size: 11.5px;\n  font-weight: 600;\n  font-variant-numeric: tabular-nums;\n}\n\n.ot-ev[data-phase=\"past\"] .ot-ev-when {\n  color: var(--ot-text-dim);\n  font-weight: 500;\n}\n\n.ot-tags {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 6px;\n  margin-top: 5px;\n}\n\n.ot-tag {\n  display: inline-flex;\n  align-items: center;\n  gap: 4px;\n  padding: 1px 7px;\n  border-radius: 6px;\n  background: color-mix(in srgb, var(--ot-text) 7%, transparent);\n  color: var(--ot-text-dim);\n  font-size: 11px;\n}\n\n.ot-tag-owner {\n  background: color-mix(in srgb, var(--ot-accent) 16%, transparent);\n  color: color-mix(in srgb, var(--ot-accent) 86%, var(--ot-text));\n}\n\n.ot-tag-warn {\n  background: color-mix(in srgb, var(--ot-warn) 18%, transparent);\n  color: color-mix(in srgb, var(--ot-warn) 86%, var(--ot-text));\n}\n\n/* A row the user typed in themselves, not one a roster produced. */\n.ot-tag-manual {\n  background: color-mix(in srgb, var(--ot-accent-3) 18%, transparent);\n  color: color-mix(in srgb, var(--ot-accent-3) 82%, var(--ot-text));\n}\n\n.ot-chip-manual {\n  background: color-mix(in srgb, var(--ot-accent-3) 18%, transparent);\n  color: color-mix(in srgb, var(--ot-accent-3) 84%, var(--ot-text));\n}\n\n.ot-ev-notes {\n  margin-top: 5px;\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n  display: -webkit-box;\n  -webkit-line-clamp: 2;\n  -webkit-box-orient: vertical;\n  overflow: hidden;\n}\n\n.ot-ev-actions {\n  display: flex;\n  gap: 6px;\n  margin-top: 9px;\n  opacity: 0;\n  max-height: 0;\n  overflow: hidden;\n  transition: opacity 0.24s ease, max-height 0.24s ease;\n}\n\n.ot-ev:hover .ot-ev-actions,\n.ot-ev[data-phase=\"current\"] .ot-ev-actions,\n.ot-ev:focus-within .ot-ev-actions {\n  opacity: 1;\n  max-height: 40px;\n}\n\n.ot-empty {\n  padding: 34px 16px;\n  border: 1px dashed var(--ot-border-strong);\n  border-radius: var(--ot-radius);\n  color: var(--ot-text-dim);\n  text-align: center;\n}\n\n.ot-empty b {\n  display: block;\n  margin-bottom: 4px;\n  color: var(--ot-text);\n  font-size: 14px;\n}\n\n/* ----------------------------------------------------------------- calendar */\n\n.ot-cal {\n  margin-bottom: 12px;\n  padding: 12px 13px 11px;\n  border: 1px solid var(--ot-border);\n  border-radius: var(--ot-radius);\n  background: linear-gradient(160deg, color-mix(in srgb, var(--ot-layer-1) 96%, transparent), color-mix(in srgb, var(--ot-layer-2) 80%, transparent));\n  box-shadow: var(--ot-shadow);\n  animation: ot-fade-up 0.28s cubic-bezier(0.2, 0.9, 0.25, 1) both;\n}\n\n.ot-cal-head {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  margin-bottom: 10px;\n}\n\n.ot-cal-title {\n  display: flex;\n  align-items: baseline;\n  gap: 7px;\n}\n\n.ot-cal-title b {\n  font-size: 14px;\n  font-weight: 650;\n}\n\n.ot-cal-summary {\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n  font-variant-numeric: tabular-nums;\n}\n\n.ot-cal-flip {\n  padding: 0 4px;\n}\n\n.ot-cal-week {\n  display: grid;\n  grid-template-columns: repeat(7, minmax(0, 1fr));\n  gap: 4px;\n  margin-bottom: 4px;\n}\n\n.ot-cal-week span {\n  text-align: center;\n  color: var(--ot-text-dim);\n  font-size: 10.5px;\n  letter-spacing: 0.06em;\n}\n\n.ot-cal-grid {\n  display: grid;\n  grid-template-columns: repeat(7, minmax(0, 1fr));\n  gap: 4px;\n}\n\n.ot-cal-cell {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  gap: 3px;\n  min-height: 42px;\n  padding: 5px 2px 4px;\n  border: 1px solid transparent;\n  border-radius: 9px;\n  background: transparent;\n  color: var(--ot-text-dim);\n  cursor: pointer;\n  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.18s ease;\n}\n\n.ot-cal-cell:hover {\n  transform: translateY(-1px);\n  border-color: var(--ot-border-strong);\n  background: color-mix(in srgb, var(--ot-text) 6%, transparent);\n  color: var(--ot-text);\n}\n\n/* Days outside the month stay clickable â€” they are real days with real\n   schedules â€” but recede so the month itself reads as the subject. */\n.ot-cal-cell[data-outside=\"true\"] {\n  opacity: 0.42;\n}\n\n.ot-cal-cell[data-marked=\"true\"] {\n  color: var(--ot-text);\n}\n\n.ot-cal-cell[data-today=\"true\"] {\n  border-color: color-mix(in srgb, var(--ot-accent) 52%, transparent);\n}\n\n.ot-cal-cell[data-selected=\"true\"] {\n  border-color: transparent;\n  background: linear-gradient(140deg, color-mix(in srgb, var(--ot-accent) 26%, transparent), color-mix(in srgb, var(--ot-accent-2) 20%, transparent));\n  color: var(--ot-text);\n  font-weight: 650;\n}\n\n.ot-cal-daynum {\n  font-size: 12.5px;\n  font-variant-numeric: tabular-nums;\n  line-height: 1.1;\n}\n\n.ot-cal-marks {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  gap: 3px;\n  height: 5px;\n}\n\n.ot-cal-mark {\n  width: 4px;\n  height: 4px;\n  border-radius: 50%;\n  background: var(--ot-accent);\n}\n\n.ot-cal-mark-more {\n  border-radius: 2px;\n}\n\n/* Every schedule on the day is ticked off: the day still counts, it is just\n   done â€” a hollow dot says that without pretending the day is empty. */\n.ot-cal-mark-done {\n  background: transparent;\n  box-shadow: inset 0 0 0 1px var(--ot-success);\n}\n\n.ot-cal-items {\n  margin-top: 11px;\n  padding-top: 10px;\n  border-top: 1px solid var(--ot-border);\n}\n\n.ot-cal-items-head {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  margin-bottom: 7px;\n  font-size: 12.5px;\n}\n\n.ot-cal-item {\n  display: flex;\n  align-items: baseline;\n  gap: 9px;\n  padding: 4px 0;\n  font-size: 12.5px;\n}\n\n.ot-cal-item-time {\n  flex: none;\n  width: 46px;\n  text-align: right;\n  color: var(--ot-text-dim);\n  font-variant-numeric: tabular-nums;\n}\n\n.ot-cal-item-title {\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n.ot-cal-item-place {\n  flex: none;\n  padding: 1px 7px;\n  border-radius: 6px;\n  background: color-mix(in srgb, var(--ot-text) 7%, transparent);\n  color: var(--ot-text-dim);\n  font-size: 11px;\n}\n\n.ot-cal-item[data-done=\"true\"] {\n  color: var(--ot-text-dim);\n}\n\n.ot-cal-item[data-done=\"true\"] .ot-cal-item-title {\n  text-decoration: line-through;\n}\n\n.ot-cal-item-done {\n  display: inline-flex;\n  align-items: center;\n  gap: 3px;\n  flex: none;\n  color: var(--ot-success);\n  font-size: 11px;\n}\n\n.ot-cal-actions {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  margin-top: 9px;\n}\n\n/* -------------------------------------------------------- add an event */\n\n.ot-add {\n  margin-bottom: 12px;\n  padding: 12px 13px 11px;\n  border: 1px solid color-mix(in srgb, var(--ot-accent-3) 34%, var(--ot-border));\n  border-radius: var(--ot-radius);\n  background: linear-gradient(160deg, color-mix(in srgb, var(--ot-layer-1) 96%, transparent), color-mix(in srgb, var(--ot-accent-3) 9%, transparent));\n  box-shadow: var(--ot-shadow);\n  animation: ot-fade-up 0.28s cubic-bezier(0.2, 0.9, 0.25, 1) both;\n}\n\n.ot-add-head {\n  display: flex;\n  align-items: baseline;\n  gap: 8px;\n  margin-bottom: 10px;\n}\n\n.ot-add-head b {\n  font-size: 13.5px;\n  font-weight: 650;\n}\n\n.ot-add-grid {\n  display: grid;\n  grid-template-columns: minmax(0, 2.2fr) repeat(3, minmax(0, 1fr)) minmax(0, 1.4fr);\n  gap: 8px;\n  align-items: end;\n}\n\n.ot-add-grid label {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  min-width: 0;\n}\n\n.ot-add-grid label > span {\n  color: var(--ot-text-dim);\n  font-size: 11px;\n}\n\n.ot-add-foot {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  margin-top: 10px;\n}\n\n@media (max-width: 860px) {\n  .ot-add-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }\n  .ot-add-title { grid-column: 1 / -1; }\n}\n\n@media (max-width: 460px) {\n  .ot-add-grid { grid-template-columns: minmax(0, 1fr); }\n}\n\n@media (max-width: 620px) {\n  .ot-cal-item-place { display: none; }\n}\n\n/* --------------------------------------------------------------- companion */\n\n.ot-comp {\n  display: flex;\n  flex-direction: column;\n  gap: 10px;\n  height: 100%;\n  min-height: 0;\n}\n\n.ot-comp-head {\n  display: flex;\n  align-items: center;\n  gap: 11px;\n}\n\n.ot-avatar {\n  position: relative;\n  width: 44px;\n  height: 44px;\n  flex: none;\n  border-radius: 14px;\n  background: linear-gradient(140deg, var(--ot-accent), var(--ot-accent-2) 60%, var(--ot-accent-3));\n  box-shadow: 0 8px 20px color-mix(in srgb, var(--ot-accent) 32%, transparent);\n  animation: ot-float 5s ease-in-out infinite;\n}\n\n.ot-avatar::after {\n  content: \"\";\n  position: absolute;\n  inset: 7px 9px auto 9px;\n  height: 8px;\n  border-radius: 999px;\n  background: rgba(255, 255, 255, 0.9);\n  box-shadow: 0 12px 0 -1px rgba(255, 255, 255, 0.9);\n  opacity: 0.92;\n}\n\n.ot-avatar[data-busy=\"true\"]::after {\n  animation: ot-blink 1.1s steps(2, end) infinite;\n}\n\n@keyframes ot-float {\n  0%, 100% { transform: translateY(0) rotate(-1deg); }\n  50% { transform: translateY(-4px) rotate(1deg); }\n}\n\n@keyframes ot-blink {\n  50% { opacity: 0.35; }\n}\n\n.ot-comp-name {\n  font-size: 14px;\n  font-weight: 640;\n}\n\n.ot-comp-state {\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n}\n\n.ot-msgs {\n  flex: 1;\n  min-height: 180px;\n  max-height: 46vh;\n  overflow-y: auto;\n  display: flex;\n  flex-direction: column;\n  gap: 9px;\n  padding-right: 3px;\n  scrollbar-width: thin;\n}\n\n.ot-msg {\n  max-width: 88%;\n  padding: 9px 12px;\n  border-radius: 13px;\n  font-size: 12.5px;\n  animation: ot-pop 0.3s cubic-bezier(0.2, 0.9, 0.25, 1);\n}\n\n@keyframes ot-pop {\n  from { opacity: 0; transform: translateY(7px) scale(0.98); }\n  to { opacity: 1; transform: none; }\n}\n\n.ot-msg-ai {\n  align-self: flex-start;\n  border: 1px solid var(--ot-border);\n  border-bottom-left-radius: 5px;\n  background: color-mix(in srgb, var(--ot-layer-1) 92%, transparent);\n}\n\n.ot-msg-user {\n  align-self: flex-end;\n  border-bottom-right-radius: 5px;\n  background: linear-gradient(120deg, color-mix(in srgb, var(--ot-accent) 88%, transparent), color-mix(in srgb, var(--ot-accent-2) 82%, transparent));\n  color: #fff;\n}\n\n.ot-msg-speak {\n  font-weight: 600;\n}\n\n.ot-msg-detail {\n  margin-top: 4px;\n  color: var(--ot-text-dim);\n  font-size: 12px;\n  white-space: pre-wrap;\n}\n\n.ot-msg-user .ot-msg-detail {\n  color: rgba(255, 255, 255, 0.86);\n}\n\n.ot-msg-trace {\n  margin-top: 6px;\n  padding-top: 5px;\n  border-top: 1px dashed color-mix(in srgb, var(--ot-text) 14%, transparent);\n  color: var(--ot-text-dim);\n  font-size: 10.5px;\n}\n\n/* Capability chip beside the companion name: which brain is answering. */\n.ot-model-chip {\n  display: inline-block;\n  margin-left: 7px;\n  padding: 1px 6px;\n  border-radius: 999px;\n  font-size: 10px;\n  font-weight: 600;\n  vertical-align: 1px;\n}\n\n.ot-model-chip-live {\n  background: color-mix(in srgb, var(--ot-success) 20%, transparent);\n  color: color-mix(in srgb, var(--ot-success) 88%, var(--ot-text));\n}\n\n.ot-model-chip-live::before {\n  content: \"\";\n  display: inline-block;\n  width: 5px;\n  height: 5px;\n  margin-right: 4px;\n  border-radius: 50%;\n  background: currentColor;\n  animation: ot-pulse 2.4s ease-out infinite;\n}\n\n.ot-model-chip-local {\n  background: color-mix(in srgb, var(--ot-text) 10%, transparent);\n  color: var(--ot-text-dim);\n}\n\n.ot-chips {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 6px;\n  margin-top: 8px;\n}\n\n.ot-chipbtn {\n  padding: 3px 9px;\n  border: 1px solid color-mix(in srgb, var(--ot-accent) 32%, transparent);\n  border-radius: 999px;\n  background: color-mix(in srgb, var(--ot-accent) 10%, transparent);\n  color: color-mix(in srgb, var(--ot-accent) 88%, var(--ot-text));\n  font-size: 11.5px;\n  cursor: pointer;\n  transition: all 0.18s ease;\n}\n\n.ot-chipbtn:hover {\n  transform: translateY(-1px);\n  background: color-mix(in srgb, var(--ot-accent) 22%, transparent);\n}\n\n.ot-typing {\n  display: inline-flex;\n  gap: 4px;\n  align-items: center;\n}\n\n.ot-typing i {\n  width: 5px;\n  height: 5px;\n  border-radius: 50%;\n  background: var(--ot-text-dim);\n  animation: ot-typing 1.1s ease-in-out infinite;\n}\n\n.ot-typing i:nth-child(2) { animation-delay: 0.16s; }\n.ot-typing i:nth-child(3) { animation-delay: 0.32s; }\n\n@keyframes ot-typing {\n  0%, 100% { transform: translateY(0); opacity: 0.4; }\n  50% { transform: translateY(-3px); opacity: 1; }\n}\n\n.ot-composer {\n  display: flex;\n  gap: 7px;\n  flex: none;\n}\n\n/* ------------------------------------------------------------------ import */\n\n/*\n * The import page is a form, so the controls follow form rules: a control and\n * the button that acts on it sit on one line, labels align in a column, and\n * nothing floats in the middle of a row. `.ot-inline-form` is that line.\n */\n.ot-gap {\n  height: 12px;\n}\n\n.ot-inline-form {\n  display: flex;\n  align-items: center;\n  /* A row of controls in a narrow column has to wrap; without this the last\n     control is painted past the card's right edge, which is what produced the\n     horizontal scrollbar pills and the cut-off sentence in the import page. */\n  flex-wrap: wrap;\n  gap: 8px;\n  min-width: 0;\n}\n\n/* The import page is a single column of forms; keep it from stretching. */\n.ot-import {\n  width: 100%;\n  max-width: 980px;\n  min-width: 0;\n}\n\n/* ---- the confirmation step ---------------------------------------------- */\n\n/* Reading a sheet produces a decision, so the decision stays on screen: sticky at\n   the top of the import page, above the cards it is about. `top: -1px` hides the\n   hairline seam that a sticky block otherwise leaves while scrolling. */\n.ot-confirm {\n  position: sticky;\n  top: -1px;\n  z-index: 3;\n  margin-bottom: 12px;\n  padding: 13px 14px;\n  border: 1px solid color-mix(in srgb, var(--ot-accent) 45%, var(--ot-border));\n  border-radius: var(--ot-radius);\n  background: linear-gradient(160deg, color-mix(in srgb, var(--ot-accent) 16%, var(--ot-layer-1)), color-mix(in srgb, var(--ot-layer-2) 92%, transparent));\n  box-shadow: 0 14px 32px color-mix(in srgb, #000 32%, transparent);\n  backdrop-filter: blur(12px);\n  animation: ot-fade-up 0.3s cubic-bezier(0.2, 0.85, 0.25, 1);\n}\n\n.ot-confirm[data-tone=\"done\"] {\n  border-color: color-mix(in srgb, var(--ot-success) 48%, var(--ot-border));\n  background: linear-gradient(160deg, color-mix(in srgb, var(--ot-success) 14%, var(--ot-layer-1)), color-mix(in srgb, var(--ot-layer-2) 92%, transparent));\n}\n\n.ot-confirm[data-tone=\"error\"] {\n  border-color: color-mix(in srgb, var(--ot-danger) 52%, var(--ot-border));\n  background: linear-gradient(160deg, color-mix(in srgb, var(--ot-danger) 14%, var(--ot-layer-1)), color-mix(in srgb, var(--ot-layer-2) 92%, transparent));\n}\n\n.ot-confirm[data-tone=\"busy\"] {\n  border-color: var(--ot-border-strong);\n  background: color-mix(in srgb, var(--ot-layer-1) 96%, transparent);\n}\n\n.ot-confirm-head {\n  display: flex;\n  align-items: center;\n  flex-wrap: wrap;\n  gap: 8px;\n  min-width: 0;\n}\n\n.ot-confirm-title {\n  font-size: 13.5px;\n  font-weight: 650;\n  /* A long file name must wrap instead of pushing the confidence pill off the\n     card â€” the toast this replaced did exactly that, and then got clipped by the\n     window edge on top of it. */\n  min-width: 0;\n  overflow-wrap: anywhere;\n}\n\n.ot-confirm-hint {\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n}\n\n.ot-confirm-lines {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  margin-top: 8px;\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n}\n\n.ot-confirm-line {\n  display: flex;\n  align-items: flex-start;\n  gap: 6px;\n  min-width: 0;\n  overflow-wrap: anywhere;\n}\n\n.ot-confirm-line > svg {\n  margin-top: 2px;\n}\n\n.ot-confirm-actions {\n  display: flex;\n  align-items: center;\n  flex-wrap: wrap;\n  gap: 8px;\n  margin-top: 11px;\n}\n\n.ot-inline-form > .ot-input {\n  flex: 1 1 auto;\n  min-width: 0;\n}\n\n.ot-inline-form > .ot-btn {\n  flex: none;\n}\n\n.ot-headspace {\n  flex: 1 1 auto;\n  min-width: 0;\n}\n\n.ot-warn-text {\n  color: color-mix(in srgb, var(--ot-warn) 80%, var(--ot-text));\n}\n\n.ot-drop {\n  padding: 16px;\n  border: 1px dashed var(--ot-border-strong);\n  border-radius: var(--ot-radius);\n  background: color-mix(in srgb, var(--ot-layer-1) 70%, transparent);\n  text-align: center;\n  cursor: pointer;\n  transition: border-color 0.2s ease, background 0.2s ease;\n}\n\n.ot-drop:hover,\n.ot-drop-active {\n  border-color: color-mix(in srgb, var(--ot-accent) 52%, transparent);\n  background: color-mix(in srgb, var(--ot-accent) 8%, var(--ot-layer-1));\n}\n\n.ot-drop-active {\n  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ot-accent) 14%, transparent);\n}\n\n.ot-drop-title {\n  font-size: 13px;\n  font-weight: 600;\n  color: var(--ot-text);\n}\n\n.ot-drop-sub {\n  margin-top: 4px;\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n}\n\n.ot-drop-actions {\n  display: flex;\n  justify-content: center;\n  flex-wrap: wrap;\n  gap: 8px;\n  margin-top: 12px;\n}\n\n/* The real input stays in the tree so its click() is trusted, but never shown. */\n.ot-file-hidden {\n  display: none;\n}\n\n.ot-details {\n  margin-top: 10px;\n}\n\n.ot-details > summary {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  padding: 6px 2px;\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n  cursor: pointer;\n  list-style: none;\n}\n\n.ot-details > summary::-webkit-details-marker {\n  display: none;\n}\n\n.ot-details > summary::before {\n  content: \"â–¸\";\n  font-size: 10px;\n  transition: transform 0.18s ease;\n}\n\n.ot-details[open] > summary::before {\n  transform: rotate(90deg);\n}\n\n.ot-details > summary:hover {\n  color: var(--ot-text);\n}\n\n.ot-details code {\n  max-width: 46ch;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n  padding: 1px 6px;\n  border-radius: 6px;\n  background: color-mix(in srgb, var(--ot-text) 8%, transparent);\n  font-size: 11px;\n}\n\n/* ---- analysis verdict ---- */\n\n.ot-verdict {\n  margin-top: 10px;\n  padding: 12px;\n  border: 1px solid var(--ot-border);\n  border-radius: var(--ot-radius-sm);\n  background: color-mix(in srgb, var(--ot-layer-1) 82%, transparent);\n}\n\n.ot-verdict[data-tone=\"high\"] {\n  border-color: color-mix(in srgb, var(--ot-success) 34%, var(--ot-border));\n}\n\n.ot-verdict[data-tone=\"low\"] {\n  border-color: color-mix(in srgb, var(--ot-warn) 34%, var(--ot-border));\n}\n\n.ot-verdict-head {\n  display: flex;\n  align-items: center;\n  flex-wrap: wrap;\n  gap: 8px;\n}\n\n.ot-verdict-model {\n  color: var(--ot-text-dim);\n  font-size: 11px;\n}\n\n.ot-verdict-body {\n  margin-top: 8px;\n  font-size: 13px;\n  line-height: 1.6;\n}\n\n.ot-verdict-hints {\n  margin: 8px 0 0;\n  padding-left: 18px;\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n  line-height: 1.7;\n}\n\n.ot-verdict-tags {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 6px;\n  margin-top: 10px;\n}\n\n.ot-tag {\n  padding: 2px 8px;\n  border: 1px solid var(--ot-border);\n  border-radius: 999px;\n  background: color-mix(in srgb, var(--ot-text) 5%, transparent);\n  color: var(--ot-text-dim);\n  font-size: 11px;\n  white-space: nowrap;\n}\n\n.ot-pill {\n  padding: 2px 9px;\n  border-radius: 999px;\n  font-size: 11px;\n  font-weight: 600;\n}\n\n.ot-pill[data-tone=\"high\"] {\n  background: color-mix(in srgb, var(--ot-success) 18%, transparent);\n  color: color-mix(in srgb, var(--ot-success) 78%, var(--ot-text));\n}\n\n.ot-pill[data-tone=\"mid\"] {\n  background: color-mix(in srgb, var(--ot-accent) 16%, transparent);\n  color: color-mix(in srgb, var(--ot-accent) 82%, var(--ot-text));\n}\n\n.ot-pill[data-tone=\"low\"] {\n  background: color-mix(in srgb, var(--ot-warn) 18%, transparent);\n  color: color-mix(in srgb, var(--ot-warn) 80%, var(--ot-text));\n}\n\n.ot-verdict-actions {\n  display: flex;\n  align-items: center;\n  flex-wrap: wrap;\n  gap: 8px;\n  margin-top: 12px;\n  padding-top: 10px;\n  border-top: 1px solid var(--ot-border);\n}\n\n.ot-linkbtn {\n  padding: 0;\n  border: 0;\n  background: none;\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n  text-decoration: underline;\n  text-underline-offset: 2px;\n  cursor: pointer;\n}\n\n.ot-linkbtn:hover {\n  color: var(--ot-text);\n}\n\n.ot-working {\n  display: flex;\n  align-items: center;\n  gap: 9px;\n  padding: 9px 11px;\n  border: 1px solid color-mix(in srgb, var(--ot-accent) 26%, var(--ot-border));\n  border-radius: 9px;\n  background: color-mix(in srgb, var(--ot-accent) 7%, transparent);\n  color: var(--ot-text-dim);\n  font-size: 12px;\n}\n\n.ot-advanced {\n  margin-top: 12px;\n  padding: 12px;\n  border: 1px solid var(--ot-border);\n  border-radius: var(--ot-radius-sm);\n  background: color-mix(in srgb, var(--ot-layer-2) 42%, transparent);\n}\n\n.ot-advanced-head {\n  margin-bottom: 4px;\n}\n\n.ot-table-wrap {\n  overflow-x: auto;\n  border: 1px solid var(--ot-border);\n  border-radius: var(--ot-radius-sm);\n}\n\n.ot-table {\n  width: 100%;\n  border-collapse: collapse;\n  font-size: 12px;\n  white-space: nowrap;\n}\n\n.ot-table th,\n.ot-table td {\n  padding: 7px 10px;\n  border-bottom: 1px solid var(--ot-border);\n  text-align: left;\n}\n\n.ot-table th {\n  position: sticky;\n  top: 0;\n  background: var(--ot-layer-2);\n  color: var(--ot-text-dim);\n  font-weight: 600;\n  z-index: 1;\n}\n\n.ot-table tr:last-child td {\n  border-bottom: 0;\n}\n\n.ot-table tr[data-match=\"true\"] {\n  background: color-mix(in srgb, var(--ot-accent) 9%, transparent);\n}\n\n.ot-table tr[data-match=\"false\"] {\n  opacity: 0.5;\n}\n\n.ot-maprow {\n  display: grid;\n  grid-template-columns: minmax(88px, 0.7fr) minmax(0, 1fr) minmax(0, 1.1fr);\n  gap: 8px;\n  align-items: center;\n}\n\n.ot-map-label {\n  color: var(--ot-text-dim);\n  font-size: 12px;\n}\n\n.ot-map-hint {\n  color: var(--ot-text-dim);\n  font-size: 11px;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n@media (max-width: 640px) {\n  .ot-maprow {\n    grid-template-columns: minmax(80px, 0.6fr) minmax(0, 1fr);\n  }\n\n  .ot-map-hint {\n    display: none;\n  }\n}\n\n\n.ot-note {\n  padding: 9px 11px;\n  border-radius: 9px;\n  border: 1px solid var(--ot-border);\n  background: color-mix(in srgb, var(--ot-layer-2) 60%, transparent);\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n}\n\n.ot-note-warn {\n  border-color: color-mix(in srgb, var(--ot-warn) 40%, transparent);\n  background: color-mix(in srgb, var(--ot-warn) 12%, transparent);\n  color: color-mix(in srgb, var(--ot-warn) 82%, var(--ot-text));\n}\n\n.ot-note-error {\n  border-color: color-mix(in srgb, var(--ot-danger) 42%, transparent);\n  background: color-mix(in srgb, var(--ot-danger) 12%, transparent);\n  color: color-mix(in srgb, var(--ot-danger) 82%, var(--ot-text));\n}\n\n.ot-note-ok {\n  border-color: color-mix(in srgb, var(--ot-success) 40%, transparent);\n  background: color-mix(in srgb, var(--ot-success) 12%, transparent);\n  color: color-mix(in srgb, var(--ot-success) 82%, var(--ot-text));\n}\n\n.ot-switch {\n  display: inline-flex;\n  align-items: center;\n  gap: 8px;\n  cursor: pointer;\n}\n\n.ot-switch input {\n  appearance: none;\n  position: relative;\n  width: 36px;\n  height: 20px;\n  border-radius: 999px;\n  background: color-mix(in srgb, var(--ot-text) 18%, transparent);\n  cursor: pointer;\n  transition: background 0.22s ease;\n}\n\n.ot-switch input::after {\n  content: \"\";\n  position: absolute;\n  top: 2px;\n  left: 2px;\n  width: 16px;\n  height: 16px;\n  border-radius: 50%;\n  background: #fff;\n  transition: transform 0.22s cubic-bezier(0.3, 0.9, 0.3, 1);\n}\n\n.ot-switch input:checked {\n  background: linear-gradient(120deg, var(--ot-accent), var(--ot-accent-2));\n}\n\n.ot-switch input:checked::after {\n  transform: translateX(16px);\n}\n\n.ot-mapping-list {\n  display: flex;\n  flex-direction: column;\n  gap: 7px;\n}\n\n.ot-sub {\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n}\n\n.ot-mono {\n  font-variant-numeric: tabular-nums;\n}\n\n.ot-feed {\n  display: flex;\n  flex-direction: column;\n  gap: 7px;\n  max-height: 320px;\n  overflow-y: auto;\n}\n\n.ot-feed-item {\n  display: flex;\n  gap: 9px;\n  padding: 8px 10px;\n  border: 1px solid var(--ot-border);\n  border-radius: 9px;\n  background: color-mix(in srgb, var(--ot-layer-1) 70%, transparent);\n}\n\n.ot-feed-item[data-level=\"urgent\"] {\n  border-color: color-mix(in srgb, var(--ot-danger) 40%, transparent);\n}\n\n.ot-feed-time {\n  flex: none;\n  color: var(--ot-text-dim);\n  font-size: 11px;\n  font-variant-numeric: tabular-nums;\n}\n\n.ot-feed-title {\n  font-weight: 600;\n  font-size: 12.5px;\n}\n\n.ot-feed-body {\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n}\n\n.ot-enter {\n  animation: ot-fade-up 0.4s cubic-bezier(0.2, 0.85, 0.25, 1) both;\n}\n\n/* ---------------------------------------------------------------- notices */\n\n/* `shell.overlay` entries are click-through until they opt back in, so every\n   interactive surface in this layer declares `pointer-events: auto` explicitly.\n   The notice STACK stays inert â€” a full-width transparent box that swallowed\n   clicks would break the app underneath â€” and each notice re-enables itself. */\n\n/* The stack fills its containing block and aligns its cards to the bottom-right\n   corner instead of positioning itself with `bottom: 18px`.\n\n   `bottom` looked equivalent and is not: if anything between the overlay layer\n   and the document establishes a containing block for `position: fixed` (a\n   transform, a filter, `contain`, a zoomed ancestor), `bottom` is measured\n   against *that* box. The cards then land wherever that box ends â€” in the app\n   this put an import confirmation under the window's caption buttons, clipped by\n   the title bar. With `inset: 0` the stack can only ever be as large as that\n   containing block, so its cards stay inside it whatever it turns out to be, and\n   a stack of several notices can never run off the top: it scrolls instead. */\n.ot-notices {\n  position: fixed;\n  inset: 0;\n  z-index: 40;\n  display: flex;\n  flex-direction: column;\n  align-items: flex-end;\n  justify-content: flex-end;\n  gap: 9px;\n  padding: 18px;\n  overflow: hidden;\n  pointer-events: none;\n}\n\n.ot-notice-stack {\n  display: flex;\n  flex-direction: column;\n  align-items: flex-end;\n  gap: 9px;\n  width: min(330px, 100%);\n  max-height: 100%;\n  overflow-y: auto;\n  overflow-x: hidden;\n  scrollbar-width: thin;\n  scrollbar-color: var(--ot-border-strong) transparent;\n}\n\n/* The floating card and the mini pill are each their own overlay root. The\n   harness turns an overlay entry into a hit target with\n   `overlayLayer > * { pointer-events: auto }`, but relying on that alone means a\n   nested wrapper silently kills every click, so each root also asks for pointer\n   events itself. */\n.ot-float-shell,\n.ot-float-mini {\n  pointer-events: auto;\n  /* The card is dragged with pointer events, so the browser must not claim the\n     gesture for scrolling or text selection first. */\n  touch-action: none;\n  user-select: none;\n}\n\n.ot-float-shell.is-dragging,\n.ot-float-mini.is-dragging {\n  /* A 40 ms transition would trail the pointer; while dragging there is none. */\n  transition: none;\n}\n\n/* Controls inside a draggable card must keep their own click. */\n.ot-float-shell button,\n.ot-float-mini button {\n  cursor: pointer;\n}\n\n/* The grip is the *only* place a drag starts â€” see the drag behaviour notes in\n   `drag.js`. Everything else on the card keeps its own click, which is what\n   \"clicking a button sometimes starts a drag instead\" needed. */\n.ot-grip {\n  cursor: grab;\n  flex: none;\n  opacity: 0.55;\n}\n\n.ot-grip:hover {\n  opacity: 0.9;\n}\n\n.is-dragging .ot-grip,\n.ot-grip:active {\n  cursor: grabbing;\n  opacity: 1;\n}\n\n.ot-notice {\n  position: relative;\n  padding: 11px 13px 11px 15px;\n  border: 1px solid var(--ot-border-strong);\n  border-radius: 12px;\n  background: var(--ot-overlay);\n  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);\n  backdrop-filter: blur(14px);\n  pointer-events: auto;\n  animation: ot-slide-in 0.36s cubic-bezier(0.2, 0.9, 0.25, 1);\n  overflow: hidden;\n}\n\n.ot-notice::before {\n  content: \"\";\n  position: absolute;\n  left: 0;\n  top: 0;\n  bottom: 0;\n  width: 3px;\n  background: linear-gradient(180deg, var(--ot-accent), var(--ot-accent-2));\n}\n\n.ot-notice[data-level=\"urgent\"]::before {\n  background: linear-gradient(180deg, var(--ot-danger), var(--ot-warn));\n}\n\n.ot-notice[data-level=\"warn\"]::before {\n  background: linear-gradient(180deg, var(--ot-warn), var(--ot-accent));\n}\n\n.ot-notice.leaving {\n  animation: ot-slide-out 0.26s ease forwards;\n}\n\n@keyframes ot-slide-in {\n  from { opacity: 0; transform: translateX(28px) scale(0.97); }\n  to { opacity: 1; transform: none; }\n}\n\n@keyframes ot-slide-out {\n  to { opacity: 0; transform: translateX(24px) scale(0.97); }\n}\n\n.ot-notice-title {\n  font-size: 12.5px;\n  font-weight: 640;\n}\n\n.ot-notice-body {\n  margin-top: 2px;\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n}\n\n.ot-notice-actions {\n  display: flex;\n  gap: 6px;\n  margin-top: 8px;\n}\n\n/* ------------------------------------------------------------------- float */\n\n.ot-float-root {\n  position: relative;\n  width: 100%;\n  height: 100%;\n  padding: 10px;\n  background: transparent;\n}\n\n.ot-float-shell {\n  position: relative;\n  display: flex;\n  flex-direction: column;\n  gap: 9px;\n  height: 100%;\n  padding: 12px;\n  border: 1px solid var(--ot-border-strong);\n  border-radius: 18px;\n  background: var(--ot-overlay);\n  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.45);\n  backdrop-filter: blur(18px);\n  /* Opt back in: an overlay entry is click-through until it does. */\n  pointer-events: auto;\n  overflow: hidden;\n  animation: ot-pop 0.34s cubic-bezier(0.2, 0.9, 0.25, 1);\n}\n\n.ot-float-grip {\n  position: absolute;\n  top: 0;\n  left: 0;\n  right: 0;\n  height: 26px;\n  cursor: grab;\n  background: linear-gradient(180deg, color-mix(in srgb, var(--ot-text) 6%, transparent), transparent);\n}\n\n.ot-float-grip:active {\n  cursor: grabbing;\n}\n\n.ot-float-head {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  padding-top: 2px;\n}\n\n/* The grip inside the expanded header: a small hit target that reads as one. */\n.ot-float-head .ot-grip {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  width: 22px;\n  height: 24px;\n  margin-left: -4px;\n  padding: 0;\n  border: 0;\n  border-radius: 6px;\n  background: transparent;\n  color: var(--ot-text-dim);\n  line-height: 0;\n}\n\n.ot-float-title {\n  font-size: 11.5px;\n  font-weight: 620;\n  letter-spacing: 0.05em;\n  color: var(--ot-text-dim);\n  text-transform: uppercase;\n}\n\n.ot-float-ring {\n  position: relative;\n  width: 142px;\n  height: 142px;\n  margin: 2px auto 0;\n}\n\n.ot-float-time {\n  font-size: 30px;\n}\n\n.ot-float-next {\n  padding: 9px 11px;\n  border: 1px solid var(--ot-border);\n  border-radius: 11px;\n  background: color-mix(in srgb, var(--ot-layer-1) 80%, transparent);\n}\n\n.ot-float-next-title {\n  font-size: 12.5px;\n  font-weight: 620;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n.ot-float-next-meta {\n  color: var(--ot-text-dim);\n  font-size: 11px;\n  margin-top: 2px;\n}\n\n.ot-float-list {\n  flex: 1;\n  min-height: 0;\n  overflow-y: auto;\n  display: flex;\n  flex-direction: column;\n  gap: 5px;\n  scrollbar-width: thin;\n}\n\n.ot-float-row {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  padding: 6px 8px;\n  border-radius: 8px;\n  background: color-mix(in srgb, var(--ot-text) 5%, transparent);\n  font-size: 12px;\n}\n\n.ot-float-row[data-phase=\"current\"] {\n  background: color-mix(in srgb, var(--ot-accent) 18%, transparent);\n}\n\n.ot-float-row-time {\n  flex: none;\n  color: var(--ot-text-dim);\n  font-variant-numeric: tabular-nums;\n  font-size: 11px;\n}\n\n.ot-float-row-title {\n  min-width: 0;\n  flex: 1;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n.ot-float-foot {\n  display: flex;\n  gap: 6px;\n  justify-content: center;\n}\n\n/* The mini card is a four-lane row, and the lanes are declared rather than left\n   to flex.\n   \n   Flex used to distribute this: the grip, the ring, the text and the two buttons\n   all competed for 248 px, and with the text able to shrink to nothing the two\n   buttons ended up *left of the grip* with the clock running under them â€” which\n   is exactly what \"æŒ‰é’®å’Œæ•°å­—æœ‰é‡å \" looks like on screen. Declaring the columns\n   makes the geometry a fact instead of an outcome: 30 px of grip, 34 px of ring,\n   the buttons at their natural width, and the text taking whatever is left.\n   `scripts/../.tools/browser-click.mjs` measures every lane and fails if two of\n   them overlap, so this cannot quietly come back. */\n.ot-float-mini {\n  /* The inline style carries the position; these are the same values restated\n     so a styling regression cannot leave the pill laid out in flow. */\n  position: fixed;\n  right: 18px;\n  bottom: 18px;\n  z-index: 30;\n  display: grid;\n  grid-template-columns: 30px 34px minmax(0, 1fr) auto;\n  align-items: center;\n  column-gap: 8px;\n  height: 60px;\n  padding: 0 10px;\n  border: 1px solid var(--ot-border-strong);\n  border-radius: 999px;\n  background: var(--ot-overlay);\n  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.4);\n  backdrop-filter: blur(16px);\n  /* Opt back in: an overlay entry is click-through until it does. */\n  pointer-events: auto;\n  cursor: default;\n  overflow: hidden;\n  animation: ot-pop 0.3s cubic-bezier(0.2, 0.9, 0.25, 1);\n}\n\n/* The card's own header text is not a hit target for selection, so a drag that\n   starts on the clock keeps moving the card instead of highlighting digits. */\n.ot-float-mini-time,\n.ot-float-mini-meta,\n.ot-float-title {\n  user-select: none;\n}\n\n/* The mini card's grip: a 30 px lane on the left edge, the size of a thumb. */\n.ot-float-mini .ot-grip {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  width: 30px;\n  height: 42px;\n  margin-left: -4px;\n  padding: 0;\n  border: 0;\n  border-radius: 10px;\n  background: transparent;\n  color: var(--ot-text-dim);\n  line-height: 0;\n}\n\n.ot-float-mini .ot-grip:hover {\n  background: color-mix(in srgb, var(--ot-text) 8%, transparent);\n}\n\n/* Grow and close, side by side at the right edge â€” the same pair the expanded\n   card carries, so \"æ”¶èµ·\" is one click from either state. */\n.ot-float-mini-actions {\n  display: flex;\n  align-items: center;\n  gap: 2px;\n  flex: none;\n}\n\n.ot-float-mini-actions .ot-btn {\n  height: 26px;\n  min-width: 26px;\n  padding: 0 5px;\n}\n\n.ot-float-mini-ring {\n  width: 38px;\n  height: 38px;\n  flex: none;\n}\n\n.ot-float-mini-time {\n  font-size: 18px;\n  font-weight: 700;\n  font-variant-numeric: tabular-nums;\n}\n\n.ot-float-mini-meta {\n  color: var(--ot-text-dim);\n  font-size: 10.5px;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n.ot-float-mini-body {\n  min-width: 0;\n  flex: 1;\n}\n\n/* -------------------------------------------------------- layout hardening */\n\n/* The panel is rendered into whatever column the host gives it, and that column\n   can be much narrower than the design width (a right sidebar open, a resized\n   window, a DPI change the renderer has not caught up with). Nothing in here may\n   then paint past the panel: a card that overflows is clipped mid-sentence and\n   grows a horizontal scrollbar, which is what the import page did. So every\n   container is allowed to shrink, every flex row wraps, and long unbroken text\n   (a pasted path, a workbook name) wraps instead of stretching its row. */\n.ot-root,\n.ot-body,\n.ot-view,\n.ot-card,\n.ot-card-pad,\n.ot-field,\n.ot-inline-form,\n.ot-row,\n.ot-verdict,\n.ot-note,\n.ot-drop {\n  min-width: 0;\n  max-width: 100%;\n}\n\n.ot-row,\n.ot-field,\n.ot-drop-actions,\n.ot-verdict-actions,\n.ot-notice-actions {\n  flex-wrap: wrap;\n}\n\n.ot-field > .ot-input,\n.ot-field > .ot-input-num {\n  min-width: 0;\n  max-width: 100%;\n}\n\n.ot-sub,\n.ot-note,\n.ot-verdict-body,\n.ot-verdict-hints,\n.ot-feed-body,\n.ot-drop-sub,\n.ot-confirm-line,\n.ot-card-title,\n.ot-tag,\n.ot-pill {\n  overflow-wrap: anywhere;\n  word-break: break-word;\n}\n\n.ot-body {\n  /* Belt and braces: if a child still overflows, clip it rather than let the\n     panel grow a scrollbar in the horizontal direction. */\n  overflow-x: hidden;\n}\n\n/* ------------------------------------------------- reading documents â†’ events */\n\n/* A row read out of a document: same timeline as any other row, different origin. */\n.ot-tag-ai {\n  background: color-mix(in srgb, var(--ot-accent-2) 18%, transparent);\n  color: color-mix(in srgb, var(--ot-accent-2) 84%, var(--ot-text));\n}\n\n.ot-chip-ai {\n  background: color-mix(in srgb, var(--ot-accent-2) 18%, transparent);\n  color: color-mix(in srgb, var(--ot-accent-2) 84%, var(--ot-text));\n}\n\n.ot-textarea {\n  margin-top: 8px;\n  width: 100%;\n  min-height: 84px;\n  resize: vertical;\n  line-height: 1.55;\n  font: inherit;\n}\n\n.ot-extract-source {\n  display: flex;\n  align-items: flex-start;\n  gap: 8px;\n  padding: 8px 10px;\n  border-radius: 10px;\n  background: color-mix(in srgb, var(--ot-layer-2) 72%, transparent);\n  border: 1px solid var(--ot-border);\n  color: var(--ot-text-dim);\n}\n\n.ot-extract-source strong {\n  color: var(--ot-text);\n  font-size: 12.5px;\n  font-weight: 620;\n  overflow-wrap: anywhere;\n}\n\n.ot-extract {\n  margin-top: 12px;\n}\n\n.ot-extract-head {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  margin-bottom: 8px;\n  font-size: 12px;\n  color: var(--ot-text-dim);\n}\n\n.ot-extract-list {\n  display: flex;\n  flex-direction: column;\n  gap: 8px;\n  /* A reading can be twenty rows; the page keeps its scroll position and the\n     list scrolls inside its own box instead of pushing the reminders card away. */\n  max-height: 420px;\n  overflow-y: auto;\n  padding-right: 2px;\n}\n\n.ot-extract-row {\n  display: flex;\n  gap: 10px;\n  padding: 10px;\n  border-radius: 12px;\n  border: 1px solid var(--ot-border);\n  background: color-mix(in srgb, var(--ot-layer-2) 62%, transparent);\n  transition: opacity 0.2s ease, border-color 0.2s ease;\n}\n\n.ot-extract-row[data-included=\"false\"] {\n  opacity: 0.5;\n  border-style: dashed;\n}\n\n.ot-extract-check {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  gap: 6px;\n  flex: none;\n  padding-top: 3px;\n  cursor: pointer;\n}\n\n.ot-extract-check input {\n  width: 16px;\n  height: 16px;\n  accent-color: var(--ot-accent);\n  cursor: pointer;\n}\n\n.ot-extract-check .ot-pill {\n  font-size: 9.5px;\n  padding: 1px 5px;\n  white-space: nowrap;\n}\n\n.ot-extract-body {\n  display: flex;\n  flex-direction: column;\n  gap: 6px;\n  flex: 1 1 auto;\n  min-width: 0;\n}\n\n.ot-extract-title {\n  font-weight: 580;\n}\n\n.ot-extract-when {\n  display: flex;\n  align-items: center;\n  gap: 6px;\n}\n\n.ot-extract-when .ot-input {\n  min-width: 0;\n}\n\n.ot-extract-date {\n  flex: 1 1 46%;\n}\n\n.ot-extract-time {\n  flex: 1 1 22%;\n  padding-left: 6px;\n  padding-right: 4px;\n}\n\n.ot-extract-place {\n  font-size: 12px;\n}\n\n.ot-extract-note {\n  font-size: 11.5px;\n  line-height: 1.5;\n  color: var(--ot-text-dim);\n  display: -webkit-box;\n  -webkit-line-clamp: 2;\n  -webkit-box-orient: vertical;\n  overflow: hidden;\n}\n\n.ot-extract-foot {\n  display: flex;\n  align-items: center;\n  gap: 10px;\n  flex-wrap: wrap;\n  margin-top: 10px;\n}\n\n/* -------------------------------------------------------- reduced motion */\n\n@media (prefers-reduced-motion: reduce) {\n  .ot-root *,\n  .ot-root *::before,\n  .ot-root *::after {\n    animation-duration: 0.001ms !important;\n    animation-iteration-count: 1 !important;\n    transition-duration: 0.001ms !important;\n  }\n\n  .ot-aurora { animation: none; }\n}\n";
+		var CSS = "/** Orbit Time â€” dashboard styles.\n   Every colour resolves through a --dsw-alias-* theme token when the harness\n   provides one, and falls back to a self-contained palette otherwise, so the\n   panel reads correctly in both light and dark themes. */\n\n.ot-root {\n  --ot-accent: var(--dsw-alias-brand-primary, #4d8dff);\n  --ot-accent-2: #a970ff;\n  --ot-accent-3: #38d6c4;\n  --ot-bg: var(--dsw-alias-bg-base, #0f1116);\n  --ot-layer-1: var(--dsw-alias-bg-layer-1, #171a21);\n  --ot-layer-2: var(--dsw-alias-bg-layer-2, #1e222b);\n  --ot-overlay: var(--dsw-alias-bg-overlay, rgba(22, 25, 33, 0.86));\n  --ot-border: var(--dsw-alias-border-l1, rgba(255, 255, 255, 0.09));\n  --ot-border-strong: var(--dsw-alias-border-l2, rgba(255, 255, 255, 0.16));\n  --ot-text: var(--dsw-alias-label-primary, #f2f4f8);\n  --ot-text-dim: var(--dsw-alias-label-secondary, #b9c0cd);\n  --ot-warn: var(--dsw-alias-state-warn-primary, #f0a83c);\n  --ot-danger: var(--dsw-alias-state-error-primary, #ff6b6b);\n  --ot-success: var(--dsw-alias-state-success-primary, #3fd18b);\n  --ot-idle: var(--dsw-alias-state-idle-primary, #6b7280);\n  --ot-shadow: 0 12px 34px rgba(0, 0, 0, 0.28);\n  --ot-radius: 14px;\n  --ot-radius-sm: 10px;\n\n  position: relative;\n  display: flex;\n  flex-direction: column;\n  height: 100%;\n  min-height: 0;\n  overflow: hidden;\n  color: var(--ot-text);\n  background: var(--ot-bg);\n  font-family: \"Segoe UI Variable Text\", \"Segoe UI\", \"Microsoft YaHei UI\", system-ui, -apple-system, sans-serif;\n  font-size: 13px;\n  line-height: 1.5;\n}\n\n.ot-root *,\n.ot-root *::before,\n.ot-root *::after {\n  box-sizing: border-box;\n}\n\n.ot-root button {\n  font-family: inherit;\n  font-size: inherit;\n  color: inherit;\n}\n\n.ot-root input,\n.ot-root select,\n.ot-root textarea {\n  font-family: inherit;\n  font-size: inherit;\n}\n\n/* ---------------------------------------------------------------- ambience */\n\n.ot-aurora {\n  position: absolute;\n  inset: -40% -20% auto -20%;\n  height: 70%;\n  pointer-events: none;\n  opacity: 0.5;\n  filter: blur(60px);\n  background:\n    radial-gradient(38% 60% at 18% 30%, color-mix(in srgb, var(--ot-accent) 55%, transparent), transparent 70%),\n    radial-gradient(34% 55% at 62% 20%, color-mix(in srgb, var(--ot-accent-2) 48%, transparent), transparent 72%),\n    radial-gradient(30% 50% at 88% 44%, color-mix(in srgb, var(--ot-accent-3) 40%, transparent), transparent 70%);\n  animation: ot-drift 26s ease-in-out infinite alternate;\n  z-index: 0;\n}\n\n@keyframes ot-drift {\n  0% { transform: translate3d(-3%, -2%, 0) scale(1); }\n  50% { transform: translate3d(3%, 2%, 0) scale(1.08); }\n  100% { transform: translate3d(-2%, 3%, 0) scale(1.03); }\n}\n\n/* ------------------------------------------------------------------ header */\n\n.ot-header {\n  position: relative;\n  z-index: 2;\n  flex: none;\n  padding: 14px 18px 10px;\n  border-bottom: 1px solid var(--ot-border);\n}\n\n.ot-headrow {\n  display: flex;\n  align-items: baseline;\n  gap: 10px;\n}\n\n.ot-title {\n  margin: 0;\n  font-size: 16px;\n  font-weight: 650;\n  letter-spacing: 0.01em;\n  background: linear-gradient(96deg, var(--ot-text) 12%, var(--ot-accent) 60%, var(--ot-accent-2) 96%);\n  -webkit-background-clip: text;\n  background-clip: text;\n  color: transparent;\n}\n\n.ot-subtitle {\n  color: var(--ot-text-dim);\n  font-size: 12px;\n}\n\n.ot-headspace {\n  flex: 1;\n}\n\n.ot-headmeta {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n}\n\n.ot-chip {\n  display: inline-flex;\n  align-items: center;\n  gap: 5px;\n  height: 24px;\n  padding: 0 9px;\n  border: 1px solid var(--ot-border);\n  border-radius: 999px;\n  background: color-mix(in srgb, var(--ot-layer-2) 72%, transparent);\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n  white-space: nowrap;\n}\n\n.ot-chip strong {\n  color: var(--ot-text);\n  font-weight: 600;\n}\n\n.ot-chip-owner {\n  border-color: color-mix(in srgb, var(--ot-accent) 42%, transparent);\n  color: color-mix(in srgb, var(--ot-accent) 82%, var(--ot-text));\n}\n\n.ot-chip-live::before {\n  content: \"\";\n  width: 6px;\n  height: 6px;\n  border-radius: 50%;\n  background: var(--ot-success);\n  box-shadow: 0 0 0 0 color-mix(in srgb, var(--ot-success) 60%, transparent);\n  animation: ot-pulse 2.4s ease-out infinite;\n}\n\n.ot-chip-warn::before {\n  background: var(--ot-warn);\n  animation: none;\n}\n\n/* --------------------------------------------------------- segmented control */\n\n/* Three mutually exclusive choices (å®Œæ•´èƒ¶å›Š / æœ€å°åœ†ç‚¹ / å…³é—­) read better as one\n   control than as three unrelated buttons, and the sliding highlight makes the\n   current state obvious at a glance. */\n.ot-seg {\n  position: relative;\n  display: grid;\n  grid-auto-flow: column;\n  grid-auto-columns: 1fr;\n  gap: 4px;\n  padding: 3px;\n  border: 1px solid var(--ot-border);\n  border-radius: 11px;\n  background: color-mix(in srgb, var(--ot-layer-2) 70%, transparent);\n}\n\n.ot-seg-item {\n  appearance: none;\n  border: 0;\n  border-radius: 8px;\n  padding: 7px 10px;\n  background: transparent;\n  color: var(--ot-text-dim);\n  font-size: 12.5px;\n  font-weight: 600;\n  cursor: pointer;\n  transition:\n    background 0.22s cubic-bezier(0.2, 0.9, 0.25, 1),\n    color 0.22s ease,\n    transform 0.22s cubic-bezier(0.2, 0.9, 0.25, 1);\n}\n\n.ot-seg-item:hover:not(:disabled) {\n  color: var(--ot-text);\n  background: color-mix(in srgb, var(--ot-text) 6%, transparent);\n}\n\n.ot-seg-item:active:not(:disabled) {\n  transform: scale(0.97);\n}\n\n.ot-seg-item.is-active {\n  color: #fff;\n  background: linear-gradient(135deg, var(--ot-accent), var(--ot-accent-2));\n  box-shadow: 0 4px 14px color-mix(in srgb, var(--ot-accent) 35%, transparent);\n}\n\n.ot-seg-item:disabled {\n  cursor: default;\n  opacity: 0.6;\n}\n\n.ot-seg-item:focus-visible {\n  outline: 2px solid color-mix(in srgb, var(--ot-accent) 60%, transparent);\n  outline-offset: 1px;\n}\n\n@keyframes ot-pulse {\n  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ot-success) 55%, transparent); }\n  70% { box-shadow: 0 0 0 7px transparent; }\n  100% { box-shadow: 0 0 0 0 transparent; }\n}\n\n/* -------------------------------------------------------------------- tabs */\n\n.ot-tabs {\n  position: relative;\n  z-index: 2;\n  flex: none;\n  display: flex;\n  gap: 4px;\n  padding: 10px 14px 0;\n}\n\n.ot-tab {\n  position: relative;\n  border: 0;\n  background: transparent;\n  padding: 7px 12px 9px;\n  border-radius: 9px 9px 0 0;\n  color: var(--ot-text-dim);\n  cursor: pointer;\n  transition: color 0.18s ease, background 0.18s ease, transform 0.18s ease;\n}\n\n.ot-tab:hover {\n  color: var(--ot-text);\n  background: color-mix(in srgb, var(--ot-layer-2) 60%, transparent);\n}\n\n.ot-tab:active {\n  transform: translateY(1px);\n}\n\n.ot-tab[data-active=\"true\"] {\n  color: var(--ot-text);\n  font-weight: 600;\n}\n\n.ot-tab[data-active=\"true\"]::after {\n  content: \"\";\n  position: absolute;\n  left: 8px;\n  right: 8px;\n  bottom: 1px;\n  height: 2px;\n  border-radius: 2px;\n  background: linear-gradient(90deg, var(--ot-accent), var(--ot-accent-2));\n  animation: ot-grow 0.32s cubic-bezier(0.2, 0.9, 0.2, 1);\n}\n\n@keyframes ot-grow {\n  from { transform: scaleX(0.2); opacity: 0; }\n  to { transform: scaleX(1); opacity: 1; }\n}\n\n.ot-badge {\n  display: inline-block;\n  min-width: 17px;\n  margin-left: 6px;\n  padding: 0 5px;\n  border-radius: 999px;\n  background: color-mix(in srgb, var(--ot-accent) 24%, transparent);\n  color: color-mix(in srgb, var(--ot-accent) 88%, var(--ot-text));\n  font-size: 10.5px;\n  font-weight: 600;\n  text-align: center;\n}\n\n/* ------------------------------------------------------------------- body */\n\n.ot-body {\n  position: relative;\n  z-index: 1;\n  flex: 1;\n  min-height: 0;\n  overflow-y: auto;\n  overflow-x: hidden;\n  padding: 14px 16px 22px;\n  scrollbar-width: thin;\n  scrollbar-color: var(--ot-border-strong) transparent;\n}\n\n.ot-body::-webkit-scrollbar {\n  width: 9px;\n}\n\n.ot-body::-webkit-scrollbar-thumb {\n  background: var(--ot-border-strong);\n  border-radius: 999px;\n  border: 2px solid transparent;\n  background-clip: content-box;\n}\n\n.ot-view {\n  animation: ot-fade-up 0.28s cubic-bezier(0.2, 0.85, 0.25, 1);\n}\n\n@keyframes ot-fade-up {\n  from { opacity: 0; transform: translateY(8px); }\n  to { opacity: 1; transform: none; }\n}\n\n/* -------------------------------------------------------------- crash card */\n\n/* Shown in place of a surface whose render threw. Deliberately loud: the\n   alternative is a blank window and a console nobody opens. */\n.ot-crash {\n  display: grid;\n  place-items: center;\n  padding: 24px;\n}\n\n.ot-crash-card {\n  position: relative;\n  z-index: 1;\n  max-width: 560px;\n  padding: 18px;\n  border: 1px solid color-mix(in srgb, var(--ot-danger) 42%, var(--ot-border));\n  border-radius: var(--ot-radius);\n  background: linear-gradient(160deg, color-mix(in srgb, var(--ot-layer-1) 96%, transparent), color-mix(in srgb, var(--ot-danger) 12%, transparent));\n  box-shadow: var(--ot-shadow);\n}\n\n.ot-crash-card h2 {\n  margin: 0 0 6px;\n  font-size: 15px;\n  font-weight: 650;\n}\n\n.ot-crash-msg {\n  margin: 10px 0 0;\n  padding: 9px 11px;\n  border-radius: 9px;\n  background: color-mix(in srgb, #000 34%, transparent);\n  color: color-mix(in srgb, var(--ot-danger) 80%, var(--ot-text));\n  font-family: Consolas, \"Cascadia Mono\", monospace;\n  font-size: 11.5px;\n  line-height: 1.55;\n  white-space: pre-wrap;\n  overflow-x: auto;\n}\n\n.ot-crash-actions {\n  display: flex;\n  gap: 8px;\n  margin-top: 12px;\n}\n\n.ot-crash details {\n  margin-top: 10px;\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n}\n\n.ot-crash summary {\n  cursor: pointer;\n}\n\n/* ---------------------------------------------------------------- surfaces */\n\n.ot-card {\n  position: relative;\n  border: 1px solid var(--ot-border);\n  border-radius: var(--ot-radius);\n  background: linear-gradient(160deg, color-mix(in srgb, var(--ot-layer-1) 96%, transparent), color-mix(in srgb, var(--ot-layer-2) 80%, transparent));\n  box-shadow: var(--ot-shadow);\n  overflow: hidden;\n}\n\n.ot-card-pad {\n  padding: 14px;\n}\n\n.ot-card-title {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  margin: 0 0 10px;\n  font-size: 12px;\n  font-weight: 650;\n  letter-spacing: 0.04em;\n  text-transform: uppercase;\n  color: var(--ot-text-dim);\n}\n\n.ot-dot {\n  width: 7px;\n  height: 7px;\n  border-radius: 50%;\n  background: linear-gradient(120deg, var(--ot-accent), var(--ot-accent-2));\n}\n\n.ot-grid {\n  display: grid;\n  gap: 12px;\n}\n\n.ot-grid-2 {\n  grid-template-columns: repeat(2, minmax(0, 1fr));\n}\n\n.ot-grid-4 {\n  grid-template-columns: repeat(4, minmax(0, 1fr));\n}\n\n@media (max-width: 720px) {\n  .ot-grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }\n}\n\n@media (max-width: 460px) {\n  .ot-grid-2, .ot-grid-4 { grid-template-columns: minmax(0, 1fr); }\n}\n\n/* -------------------------------------------------------------- stat chips */\n\n.ot-stat {\n  position: relative;\n  padding: 12px 13px;\n  border: 1px solid var(--ot-border);\n  border-radius: var(--ot-radius-sm);\n  background: color-mix(in srgb, var(--ot-layer-1) 88%, transparent);\n  overflow: hidden;\n  transition: transform 0.22s cubic-bezier(0.2, 0.9, 0.25, 1), border-color 0.22s ease;\n}\n\n.ot-stat:hover {\n  transform: translateY(-2px);\n  border-color: color-mix(in srgb, var(--ot-accent) 34%, var(--ot-border));\n}\n\n.ot-stat::after {\n  content: \"\";\n  position: absolute;\n  right: -30px;\n  top: -30px;\n  width: 76px;\n  height: 76px;\n  border-radius: 50%;\n  background: radial-gradient(circle, color-mix(in srgb, var(--ot-accent) 26%, transparent), transparent 68%);\n  pointer-events: none;\n}\n\n.ot-stat-label {\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n}\n\n.ot-stat-value {\n  margin-top: 3px;\n  font-size: 21px;\n  font-weight: 660;\n  letter-spacing: -0.01em;\n  font-variant-numeric: tabular-nums;\n}\n\n.ot-stat-foot {\n  margin-top: 2px;\n  color: var(--ot-text-dim);\n  font-size: 11px;\n}\n\n/* ------------------------------------------------------------------- next */\n\n.ot-next {\n  display: flex;\n  align-items: center;\n  gap: 14px;\n  padding: 15px 16px;\n}\n\n.ot-next-main {\n  min-width: 0;\n  flex: 1;\n}\n\n.ot-next-time {\n  display: flex;\n  align-items: baseline;\n  gap: 8px;\n  font-variant-numeric: tabular-nums;\n}\n\n.ot-next-start {\n  font-size: 24px;\n  font-weight: 680;\n  letter-spacing: -0.02em;\n}\n\n.ot-next-count {\n  color: color-mix(in srgb, var(--ot-accent) 84%, var(--ot-text));\n  font-size: 12.5px;\n  font-weight: 600;\n}\n\n.ot-next-title {\n  margin-top: 2px;\n  font-size: 14.5px;\n  font-weight: 600;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n.ot-next-meta {\n  margin-top: 3px;\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n.ot-countdown {\n  flex: none;\n  text-align: right;\n}\n\n.ot-countdown-value {\n  font-size: 26px;\n  font-weight: 700;\n  font-variant-numeric: tabular-nums;\n  /* \"5 天 3 小时\" is one statement; wrapped between 天 and 小时 it reads as two. */\n  white-space: nowrap;\n  letter-spacing: -0.02em;\n  background: linear-gradient(120deg, var(--ot-accent), var(--ot-accent-3));\n  -webkit-background-clip: text;\n  background-clip: text;\n  color: transparent;\n}\n\n.ot-countdown-label {\n  color: var(--ot-text-dim);\n  font-size: 11px;\n}\n\n.ot-progress {\n  position: relative;\n  height: 3px;\n  margin-top: 10px;\n  border-radius: 999px;\n  background: color-mix(in srgb, var(--ot-text) 10%, transparent);\n  overflow: hidden;\n}\n\n.ot-progress > i {\n  position: absolute;\n  inset: 0 auto 0 0;\n  border-radius: inherit;\n  background: linear-gradient(90deg, var(--ot-accent), var(--ot-accent-2));\n  transition: width 0.6s cubic-bezier(0.25, 0.9, 0.3, 1);\n}\n\n/* ---------------------------------------------------------------- pomodoro */\n\n.ot-pomo {\n  display: grid;\n  grid-template-columns: minmax(0, 220px) minmax(0, 1fr);\n  gap: 18px;\n  align-items: center;\n}\n\n@media (max-width: 620px) {\n  .ot-pomo { grid-template-columns: minmax(0, 1fr); justify-items: center; }\n}\n\n.ot-ring {\n  position: relative;\n  width: 208px;\n  height: 208px;\n  flex: none;\n}\n\n.ot-ring-svg {\n  width: 100%;\n  height: 100%;\n  transform: rotate(-90deg);\n}\n\n.ot-ring-track {\n  fill: none;\n  stroke: color-mix(in srgb, var(--ot-text) 9%, transparent);\n  stroke-width: 10;\n}\n\n.ot-ring-arc {\n  fill: none;\n  stroke: url(#ot-ring-gradient);\n  stroke-width: 10;\n  stroke-linecap: round;\n  transition: stroke-dashoffset 0.95s linear;\n  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--ot-accent) 45%, transparent));\n}\n\n.ot-ring-break .ot-ring-arc {\n  stroke: url(#ot-ring-gradient-break);\n}\n\n.ot-ring-center {\n  position: absolute;\n  inset: 0;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  gap: 2px;\n}\n\n.ot-ring-time {\n  font-size: 40px;\n  font-weight: 700;\n  font-variant-numeric: tabular-nums;\n  letter-spacing: -0.03em;\n}\n\n.ot-ring-phase {\n  color: var(--ot-text-dim);\n  font-size: 12px;\n  letter-spacing: 0.08em;\n  text-transform: uppercase;\n}\n\n.ot-ring-subject {\n  max-width: 150px;\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n  text-align: center;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n.ot-ring.running .ot-ring-center::after {\n  content: \"\";\n  position: absolute;\n  inset: 26px;\n  border-radius: 50%;\n  border: 1px solid color-mix(in srgb, var(--ot-accent) 26%, transparent);\n  animation: ot-breathe 3.6s ease-in-out infinite;\n  pointer-events: none;\n}\n\n@keyframes ot-breathe {\n  0%, 100% { transform: scale(0.97); opacity: 0.35; }\n  50% { transform: scale(1.04); opacity: 0.85; }\n}\n\n.ot-pomo-side {\n  display: flex;\n  flex-direction: column;\n  gap: 12px;\n  min-width: 0;\n}\n\n.ot-row {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  flex-wrap: wrap;\n}\n\n.ot-btn {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  gap: 6px;\n  height: 32px;\n  padding: 0 13px;\n  border: 1px solid var(--ot-border);\n  border-radius: 9px;\n  background: color-mix(in srgb, var(--ot-layer-2) 78%, transparent);\n  color: var(--ot-text);\n  cursor: pointer;\n  white-space: nowrap;\n  transition: transform 0.16s cubic-bezier(0.2, 0.9, 0.25, 1), background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;\n}\n\n.ot-btn:hover:not(:disabled) {\n  transform: translateY(-1px);\n  border-color: color-mix(in srgb, var(--ot-accent) 40%, var(--ot-border));\n  background: color-mix(in srgb, var(--ot-accent) 14%, var(--ot-layer-2));\n  box-shadow: 0 6px 16px color-mix(in srgb, var(--ot-accent) 16%, transparent);\n}\n\n.ot-btn:active:not(:disabled) {\n  transform: translateY(0) scale(0.985);\n}\n\n.ot-btn:disabled {\n  opacity: 0.45;\n  cursor: not-allowed;\n}\n\n.ot-btn-primary {\n  border-color: transparent;\n  background: linear-gradient(120deg, var(--ot-accent), var(--ot-accent-2));\n  color: #fff;\n  font-weight: 600;\n}\n\n.ot-btn-primary:hover:not(:disabled) {\n  background: linear-gradient(120deg, var(--ot-accent), var(--ot-accent-2));\n  box-shadow: 0 8px 22px color-mix(in srgb, var(--ot-accent) 34%, transparent);\n}\n\n.ot-btn-ghost {\n  border-color: transparent;\n  background: transparent;\n  color: var(--ot-text-dim);\n}\n\n.ot-btn-ghost:hover:not(:disabled) {\n  background: color-mix(in srgb, var(--ot-text) 8%, transparent);\n  color: var(--ot-text);\n  box-shadow: none;\n}\n\n.ot-btn-sm {\n  height: 26px;\n  padding: 0 9px;\n  font-size: 11.5px;\n  border-radius: 7px;\n}\n\n.ot-btn-icon {\n  width: 30px;\n  padding: 0;\n}\n\n.ot-rounds {\n  display: flex;\n  align-items: center;\n  gap: 6px;\n}\n\n.ot-round {\n  width: 11px;\n  height: 11px;\n  border-radius: 50%;\n  border: 1px solid var(--ot-border-strong);\n  transition: background 0.3s ease, transform 0.3s ease, border-color 0.3s ease;\n}\n\n.ot-round[data-done=\"true\"] {\n  border-color: transparent;\n  background: linear-gradient(120deg, var(--ot-accent), var(--ot-accent-2));\n  transform: scale(1.12);\n}\n\n.ot-round[data-current=\"true\"] {\n  border-color: color-mix(in srgb, var(--ot-accent) 70%, transparent);\n  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ot-accent) 18%, transparent);\n}\n\n.ot-field {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n}\n\n.ot-field-label {\n  min-width: 92px;\n  color: var(--ot-text-dim);\n  font-size: 12px;\n}\n\n.ot-input {\n  flex: 1;\n  min-width: 0;\n  height: 32px;\n  padding: 0 10px;\n  border: 1px solid var(--ot-border);\n  border-radius: 9px;\n  background: color-mix(in srgb, var(--ot-bg) 60%, transparent);\n  color: var(--ot-text);\n  outline: none;\n  transition: border-color 0.18s ease, box-shadow 0.18s ease;\n}\n\n.ot-input:focus {\n  border-color: color-mix(in srgb, var(--ot-accent) 56%, transparent);\n  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ot-accent) 15%, transparent);\n}\n\n.ot-input-num {\n  width: 74px;\n  flex: none;\n  text-align: center;\n  font-variant-numeric: tabular-nums;\n}\n\n/* ---------------------------------------------------------------- timeline */\n\n.ot-daybar {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  margin-bottom: 12px;\n}\n\n.ot-daylist {\n  display: flex;\n  gap: 6px;\n  overflow-x: auto;\n  padding-bottom: 2px;\n  scrollbar-width: none;\n}\n\n.ot-daylist::-webkit-scrollbar { display: none; }\n\n.ot-daychip {\n  flex: none;\n  min-width: 46px;\n  padding: 6px 8px;\n  border: 1px solid var(--ot-border);\n  border-radius: 10px;\n  background: transparent;\n  color: var(--ot-text-dim);\n  cursor: pointer;\n  text-align: center;\n  transition: all 0.2s cubic-bezier(0.2, 0.9, 0.25, 1);\n}\n\n.ot-daychip:hover {\n  transform: translateY(-1px);\n  color: var(--ot-text);\n  border-color: var(--ot-border-strong);\n}\n\n.ot-daychip[data-active=\"true\"] {\n  border-color: transparent;\n  background: linear-gradient(140deg, color-mix(in srgb, var(--ot-accent) 26%, transparent), color-mix(in srgb, var(--ot-accent-2) 20%, transparent));\n  color: var(--ot-text);\n  font-weight: 600;\n}\n\n.ot-daychip b {\n  display: block;\n  font-size: 14px;\n  font-variant-numeric: tabular-nums;\n}\n\n.ot-daychip span {\n  font-size: 10.5px;\n}\n\n.ot-daychip i {\n  display: inline-block;\n  width: 4px;\n  height: 4px;\n  margin-top: 3px;\n  border-radius: 50%;\n  background: var(--ot-accent);\n}\n\n.ot-tl {\n  position: relative;\n  padding-left: 14px;\n}\n\n.ot-tl::before {\n  content: \"\";\n  position: absolute;\n  left: 3px;\n  top: 6px;\n  bottom: 6px;\n  width: 1px;\n  background: linear-gradient(180deg, transparent, var(--ot-border-strong) 12%, var(--ot-border-strong) 88%, transparent);\n}\n\n.ot-ev {\n  position: relative;\n  display: flex;\n  gap: 11px;\n  margin-bottom: 9px;\n}\n\n.ot-ev-node {\n  position: absolute;\n  left: -14px;\n  top: 15px;\n  width: 9px;\n  height: 9px;\n  border-radius: 50%;\n  border: 2px solid var(--ot-bg);\n  background: var(--ot-idle);\n  transition: background 0.3s ease, box-shadow 0.3s ease;\n}\n\n.ot-ev[data-phase=\"current\"] .ot-ev-node {\n  background: linear-gradient(120deg, var(--ot-accent), var(--ot-accent-3));\n  box-shadow: 0 0 0 0 color-mix(in srgb, var(--ot-accent) 50%, transparent);\n  animation: ot-pulse 2s ease-out infinite;\n}\n\n.ot-ev[data-phase=\"past\"] .ot-ev-node,\n.ot-ev[data-done=\"true\"] .ot-ev-node {\n  background: var(--ot-success);\n}\n\n.ot-ev-time {\n  flex: none;\n  width: 54px;\n  padding-top: 12px;\n  text-align: right;\n  font-variant-numeric: tabular-nums;\n}\n\n.ot-ev-start {\n  font-size: 13px;\n  font-weight: 620;\n}\n\n.ot-ev-end {\n  color: var(--ot-text-dim);\n  font-size: 10.5px;\n}\n\n.ot-ev-card {\n  flex: 1;\n  min-width: 0;\n  padding: 10px 12px;\n  border: 1px solid var(--ot-border);\n  border-radius: var(--ot-radius-sm);\n  background: color-mix(in srgb, var(--ot-layer-1) 86%, transparent);\n  transition: transform 0.22s cubic-bezier(0.2, 0.9, 0.25, 1), border-color 0.22s ease, background 0.22s ease;\n}\n\n.ot-ev-card:hover {\n  transform: translateX(3px);\n  border-color: color-mix(in srgb, var(--ot-accent) 36%, var(--ot-border));\n}\n\n.ot-ev[data-phase=\"current\"] .ot-ev-card {\n  border-color: color-mix(in srgb, var(--ot-accent) 48%, transparent);\n  background: linear-gradient(120deg, color-mix(in srgb, var(--ot-accent) 13%, var(--ot-layer-1)), color-mix(in srgb, var(--ot-layer-1) 92%, transparent));\n  box-shadow: 0 8px 22px color-mix(in srgb, var(--ot-accent) 15%, transparent);\n}\n\n.ot-ev[data-done=\"true\"] .ot-ev-card {\n  opacity: 0.55;\n}\n\n.ot-ev-head {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n}\n\n.ot-ev-title {\n  min-width: 0;\n  flex: 1;\n  font-size: 13.5px;\n  font-weight: 600;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n.ot-ev[data-done=\"true\"] .ot-ev-title {\n  text-decoration: line-through;\n}\n\n.ot-ev-when {\n  flex: none;\n  color: color-mix(in srgb, var(--ot-accent) 82%, var(--ot-text));\n  font-size: 11.5px;\n  font-weight: 600;\n  font-variant-numeric: tabular-nums;\n}\n\n.ot-ev[data-phase=\"past\"] .ot-ev-when {\n  color: var(--ot-text-dim);\n  font-weight: 500;\n}\n\n.ot-tags {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 6px;\n  margin-top: 5px;\n}\n\n.ot-tag {\n  display: inline-flex;\n  align-items: center;\n  gap: 4px;\n  padding: 1px 7px;\n  border-radius: 6px;\n  background: color-mix(in srgb, var(--ot-text) 7%, transparent);\n  color: var(--ot-text-dim);\n  font-size: 11px;\n}\n\n.ot-tag-owner {\n  background: color-mix(in srgb, var(--ot-accent) 16%, transparent);\n  color: color-mix(in srgb, var(--ot-accent) 86%, var(--ot-text));\n}\n\n.ot-tag-warn {\n  background: color-mix(in srgb, var(--ot-warn) 18%, transparent);\n  color: color-mix(in srgb, var(--ot-warn) 86%, var(--ot-text));\n}\n\n/* A row the user typed in themselves, not one a roster produced. */\n.ot-tag-manual {\n  background: color-mix(in srgb, var(--ot-accent-3) 18%, transparent);\n  color: color-mix(in srgb, var(--ot-accent-3) 82%, var(--ot-text));\n}\n\n.ot-chip-manual {\n  background: color-mix(in srgb, var(--ot-accent-3) 18%, transparent);\n  color: color-mix(in srgb, var(--ot-accent-3) 84%, var(--ot-text));\n}\n\n.ot-ev-notes {\n  margin-top: 5px;\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n  display: -webkit-box;\n  -webkit-line-clamp: 2;\n  -webkit-box-orient: vertical;\n  overflow: hidden;\n}\n\n.ot-ev-actions {\n  display: flex;\n  gap: 6px;\n  margin-top: 9px;\n  opacity: 0;\n  max-height: 0;\n  overflow: hidden;\n  transition: opacity 0.24s ease, max-height 0.24s ease;\n}\n\n.ot-ev:hover .ot-ev-actions,\n.ot-ev[data-phase=\"current\"] .ot-ev-actions,\n.ot-ev:focus-within .ot-ev-actions {\n  opacity: 1;\n  max-height: 40px;\n}\n\n.ot-empty {\n  padding: 34px 16px;\n  border: 1px dashed var(--ot-border-strong);\n  border-radius: var(--ot-radius);\n  color: var(--ot-text-dim);\n  text-align: center;\n}\n\n.ot-empty b {\n  display: block;\n  margin-bottom: 4px;\n  color: var(--ot-text);\n  font-size: 14px;\n}\n\n/* ----------------------------------------------------------------- calendar */\n\n.ot-cal {\n  margin-bottom: 12px;\n  padding: 12px 13px 11px;\n  border: 1px solid var(--ot-border);\n  border-radius: var(--ot-radius);\n  background: linear-gradient(160deg, color-mix(in srgb, var(--ot-layer-1) 96%, transparent), color-mix(in srgb, var(--ot-layer-2) 80%, transparent));\n  box-shadow: var(--ot-shadow);\n  animation: ot-fade-up 0.28s cubic-bezier(0.2, 0.9, 0.25, 1) both;\n}\n\n.ot-cal-head {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  margin-bottom: 10px;\n}\n\n.ot-cal-title {\n  display: flex;\n  align-items: baseline;\n  gap: 7px;\n}\n\n.ot-cal-title b {\n  font-size: 14px;\n  font-weight: 650;\n}\n\n.ot-cal-summary {\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n  font-variant-numeric: tabular-nums;\n}\n\n.ot-cal-flip {\n  padding: 0 4px;\n}\n\n.ot-cal-week {\n  display: grid;\n  grid-template-columns: repeat(7, minmax(0, 1fr));\n  gap: 4px;\n  margin-bottom: 4px;\n}\n\n.ot-cal-week span {\n  text-align: center;\n  color: var(--ot-text-dim);\n  font-size: 10.5px;\n  letter-spacing: 0.06em;\n}\n\n.ot-cal-grid {\n  display: grid;\n  grid-template-columns: repeat(7, minmax(0, 1fr));\n  gap: 4px;\n}\n\n.ot-cal-cell {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  gap: 3px;\n  min-height: 42px;\n  padding: 5px 2px 4px;\n  border: 1px solid transparent;\n  border-radius: 9px;\n  background: transparent;\n  color: var(--ot-text-dim);\n  cursor: pointer;\n  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.18s ease;\n}\n\n.ot-cal-cell:hover {\n  transform: translateY(-1px);\n  border-color: var(--ot-border-strong);\n  background: color-mix(in srgb, var(--ot-text) 6%, transparent);\n  color: var(--ot-text);\n}\n\n/* Days outside the month stay clickable â€” they are real days with real\n   schedules â€” but recede so the month itself reads as the subject. */\n.ot-cal-cell[data-outside=\"true\"] {\n  opacity: 0.42;\n}\n\n.ot-cal-cell[data-marked=\"true\"] {\n  color: var(--ot-text);\n}\n\n.ot-cal-cell[data-today=\"true\"] {\n  border-color: color-mix(in srgb, var(--ot-accent) 52%, transparent);\n}\n\n.ot-cal-cell[data-selected=\"true\"] {\n  border-color: transparent;\n  background: linear-gradient(140deg, color-mix(in srgb, var(--ot-accent) 26%, transparent), color-mix(in srgb, var(--ot-accent-2) 20%, transparent));\n  color: var(--ot-text);\n  font-weight: 650;\n}\n\n.ot-cal-daynum {\n  font-size: 12.5px;\n  font-variant-numeric: tabular-nums;\n  line-height: 1.1;\n}\n\n.ot-cal-marks {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  gap: 3px;\n  height: 5px;\n}\n\n.ot-cal-mark {\n  width: 4px;\n  height: 4px;\n  border-radius: 50%;\n  background: var(--ot-accent);\n}\n\n.ot-cal-mark-more {\n  border-radius: 2px;\n}\n\n/* Every schedule on the day is ticked off: the day still counts, it is just\n   done â€” a hollow dot says that without pretending the day is empty. */\n.ot-cal-mark-done {\n  background: transparent;\n  box-shadow: inset 0 0 0 1px var(--ot-success);\n}\n\n.ot-cal-items {\n  margin-top: 11px;\n  padding-top: 10px;\n  border-top: 1px solid var(--ot-border);\n}\n\n.ot-cal-items-head {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  margin-bottom: 7px;\n  font-size: 12.5px;\n}\n\n.ot-cal-item {\n  display: flex;\n  align-items: baseline;\n  gap: 9px;\n  padding: 4px 0;\n  font-size: 12.5px;\n}\n\n.ot-cal-item-time {\n  flex: none;\n  width: 46px;\n  text-align: right;\n  color: var(--ot-text-dim);\n  font-variant-numeric: tabular-nums;\n}\n\n.ot-cal-item-title {\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n.ot-cal-item-place {\n  flex: none;\n  padding: 1px 7px;\n  border-radius: 6px;\n  background: color-mix(in srgb, var(--ot-text) 7%, transparent);\n  color: var(--ot-text-dim);\n  font-size: 11px;\n}\n\n.ot-cal-item[data-done=\"true\"] {\n  color: var(--ot-text-dim);\n}\n\n.ot-cal-item[data-done=\"true\"] .ot-cal-item-title {\n  text-decoration: line-through;\n}\n\n.ot-cal-item-done {\n  display: inline-flex;\n  align-items: center;\n  gap: 3px;\n  flex: none;\n  color: var(--ot-success);\n  font-size: 11px;\n}\n\n.ot-cal-actions {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  margin-top: 9px;\n}\n\n/* -------------------------------------------------------- add an event */\n\n.ot-add {\n  margin-bottom: 12px;\n  padding: 12px 13px 11px;\n  border: 1px solid color-mix(in srgb, var(--ot-accent-3) 34%, var(--ot-border));\n  border-radius: var(--ot-radius);\n  background: linear-gradient(160deg, color-mix(in srgb, var(--ot-layer-1) 96%, transparent), color-mix(in srgb, var(--ot-accent-3) 9%, transparent));\n  box-shadow: var(--ot-shadow);\n  animation: ot-fade-up 0.28s cubic-bezier(0.2, 0.9, 0.25, 1) both;\n}\n\n.ot-add-head {\n  display: flex;\n  align-items: baseline;\n  gap: 8px;\n  margin-bottom: 10px;\n}\n\n.ot-add-head b {\n  font-size: 13.5px;\n  font-weight: 650;\n}\n\n.ot-add-grid {\n  display: grid;\n  grid-template-columns: minmax(0, 2.2fr) repeat(3, minmax(0, 1fr)) minmax(0, 1.4fr);\n  gap: 8px;\n  align-items: end;\n}\n\n.ot-add-grid label {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  min-width: 0;\n}\n\n.ot-add-grid label > span {\n  color: var(--ot-text-dim);\n  font-size: 11px;\n}\n\n.ot-add-foot {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  margin-top: 10px;\n}\n\n@media (max-width: 860px) {\n  .ot-add-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }\n  .ot-add-title { grid-column: 1 / -1; }\n}\n\n@media (max-width: 460px) {\n  .ot-add-grid { grid-template-columns: minmax(0, 1fr); }\n}\n\n@media (max-width: 620px) {\n  .ot-cal-item-place { display: none; }\n}\n\n/* --------------------------------------------------------------- companion */\n\n.ot-comp {\n  display: flex;\n  flex-direction: column;\n  gap: 10px;\n  height: 100%;\n  min-height: 0;\n}\n\n.ot-comp-head {\n  display: flex;\n  align-items: center;\n  gap: 11px;\n}\n\n.ot-avatar {\n  position: relative;\n  width: 44px;\n  height: 44px;\n  flex: none;\n  border-radius: 14px;\n  background: linear-gradient(140deg, var(--ot-accent), var(--ot-accent-2) 60%, var(--ot-accent-3));\n  box-shadow: 0 8px 20px color-mix(in srgb, var(--ot-accent) 32%, transparent);\n  animation: ot-float 5s ease-in-out infinite;\n}\n\n.ot-avatar::after {\n  content: \"\";\n  position: absolute;\n  inset: 7px 9px auto 9px;\n  height: 8px;\n  border-radius: 999px;\n  background: rgba(255, 255, 255, 0.9);\n  box-shadow: 0 12px 0 -1px rgba(255, 255, 255, 0.9);\n  opacity: 0.92;\n}\n\n.ot-avatar[data-busy=\"true\"]::after {\n  animation: ot-blink 1.1s steps(2, end) infinite;\n}\n\n@keyframes ot-float {\n  0%, 100% { transform: translateY(0) rotate(-1deg); }\n  50% { transform: translateY(-4px) rotate(1deg); }\n}\n\n@keyframes ot-blink {\n  50% { opacity: 0.35; }\n}\n\n.ot-comp-name {\n  font-size: 14px;\n  font-weight: 640;\n}\n\n.ot-comp-state {\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n}\n\n.ot-msgs {\n  flex: 1;\n  min-height: 180px;\n  max-height: 46vh;\n  overflow-y: auto;\n  display: flex;\n  flex-direction: column;\n  gap: 9px;\n  padding-right: 3px;\n  scrollbar-width: thin;\n}\n\n.ot-msg {\n  max-width: 88%;\n  padding: 9px 12px;\n  border-radius: 13px;\n  font-size: 12.5px;\n  animation: ot-pop 0.3s cubic-bezier(0.2, 0.9, 0.25, 1);\n}\n\n@keyframes ot-pop {\n  from { opacity: 0; transform: translateY(7px) scale(0.98); }\n  to { opacity: 1; transform: none; }\n}\n\n.ot-msg-ai {\n  align-self: flex-start;\n  border: 1px solid var(--ot-border);\n  border-bottom-left-radius: 5px;\n  background: color-mix(in srgb, var(--ot-layer-1) 92%, transparent);\n}\n\n.ot-msg-user {\n  align-self: flex-end;\n  border-bottom-right-radius: 5px;\n  background: linear-gradient(120deg, color-mix(in srgb, var(--ot-accent) 88%, transparent), color-mix(in srgb, var(--ot-accent-2) 82%, transparent));\n  color: #fff;\n}\n\n.ot-msg-speak {\n  font-weight: 600;\n}\n\n.ot-msg-detail {\n  margin-top: 4px;\n  color: var(--ot-text-dim);\n  font-size: 12px;\n  white-space: pre-wrap;\n}\n\n.ot-msg-user .ot-msg-detail {\n  color: rgba(255, 255, 255, 0.86);\n}\n\n.ot-msg-trace {\n  margin-top: 6px;\n  padding-top: 5px;\n  border-top: 1px dashed color-mix(in srgb, var(--ot-text) 14%, transparent);\n  color: var(--ot-text-dim);\n  font-size: 10.5px;\n}\n\n/* Capability chip beside the companion name: which brain is answering. */\n.ot-model-chip {\n  display: inline-block;\n  margin-left: 7px;\n  padding: 1px 6px;\n  border-radius: 999px;\n  font-size: 10px;\n  font-weight: 600;\n  vertical-align: 1px;\n}\n\n.ot-model-chip-live {\n  background: color-mix(in srgb, var(--ot-success) 20%, transparent);\n  color: color-mix(in srgb, var(--ot-success) 88%, var(--ot-text));\n}\n\n.ot-model-chip-live::before {\n  content: \"\";\n  display: inline-block;\n  width: 5px;\n  height: 5px;\n  margin-right: 4px;\n  border-radius: 50%;\n  background: currentColor;\n  animation: ot-pulse 2.4s ease-out infinite;\n}\n\n.ot-model-chip-local {\n  background: color-mix(in srgb, var(--ot-text) 10%, transparent);\n  color: var(--ot-text-dim);\n}\n\n.ot-chips {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 6px;\n  margin-top: 8px;\n}\n\n.ot-chipbtn {\n  padding: 3px 9px;\n  border: 1px solid color-mix(in srgb, var(--ot-accent) 32%, transparent);\n  border-radius: 999px;\n  background: color-mix(in srgb, var(--ot-accent) 10%, transparent);\n  color: color-mix(in srgb, var(--ot-accent) 88%, var(--ot-text));\n  font-size: 11.5px;\n  cursor: pointer;\n  transition: all 0.18s ease;\n}\n\n.ot-chipbtn:hover {\n  transform: translateY(-1px);\n  background: color-mix(in srgb, var(--ot-accent) 22%, transparent);\n}\n\n.ot-typing {\n  display: inline-flex;\n  gap: 4px;\n  align-items: center;\n}\n\n.ot-typing i {\n  width: 5px;\n  height: 5px;\n  border-radius: 50%;\n  background: var(--ot-text-dim);\n  animation: ot-typing 1.1s ease-in-out infinite;\n}\n\n.ot-typing i:nth-child(2) { animation-delay: 0.16s; }\n.ot-typing i:nth-child(3) { animation-delay: 0.32s; }\n\n@keyframes ot-typing {\n  0%, 100% { transform: translateY(0); opacity: 0.4; }\n  50% { transform: translateY(-3px); opacity: 1; }\n}\n\n.ot-composer {\n  display: flex;\n  gap: 7px;\n  flex: none;\n}\n\n/* ------------------------------------------------------------------ import */\n\n/*\n * The import page is a form, so the controls follow form rules: a control and\n * the button that acts on it sit on one line, labels align in a column, and\n * nothing floats in the middle of a row. `.ot-inline-form` is that line.\n */\n.ot-gap {\n  height: 12px;\n}\n\n.ot-inline-form {\n  display: flex;\n  align-items: center;\n  /* A row of controls in a narrow column has to wrap; without this the last\n     control is painted past the card's right edge, which is what produced the\n     horizontal scrollbar pills and the cut-off sentence in the import page. */\n  flex-wrap: wrap;\n  gap: 8px;\n  min-width: 0;\n}\n\n/* The import page is a single column of forms; keep it from stretching. */\n.ot-import {\n  width: 100%;\n  max-width: 980px;\n  min-width: 0;\n}\n\n/* ---- the confirmation step ---------------------------------------------- */\n\n/* Reading a sheet produces a decision, so the decision stays on screen: sticky at\n   the top of the import page, above the cards it is about. `top: -1px` hides the\n   hairline seam that a sticky block otherwise leaves while scrolling. */\n.ot-confirm {\n  position: sticky;\n  top: -1px;\n  z-index: 3;\n  margin-bottom: 12px;\n  padding: 13px 14px;\n  border: 1px solid color-mix(in srgb, var(--ot-accent) 45%, var(--ot-border));\n  border-radius: var(--ot-radius);\n  background: linear-gradient(160deg, color-mix(in srgb, var(--ot-accent) 16%, var(--ot-layer-1)), color-mix(in srgb, var(--ot-layer-2) 92%, transparent));\n  box-shadow: 0 14px 32px color-mix(in srgb, #000 32%, transparent);\n  backdrop-filter: blur(12px);\n  animation: ot-fade-up 0.3s cubic-bezier(0.2, 0.85, 0.25, 1);\n}\n\n.ot-confirm[data-tone=\"done\"] {\n  border-color: color-mix(in srgb, var(--ot-success) 48%, var(--ot-border));\n  background: linear-gradient(160deg, color-mix(in srgb, var(--ot-success) 14%, var(--ot-layer-1)), color-mix(in srgb, var(--ot-layer-2) 92%, transparent));\n}\n\n.ot-confirm[data-tone=\"error\"] {\n  border-color: color-mix(in srgb, var(--ot-danger) 52%, var(--ot-border));\n  background: linear-gradient(160deg, color-mix(in srgb, var(--ot-danger) 14%, var(--ot-layer-1)), color-mix(in srgb, var(--ot-layer-2) 92%, transparent));\n}\n\n.ot-confirm[data-tone=\"busy\"] {\n  border-color: var(--ot-border-strong);\n  background: color-mix(in srgb, var(--ot-layer-1) 96%, transparent);\n}\n\n.ot-confirm-head {\n  display: flex;\n  align-items: center;\n  flex-wrap: wrap;\n  gap: 8px;\n  min-width: 0;\n}\n\n.ot-confirm-title {\n  font-size: 13.5px;\n  font-weight: 650;\n  /* A long file name must wrap instead of pushing the confidence pill off the\n     card â€” the toast this replaced did exactly that, and then got clipped by the\n     window edge on top of it. */\n  min-width: 0;\n  overflow-wrap: anywhere;\n}\n\n.ot-confirm-hint {\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n}\n\n.ot-confirm-lines {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n  margin-top: 8px;\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n}\n\n.ot-confirm-line {\n  display: flex;\n  align-items: flex-start;\n  gap: 6px;\n  min-width: 0;\n  overflow-wrap: anywhere;\n}\n\n.ot-confirm-line > svg {\n  margin-top: 2px;\n}\n\n.ot-confirm-actions {\n  display: flex;\n  align-items: center;\n  flex-wrap: wrap;\n  gap: 8px;\n  margin-top: 11px;\n}\n\n.ot-inline-form > .ot-input {\n  flex: 1 1 auto;\n  min-width: 0;\n}\n\n.ot-inline-form > .ot-btn {\n  flex: none;\n}\n\n.ot-headspace {\n  flex: 1 1 auto;\n  min-width: 0;\n}\n\n.ot-warn-text {\n  color: color-mix(in srgb, var(--ot-warn) 80%, var(--ot-text));\n}\n\n.ot-drop {\n  padding: 16px;\n  border: 1px dashed var(--ot-border-strong);\n  border-radius: var(--ot-radius);\n  background: color-mix(in srgb, var(--ot-layer-1) 70%, transparent);\n  text-align: center;\n  cursor: pointer;\n  transition: border-color 0.2s ease, background 0.2s ease;\n}\n\n.ot-drop:hover,\n.ot-drop-active {\n  border-color: color-mix(in srgb, var(--ot-accent) 52%, transparent);\n  background: color-mix(in srgb, var(--ot-accent) 8%, var(--ot-layer-1));\n}\n\n.ot-drop-active {\n  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ot-accent) 14%, transparent);\n}\n\n.ot-drop-title {\n  font-size: 13px;\n  font-weight: 600;\n  color: var(--ot-text);\n}\n\n.ot-drop-sub {\n  margin-top: 4px;\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n}\n\n.ot-drop-actions {\n  display: flex;\n  justify-content: center;\n  flex-wrap: wrap;\n  gap: 8px;\n  margin-top: 12px;\n}\n\n/* The real input stays in the tree so its click() is trusted, but never shown. */\n.ot-file-hidden {\n  display: none;\n}\n\n.ot-details {\n  margin-top: 10px;\n}\n\n.ot-details > summary {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  padding: 6px 2px;\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n  cursor: pointer;\n  list-style: none;\n}\n\n.ot-details > summary::-webkit-details-marker {\n  display: none;\n}\n\n.ot-details > summary::before {\n  content: \"â–¸\";\n  font-size: 10px;\n  transition: transform 0.18s ease;\n}\n\n.ot-details[open] > summary::before {\n  transform: rotate(90deg);\n}\n\n.ot-details > summary:hover {\n  color: var(--ot-text);\n}\n\n.ot-details code {\n  max-width: 46ch;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n  padding: 1px 6px;\n  border-radius: 6px;\n  background: color-mix(in srgb, var(--ot-text) 8%, transparent);\n  font-size: 11px;\n}\n\n/* ---- analysis verdict ---- */\n\n.ot-verdict {\n  margin-top: 10px;\n  padding: 12px;\n  border: 1px solid var(--ot-border);\n  border-radius: var(--ot-radius-sm);\n  background: color-mix(in srgb, var(--ot-layer-1) 82%, transparent);\n}\n\n.ot-verdict[data-tone=\"high\"] {\n  border-color: color-mix(in srgb, var(--ot-success) 34%, var(--ot-border));\n}\n\n.ot-verdict[data-tone=\"low\"] {\n  border-color: color-mix(in srgb, var(--ot-warn) 34%, var(--ot-border));\n}\n\n.ot-verdict-head {\n  display: flex;\n  align-items: center;\n  flex-wrap: wrap;\n  gap: 8px;\n}\n\n.ot-verdict-model {\n  color: var(--ot-text-dim);\n  font-size: 11px;\n}\n\n.ot-verdict-body {\n  margin-top: 8px;\n  font-size: 13px;\n  line-height: 1.6;\n}\n\n.ot-verdict-hints {\n  margin: 8px 0 0;\n  padding-left: 18px;\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n  line-height: 1.7;\n}\n\n.ot-verdict-tags {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 6px;\n  margin-top: 10px;\n}\n\n.ot-tag {\n  padding: 2px 8px;\n  border: 1px solid var(--ot-border);\n  border-radius: 999px;\n  background: color-mix(in srgb, var(--ot-text) 5%, transparent);\n  color: var(--ot-text-dim);\n  font-size: 11px;\n  white-space: nowrap;\n}\n\n.ot-pill {\n  padding: 2px 9px;\n  border-radius: 999px;\n  font-size: 11px;\n  font-weight: 600;\n}\n\n.ot-pill[data-tone=\"high\"] {\n  background: color-mix(in srgb, var(--ot-success) 18%, transparent);\n  color: color-mix(in srgb, var(--ot-success) 78%, var(--ot-text));\n}\n\n.ot-pill[data-tone=\"mid\"] {\n  background: color-mix(in srgb, var(--ot-accent) 16%, transparent);\n  color: color-mix(in srgb, var(--ot-accent) 82%, var(--ot-text));\n}\n\n.ot-pill[data-tone=\"low\"] {\n  background: color-mix(in srgb, var(--ot-warn) 18%, transparent);\n  color: color-mix(in srgb, var(--ot-warn) 80%, var(--ot-text));\n}\n\n.ot-verdict-actions {\n  display: flex;\n  align-items: center;\n  flex-wrap: wrap;\n  gap: 8px;\n  margin-top: 12px;\n  padding-top: 10px;\n  border-top: 1px solid var(--ot-border);\n}\n\n.ot-linkbtn {\n  padding: 0;\n  border: 0;\n  background: none;\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n  text-decoration: underline;\n  text-underline-offset: 2px;\n  cursor: pointer;\n}\n\n.ot-linkbtn:hover {\n  color: var(--ot-text);\n}\n\n.ot-working {\n  display: flex;\n  align-items: center;\n  gap: 9px;\n  padding: 9px 11px;\n  border: 1px solid color-mix(in srgb, var(--ot-accent) 26%, var(--ot-border));\n  border-radius: 9px;\n  background: color-mix(in srgb, var(--ot-accent) 7%, transparent);\n  color: var(--ot-text-dim);\n  font-size: 12px;\n}\n\n.ot-advanced {\n  margin-top: 12px;\n  padding: 12px;\n  border: 1px solid var(--ot-border);\n  border-radius: var(--ot-radius-sm);\n  background: color-mix(in srgb, var(--ot-layer-2) 42%, transparent);\n}\n\n.ot-advanced-head {\n  margin-bottom: 4px;\n}\n\n.ot-table-wrap {\n  overflow-x: auto;\n  border: 1px solid var(--ot-border);\n  border-radius: var(--ot-radius-sm);\n}\n\n.ot-table {\n  width: 100%;\n  border-collapse: collapse;\n  font-size: 12px;\n  white-space: nowrap;\n}\n\n.ot-table th,\n.ot-table td {\n  padding: 7px 10px;\n  border-bottom: 1px solid var(--ot-border);\n  text-align: left;\n}\n\n.ot-table th {\n  position: sticky;\n  top: 0;\n  background: var(--ot-layer-2);\n  color: var(--ot-text-dim);\n  font-weight: 600;\n  z-index: 1;\n}\n\n.ot-table tr:last-child td {\n  border-bottom: 0;\n}\n\n.ot-table tr[data-match=\"true\"] {\n  background: color-mix(in srgb, var(--ot-accent) 9%, transparent);\n}\n\n.ot-table tr[data-match=\"false\"] {\n  opacity: 0.5;\n}\n\n.ot-maprow {\n  display: grid;\n  grid-template-columns: minmax(88px, 0.7fr) minmax(0, 1fr) minmax(0, 1.1fr);\n  gap: 8px;\n  align-items: center;\n}\n\n.ot-map-label {\n  color: var(--ot-text-dim);\n  font-size: 12px;\n}\n\n.ot-map-hint {\n  color: var(--ot-text-dim);\n  font-size: 11px;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n@media (max-width: 640px) {\n  .ot-maprow {\n    grid-template-columns: minmax(80px, 0.6fr) minmax(0, 1fr);\n  }\n\n  .ot-map-hint {\n    display: none;\n  }\n}\n\n\n.ot-note {\n  padding: 9px 11px;\n  border-radius: 9px;\n  border: 1px solid var(--ot-border);\n  background: color-mix(in srgb, var(--ot-layer-2) 60%, transparent);\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n}\n\n.ot-note-warn {\n  border-color: color-mix(in srgb, var(--ot-warn) 40%, transparent);\n  background: color-mix(in srgb, var(--ot-warn) 12%, transparent);\n  color: color-mix(in srgb, var(--ot-warn) 82%, var(--ot-text));\n}\n\n.ot-note-error {\n  border-color: color-mix(in srgb, var(--ot-danger) 42%, transparent);\n  background: color-mix(in srgb, var(--ot-danger) 12%, transparent);\n  color: color-mix(in srgb, var(--ot-danger) 82%, var(--ot-text));\n}\n\n.ot-note-ok {\n  border-color: color-mix(in srgb, var(--ot-success) 40%, transparent);\n  background: color-mix(in srgb, var(--ot-success) 12%, transparent);\n  color: color-mix(in srgb, var(--ot-success) 82%, var(--ot-text));\n}\n\n/* The in-page result line — what replaced the corner toast for click results.\n   It is a normal block in the panel body: it takes its place in the layout,\n   scrolls with the page, and never fades on a timer. Only a click that could\n   not do what it promised uses it; a success is visible as the changed page. */\n.ot-inline-report {\n  display: flex;\n  align-items: flex-start;\n  gap: 9px;\n  margin-bottom: 10px;\n  padding: 9px 11px;\n  border: 1px solid color-mix(in srgb, var(--ot-danger) 42%, transparent);\n  border-radius: 10px;\n  background: color-mix(in srgb, var(--ot-danger) 10%, transparent);\n  color: color-mix(in srgb, var(--ot-danger) 80%, var(--ot-text));\n  font-size: 11.5px;\n}\n\n.ot-inline-report[data-level=\"info\"] {\n  border-color: color-mix(in srgb, var(--ot-accent) 38%, transparent);\n  background: color-mix(in srgb, var(--ot-accent) 10%, transparent);\n  color: color-mix(in srgb, var(--ot-accent) 78%, var(--ot-text));\n}\n\n.ot-inline-report > svg {\n  margin-top: 1px;\n  flex: none;\n}\n\n.ot-inline-report-text {\n  display: flex;\n  flex: 1;\n  min-width: 0;\n  flex-direction: column;\n  gap: 2px;\n}\n\n.ot-inline-report-text strong {\n  color: var(--ot-text);\n  font-size: 12px;\n  font-weight: 640;\n}\n\n.ot-inline-report-text span {\n  color: var(--ot-text-dim);\n}\n\n.ot-switch {\n  display: inline-flex;\n  align-items: center;\n  gap: 8px;\n  cursor: pointer;\n}\n\n.ot-switch input {\n  appearance: none;\n  position: relative;\n  width: 36px;\n  height: 20px;\n  border-radius: 999px;\n  background: color-mix(in srgb, var(--ot-text) 18%, transparent);\n  cursor: pointer;\n  transition: background 0.22s ease;\n}\n\n.ot-switch input::after {\n  content: \"\";\n  position: absolute;\n  top: 2px;\n  left: 2px;\n  width: 16px;\n  height: 16px;\n  border-radius: 50%;\n  background: #fff;\n  transition: transform 0.22s cubic-bezier(0.3, 0.9, 0.3, 1);\n}\n\n.ot-switch input:checked {\n  background: linear-gradient(120deg, var(--ot-accent), var(--ot-accent-2));\n}\n\n.ot-switch input:checked::after {\n  transform: translateX(16px);\n}\n\n.ot-mapping-list {\n  display: flex;\n  flex-direction: column;\n  gap: 7px;\n}\n\n.ot-sub {\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n}\n\n.ot-mono {\n  font-variant-numeric: tabular-nums;\n}\n\n.ot-feed {\n  display: flex;\n  flex-direction: column;\n  gap: 7px;\n  max-height: 320px;\n  overflow-y: auto;\n}\n\n.ot-feed-item {\n  display: flex;\n  gap: 9px;\n  padding: 8px 10px;\n  border: 1px solid var(--ot-border);\n  border-radius: 9px;\n  background: color-mix(in srgb, var(--ot-layer-1) 70%, transparent);\n}\n\n.ot-feed-item[data-level=\"urgent\"] {\n  border-color: color-mix(in srgb, var(--ot-danger) 40%, transparent);\n}\n\n.ot-feed-time {\n  flex: none;\n  color: var(--ot-text-dim);\n  font-size: 11px;\n  font-variant-numeric: tabular-nums;\n}\n\n.ot-feed-title {\n  font-weight: 600;\n  font-size: 12.5px;\n}\n\n.ot-feed-body {\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n}\n\n.ot-enter {\n  animation: ot-fade-up 0.4s cubic-bezier(0.2, 0.85, 0.25, 1) both;\n}\n\n/* ---------------------------------------------------------------- notices */\n\n/* `shell.overlay` entries are click-through until they opt back in, so every\n   interactive surface in this layer declares `pointer-events: auto` explicitly.\n   The notice STACK stays inert â€” a full-width transparent box that swallowed\n   clicks would break the app underneath â€” and each notice re-enables itself. */\n\n/* The stack fills its containing block and aligns its cards to the bottom-right\n   corner instead of positioning itself with `bottom: 18px`.\n\n   `bottom` looked equivalent and is not: if anything between the overlay layer\n   and the document establishes a containing block for `position: fixed` (a\n   transform, a filter, `contain`, a zoomed ancestor), `bottom` is measured\n   against *that* box. The cards then land wherever that box ends â€” in the app\n   this put an import confirmation under the window's caption buttons, clipped by\n   the title bar. With `inset: 0` the stack can only ever be as large as that\n   containing block, so its cards stay inside it whatever it turns out to be, and\n   a stack of several notices can never run off the top: it scrolls instead. */\n.ot-notices {\n  position: fixed;\n  inset: 0;\n  z-index: 40;\n  display: flex;\n  flex-direction: column;\n  align-items: flex-end;\n  justify-content: flex-end;\n  gap: 9px;\n  padding: 18px;\n  overflow: hidden;\n  pointer-events: none;\n}\n\n.ot-notice-stack {\n  display: flex;\n  flex-direction: column;\n  align-items: flex-end;\n  gap: 9px;\n  width: min(330px, 100%);\n  max-height: 100%;\n  overflow-y: auto;\n  overflow-x: hidden;\n  scrollbar-width: thin;\n  scrollbar-color: var(--ot-border-strong) transparent;\n}\n\n/* The floating card and the mini pill are each their own overlay root. The\n   harness turns an overlay entry into a hit target with\n   `overlayLayer > * { pointer-events: auto }`, but relying on that alone means a\n   nested wrapper silently kills every click, so each root also asks for pointer\n   events itself. */\n.ot-float-shell,\n.ot-float-mini {\n  pointer-events: auto;\n  /* The card is dragged with pointer events, so the browser must not claim the\n     gesture for scrolling or text selection first. */\n  touch-action: none;\n  user-select: none;\n}\n\n.ot-float-shell.is-dragging,\n.ot-float-mini.is-dragging {\n  /* A 40 ms transition would trail the pointer; while dragging there is none. */\n  transition: none;\n}\n\n/* Controls inside a draggable card must keep their own click. */\n.ot-float-shell button,\n.ot-float-mini button {\n  cursor: pointer;\n}\n\n/* The grip is the *only* place a drag starts â€” see the drag behaviour notes in\n   `drag.js`. Everything else on the card keeps its own click, which is what\n   \"clicking a button sometimes starts a drag instead\" needed. */\n.ot-grip {\n  cursor: grab;\n  flex: none;\n  opacity: 0.55;\n}\n\n.ot-grip:hover {\n  opacity: 0.9;\n}\n\n.is-dragging .ot-grip,\n.ot-grip:active {\n  cursor: grabbing;\n  opacity: 1;\n}\n\n.ot-notice {\n  position: relative;\n  padding: 11px 13px 11px 15px;\n  border: 1px solid var(--ot-border-strong);\n  border-radius: 12px;\n  background: var(--ot-overlay);\n  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);\n  backdrop-filter: blur(14px);\n  pointer-events: auto;\n  animation: ot-slide-in 0.36s cubic-bezier(0.2, 0.9, 0.25, 1);\n  overflow: hidden;\n}\n\n.ot-notice::before {\n  content: \"\";\n  position: absolute;\n  left: 0;\n  top: 0;\n  bottom: 0;\n  width: 3px;\n  background: linear-gradient(180deg, var(--ot-accent), var(--ot-accent-2));\n}\n\n.ot-notice[data-level=\"urgent\"]::before {\n  background: linear-gradient(180deg, var(--ot-danger), var(--ot-warn));\n}\n\n.ot-notice[data-level=\"warn\"]::before {\n  background: linear-gradient(180deg, var(--ot-warn), var(--ot-accent));\n}\n\n.ot-notice.leaving {\n  animation: ot-slide-out 0.26s ease forwards;\n}\n\n@keyframes ot-slide-in {\n  from { opacity: 0; transform: translateX(28px) scale(0.97); }\n  to { opacity: 1; transform: none; }\n}\n\n@keyframes ot-slide-out {\n  to { opacity: 0; transform: translateX(24px) scale(0.97); }\n}\n\n.ot-notice-title {\n  font-size: 12.5px;\n  font-weight: 640;\n}\n\n.ot-notice-body {\n  margin-top: 2px;\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n}\n\n.ot-notice-actions {\n  display: flex;\n  gap: 6px;\n  margin-top: 8px;\n}\n\n/* ------------------------------------------------------------------- float */\n\n.ot-float-root {\n  position: relative;\n  width: 100%;\n  height: 100%;\n  padding: 10px;\n  background: transparent;\n}\n\n.ot-float-shell {\n  position: relative;\n  display: flex;\n  flex-direction: column;\n  gap: 9px;\n  height: 100%;\n  padding: 12px;\n  border: 1px solid var(--ot-border-strong);\n  border-radius: 18px;\n  background: var(--ot-overlay);\n  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.45);\n  backdrop-filter: blur(18px);\n  /* Opt back in: an overlay entry is click-through until it does. */\n  pointer-events: auto;\n  overflow: hidden;\n  animation: ot-pop 0.34s cubic-bezier(0.2, 0.9, 0.25, 1);\n}\n\n.ot-float-grip {\n  position: absolute;\n  top: 0;\n  left: 0;\n  right: 0;\n  height: 26px;\n  cursor: grab;\n  background: linear-gradient(180deg, color-mix(in srgb, var(--ot-text) 6%, transparent), transparent);\n}\n\n.ot-float-grip:active {\n  cursor: grabbing;\n}\n\n.ot-float-head {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  padding-top: 2px;\n}\n\n/* The grip inside the expanded header: a small hit target that reads as one. */\n.ot-float-head .ot-grip {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  width: 22px;\n  height: 24px;\n  margin-left: -4px;\n  padding: 0;\n  border: 0;\n  border-radius: 6px;\n  background: transparent;\n  color: var(--ot-text-dim);\n  line-height: 0;\n}\n\n.ot-float-title {\n  font-size: 11.5px;\n  font-weight: 620;\n  letter-spacing: 0.05em;\n  color: var(--ot-text-dim);\n  text-transform: uppercase;\n}\n\n.ot-float-ring {\n  position: relative;\n  width: 142px;\n  height: 142px;\n  margin: 2px auto 0;\n}\n\n.ot-float-time {\n  font-size: 30px;\n}\n\n.ot-float-next {\n  padding: 9px 11px;\n  border: 1px solid var(--ot-border);\n  border-radius: 11px;\n  background: color-mix(in srgb, var(--ot-layer-1) 80%, transparent);\n}\n\n.ot-float-next-title {\n  font-size: 12.5px;\n  font-weight: 620;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n.ot-float-next-meta {\n  color: var(--ot-text-dim);\n  font-size: 11px;\n  margin-top: 2px;\n}\n\n.ot-float-list {\n  flex: 1;\n  min-height: 0;\n  overflow-y: auto;\n  display: flex;\n  flex-direction: column;\n  gap: 5px;\n  scrollbar-width: thin;\n}\n\n.ot-float-row {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  padding: 6px 8px;\n  border-radius: 8px;\n  background: color-mix(in srgb, var(--ot-text) 5%, transparent);\n  font-size: 12px;\n}\n\n.ot-float-row[data-phase=\"current\"] {\n  background: color-mix(in srgb, var(--ot-accent) 18%, transparent);\n}\n\n.ot-float-row-time {\n  flex: none;\n  color: var(--ot-text-dim);\n  font-variant-numeric: tabular-nums;\n  font-size: 11px;\n}\n\n.ot-float-row-title {\n  min-width: 0;\n  flex: 1;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n.ot-float-foot {\n  display: flex;\n  gap: 6px;\n  justify-content: center;\n}\n\n/* The mini card is a four-lane row, and the lanes are declared rather than left\n   to flex.\n   \n   Flex used to distribute this: the grip, the ring, the text and the two buttons\n   all competed for 248 px, and with the text able to shrink to nothing the two\n   buttons ended up *left of the grip* with the clock running under them â€” which\n   is exactly what \"æŒ‰é’®å’Œæ•°å­—æœ‰é‡å \" looks like on screen. Declaring the columns\n   makes the geometry a fact instead of an outcome: 30 px of grip, 34 px of ring,\n   the buttons at their natural width, and the text taking whatever is left.\n   `scripts/../.tools/browser-click.mjs` measures every lane and fails if two of\n   them overlap, so this cannot quietly come back. */\n.ot-float-mini {\n  /* The inline style carries the position; these are the same values restated\n     so a styling regression cannot leave the pill laid out in flow. */\n  position: fixed;\n  right: 18px;\n  bottom: 18px;\n  z-index: 30;\n  display: grid;\n  grid-template-columns: 30px 34px minmax(0, 1fr) auto;\n  align-items: center;\n  column-gap: 8px;\n  height: 60px;\n  padding: 0 10px;\n  border: 1px solid var(--ot-border-strong);\n  border-radius: 999px;\n  background: var(--ot-overlay);\n  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.4);\n  backdrop-filter: blur(16px);\n  /* Opt back in: an overlay entry is click-through until it does. */\n  pointer-events: auto;\n  cursor: default;\n  overflow: hidden;\n  animation: ot-pop 0.3s cubic-bezier(0.2, 0.9, 0.25, 1);\n}\n\n/* The card's own header text is not a hit target for selection, so a drag that\n   starts on the clock keeps moving the card instead of highlighting digits. */\n.ot-float-mini-time,\n.ot-float-mini-meta,\n.ot-float-title {\n  user-select: none;\n}\n\n/* The mini card's grip: a 30 px lane on the left edge, the size of a thumb. */\n.ot-float-mini .ot-grip {\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  width: 30px;\n  height: 42px;\n  margin-left: -4px;\n  padding: 0;\n  border: 0;\n  border-radius: 10px;\n  background: transparent;\n  color: var(--ot-text-dim);\n  line-height: 0;\n}\n\n.ot-float-mini .ot-grip:hover {\n  background: color-mix(in srgb, var(--ot-text) 8%, transparent);\n}\n\n/* Grow and close, side by side at the right edge â€” the same pair the expanded\n   card carries, so \"æ”¶èµ·\" is one click from either state. */\n.ot-float-mini-actions {\n  display: flex;\n  align-items: center;\n  gap: 2px;\n  flex: none;\n}\n\n.ot-float-mini-actions .ot-btn {\n  height: 26px;\n  min-width: 26px;\n  padding: 0 5px;\n}\n\n.ot-float-mini-ring {\n  width: 38px;\n  height: 38px;\n  flex: none;\n}\n\n.ot-float-mini-time {\n  font-size: 18px;\n  font-weight: 700;\n  font-variant-numeric: tabular-nums;\n  white-space: nowrap;\n}\n\n.ot-float-mini-meta {\n  color: var(--ot-text-dim);\n  font-size: 10.5px;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n.ot-float-mini-body {\n  min-width: 0;\n  flex: 1;\n}\n\n/* -------------------------------------------------------- layout hardening */\n\n/* The panel is rendered into whatever column the host gives it, and that column\n   can be much narrower than the design width (a right sidebar open, a resized\n   window, a DPI change the renderer has not caught up with). Nothing in here may\n   then paint past the panel: a card that overflows is clipped mid-sentence and\n   grows a horizontal scrollbar, which is what the import page did. So every\n   container is allowed to shrink, every flex row wraps, and long unbroken text\n   (a pasted path, a workbook name) wraps instead of stretching its row. */\n.ot-root,\n.ot-body,\n.ot-view,\n.ot-card,\n.ot-card-pad,\n.ot-field,\n.ot-inline-form,\n.ot-row,\n.ot-verdict,\n.ot-note,\n.ot-drop {\n  min-width: 0;\n  max-width: 100%;\n}\n\n.ot-row,\n.ot-field,\n.ot-drop-actions,\n.ot-verdict-actions,\n.ot-notice-actions {\n  flex-wrap: wrap;\n}\n\n.ot-field > .ot-input,\n.ot-field > .ot-input-num {\n  min-width: 0;\n  max-width: 100%;\n}\n\n.ot-sub,\n.ot-note,\n.ot-verdict-body,\n.ot-verdict-hints,\n.ot-feed-body,\n.ot-drop-sub,\n.ot-confirm-line,\n.ot-card-title,\n.ot-tag,\n.ot-pill {\n  overflow-wrap: anywhere;\n  word-break: break-word;\n}\n\n.ot-body {\n  /* Belt and braces: if a child still overflows, clip it rather than let the\n     panel grow a scrollbar in the horizontal direction. */\n  overflow-x: hidden;\n}\n\n/* ------------------------------------------------- reading documents â†’ events */\n\n/* A row read out of a document: same timeline as any other row, different origin. */\n.ot-tag-ai {\n  background: color-mix(in srgb, var(--ot-accent-2) 18%, transparent);\n  color: color-mix(in srgb, var(--ot-accent-2) 84%, var(--ot-text));\n}\n\n.ot-chip-ai {\n  background: color-mix(in srgb, var(--ot-accent-2) 18%, transparent);\n  color: color-mix(in srgb, var(--ot-accent-2) 84%, var(--ot-text));\n}\n\n.ot-textarea {\n  margin-top: 8px;\n  width: 100%;\n  min-height: 84px;\n  resize: vertical;\n  line-height: 1.55;\n  font: inherit;\n}\n\n.ot-extract-source {\n  display: flex;\n  align-items: flex-start;\n  gap: 8px;\n  padding: 8px 10px;\n  border-radius: 10px;\n  background: color-mix(in srgb, var(--ot-layer-2) 72%, transparent);\n  border: 1px solid var(--ot-border);\n  color: var(--ot-text-dim);\n}\n\n.ot-extract-source strong {\n  color: var(--ot-text);\n  font-size: 12.5px;\n  font-weight: 620;\n  overflow-wrap: anywhere;\n}\n\n.ot-extract {\n  margin-top: 12px;\n}\n\n.ot-extract-head {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  margin-bottom: 8px;\n  font-size: 12px;\n  color: var(--ot-text-dim);\n}\n\n.ot-extract-list {\n  display: flex;\n  flex-direction: column;\n  gap: 8px;\n  /* A reading can be twenty rows; the page keeps its scroll position and the\n     list scrolls inside its own box instead of pushing the reminders card away. */\n  max-height: 420px;\n  overflow-y: auto;\n  padding-right: 2px;\n}\n\n.ot-extract-row {\n  display: flex;\n  gap: 10px;\n  padding: 10px;\n  border-radius: 12px;\n  border: 1px solid var(--ot-border);\n  background: color-mix(in srgb, var(--ot-layer-2) 62%, transparent);\n  transition: opacity 0.2s ease, border-color 0.2s ease;\n}\n\n.ot-extract-row[data-included=\"false\"] {\n  opacity: 0.5;\n  border-style: dashed;\n}\n\n.ot-extract-check {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  gap: 6px;\n  flex: none;\n  padding-top: 3px;\n  cursor: pointer;\n}\n\n.ot-extract-check input {\n  width: 16px;\n  height: 16px;\n  accent-color: var(--ot-accent);\n  cursor: pointer;\n}\n\n.ot-extract-check .ot-pill {\n  font-size: 9.5px;\n  padding: 1px 5px;\n  white-space: nowrap;\n}\n\n.ot-extract-body {\n  display: flex;\n  flex-direction: column;\n  gap: 6px;\n  flex: 1 1 auto;\n  min-width: 0;\n}\n\n.ot-extract-title {\n  font-weight: 580;\n}\n\n.ot-extract-when {\n  display: flex;\n  align-items: center;\n  gap: 6px;\n}\n\n.ot-extract-when .ot-input {\n  min-width: 0;\n}\n\n.ot-extract-date {\n  flex: 1 1 46%;\n}\n\n.ot-extract-time {\n  flex: 1 1 22%;\n  padding-left: 6px;\n  padding-right: 4px;\n}\n\n.ot-extract-place {\n  font-size: 12px;\n}\n\n.ot-extract-note {\n  font-size: 11.5px;\n  line-height: 1.5;\n  color: var(--ot-text-dim);\n  display: -webkit-box;\n  -webkit-line-clamp: 2;\n  -webkit-box-orient: vertical;\n  overflow: hidden;\n}\n\n.ot-extract-foot {\n  display: flex;\n  align-items: center;\n  gap: 10px;\n  flex-wrap: wrap;\n  margin-top: 10px;\n}\n\n/* --------------------------------------------------------- network deadlines */\n\n/* The tab is a page of forms, so it stacks cards with the same rhythm as the\n   settings tab rather than inventing a new layout. */\n.ot-netddl {\n  display: flex;\n  flex-direction: column;\n  gap: 12px;\n  padding: 4px 2px 18px;\n}\n\n/* A row the site said was due, not one a roster produced. Same shape as the\n   other origin tags so a scan down the timeline reads consistently. */\n.ot-tag-web {\n  background: color-mix(in srgb, var(--ot-accent-2) 18%, transparent);\n  color: color-mix(in srgb, var(--ot-accent-2) 84%, var(--ot-text));\n}\n\n.ot-chip-web {\n  background: color-mix(in srgb, var(--ot-accent-2) 18%, transparent);\n  color: color-mix(in srgb, var(--ot-accent-2) 84%, var(--ot-text));\n}\n\n.ot-net-tabs {\n  display: inline-flex;\n  gap: 4px;\n  padding: 3px;\n  margin: 8px 0 10px;\n  border: 1px solid var(--ot-border);\n  border-radius: 10px;\n  background: color-mix(in srgb, var(--ot-layer-2) 55%, transparent);\n  align-self: flex-start;\n}\n\n.ot-net-tab {\n  padding: 5px 14px;\n  border: 0;\n  border-radius: 7px;\n  background: transparent;\n  color: var(--ot-text-dim);\n  font-size: 12px;\n  cursor: pointer;\n}\n\n.ot-net-tab:hover {\n  color: var(--ot-text);\n}\n\n.ot-net-tab-on {\n  background: color-mix(in srgb, var(--ot-accent) 20%, transparent);\n  color: color-mix(in srgb, var(--ot-accent) 88%, var(--ot-text));\n  font-weight: 600;\n}\n\n.ot-net-status {\n  display: flex;\n  flex-direction: column;\n  gap: 2px;\n  margin-bottom: 8px;\n}\n\n.ot-net-path {\n  font-size: 11px;\n  opacity: 0.75;\n  word-break: break-all;\n}\n\n.ot-net-login,\n.ot-net-page {\n  display: grid;\n  grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr);\n  gap: 10px 14px;\n  margin-top: 8px;\n}\n\n.ot-net-page .ot-net-url {\n  grid-column: 1 / -1;\n}\n\n.ot-net-login-foot,\n.ot-net-actions,\n.ot-net-commit {\n  grid-column: 1 / -1;\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  flex-wrap: wrap;\n}\n\n.ot-net-commit {\n  margin-top: 12px;\n  padding-top: 12px;\n  border-top: 1px dashed var(--ot-border);\n}\n\n.ot-net-notes {\n  margin-top: 8px;\n  display: flex;\n  flex-direction: column;\n  gap: 2px;\n  opacity: 0.85;\n}\n\n.ot-net-pageinfo {\n  margin-top: 6px;\n  font-size: 11px;\n}\n\n.ot-net-courses {\n  display: grid;\n  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));\n  gap: 6px 12px;\n  margin-top: 10px;\n}\n\n.ot-net-course {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  padding: 7px 10px;\n  border: 1px solid var(--ot-border);\n  border-radius: 9px;\n  cursor: pointer;\n}\n\n.ot-net-course:hover {\n  border-color: var(--ot-border-strong);\n}\n\n.ot-net-course-name {\n  flex: 1;\n  min-width: 0;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n/* The review list: one deadline per row, ticked by default. */\n.ot-net-rows {\n  display: flex;\n  flex-direction: column;\n  gap: 6px;\n  margin-top: 10px;\n  max-height: 420px;\n  overflow: auto;\n}\n\n.ot-net-row {\n  display: grid;\n  grid-template-columns: auto 132px minmax(0, 1fr) auto;\n  align-items: center;\n  gap: 10px;\n  padding: 8px 10px;\n  border: 1px solid var(--ot-border);\n  border-radius: 9px;\n  background: color-mix(in srgb, var(--ot-layer-2) 40%, transparent);\n  cursor: pointer;\n}\n\n.ot-net-row:hover {\n  border-color: var(--ot-border-strong);\n}\n\n.ot-net-row-off {\n  opacity: 0.45;\n}\n\n.ot-net-when {\n  display: flex;\n  flex-direction: column;\n  line-height: 1.25;\n}\n\n.ot-net-when b {\n  font-size: 12px;\n  font-variant-numeric: tabular-nums;\n}\n\n.ot-net-clock {\n  color: var(--ot-text-dim);\n  font-size: 11.5px;\n  font-variant-numeric: tabular-nums;\n}\n\n.ot-net-count {\n  font-size: 10.5px;\n  font-style: normal;\n  color: var(--ot-warn);\n}\n\n.ot-net-what {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  min-width: 0;\n  flex-wrap: wrap;\n}\n\n.ot-net-title {\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n  max-width: 100%;\n}\n\n.ot-net-link {\n  color: var(--ot-accent);\n  font-size: 11px;\n  text-decoration: none;\n  border-bottom: 1px dotted currentColor;\n}\n\n.ot-net-conf {\n  color: var(--ot-text-dim);\n  font-size: 11px;\n  font-variant-numeric: tabular-nums;\n}\n\n@media (max-width: 720px) {\n  .ot-net-login,\n  .ot-net-page {\n    grid-template-columns: 1fr;\n  }\n\n  .ot-net-row {\n    grid-template-columns: auto minmax(0, 1fr) auto;\n  }\n\n  .ot-net-when {\n    grid-column: 2 / 3;\n  }\n}\n\n/* -------------------------------------------------------- reduced motion */\n\n@media (prefers-reduced-motion: reduce) {\n  .ot-root *,\n  .ot-root *::before,\n  .ot-root *::after {\n    animation-duration: 0.001ms !important;\n    animation-iteration-count: 1 !important;\n    transition-duration: 0.001ms !important;\n  }\n\n  .ot-aurora { animation: none; }\n}\n";
 		var __otStyleDisposer = null;
 		function __otEnsureStyles() {
 			if (__otStyleDisposer !== null) return;
@@ -102,6 +102,42 @@ window.__ModuleLoader__.load({
 		  return pad2(minutes) + ':' + pad2(seconds)
 		}
 		
+		/**
+		 * A countdown sized to its horizon.
+		 *
+		 * A minutes:seconds clock is right for "23 分钟后" and wrong for "5 天后": the
+		 * seconds tick for days without changing anything anyone can act on. Past a day
+		 * the answer is days and hours; under a day it becomes the clock people read —
+		 * hours:minutes:seconds once there is an hour, minutes:seconds below that.
+		 */
+		function formatCountdown(ms) {
+		  var total = Math.max(0, Math.round(ms / 1000))
+		  var days = Math.floor(total / 86400)
+		  if (days >= 1) {
+		    var dayHours = Math.floor((total % 86400) / 3600)
+		    return days + ' 天' + (dayHours > 0 ? ' ' + dayHours + ' 小时' : '')
+		  }
+		  var hours = Math.floor(total / 3600)
+		  var minutes = Math.floor((total % 3600) / 60)
+		  var seconds = total % 60
+		  if (hours > 0) return pad2(hours) + ':' + pad2(minutes) + ':' + pad2(seconds)
+		  return pad2(minutes) + ':' + pad2(seconds)
+		}
+		
+		/**
+		 * The same answer in the fewest characters, for the 98 px mini card: days and
+		 * hours without the spaces, otherwise the ordinary clock.
+		 */
+		function formatCountdownShort(ms) {
+		  var total = Math.max(0, Math.round(ms / 1000))
+		  var days = Math.floor(total / 86400)
+		  if (days >= 1) {
+		    var dayHours = Math.floor((total % 86400) / 3600)
+		    return days + '天' + (dayHours > 0 ? dayHours + '时' : '')
+		  }
+		  return formatCountdown(total * 1000)
+		}
+		
 		function formatDuration(ms) {
 		  var total = Math.max(0, Math.round(ms / 1000))
 		  var hours = Math.floor(total / 3600)
@@ -116,6 +152,13 @@ window.__ModuleLoader__.load({
 		  if (minutes < -1) return '已过 ' + Math.abs(minutes) + ' 分钟'
 		  if (minutes <= 0) return '就是现在'
 		  if (minutes < 60) return minutes + ' 分钟后'
+		  // "141 小时 45 分后" is arithmetically right and useless; a schedule that
+		  // reaches into next week should say so in days.
+		  if (minutes >= 1440) {
+		    var days = Math.floor(minutes / 1440)
+		    var dayHours = Math.floor((minutes % 1440) / 60)
+		    return days + ' 天' + (dayHours > 0 ? ' ' + dayHours + ' 小时' : '') + '后'
+		  }
 		  var hours = Math.floor(minutes / 60)
 		  var rest = minutes % 60
 		  return rest === 0 ? hours + ' 小时后' : hours + ' 小时 ' + rest + ' 分后'
@@ -195,6 +238,8 @@ window.__ModuleLoader__.load({
 		exports.fromMinutes = fromMinutes
 		exports.addMinutes = addMinutes
 		exports.formatClock = formatClock
+		exports.formatCountdown = formatCountdown
+		exports.formatCountdownShort = formatCountdownShort
 		exports.formatDuration = formatDuration
 		exports.formatRelative = formatRelative
 		exports.formatDay = formatDay
@@ -403,6 +448,10 @@ window.__ModuleLoader__.load({
 		  // fixed action row built as an array — logs a missing-key warning.
 		  if (props.key !== undefined && props.key !== null) extra.key = props.key
 		  var label = children === undefined || children === null ? props.children : children
+		  // `children` is an array because that is the only shape that keeps the label
+		  // (see above), and React asks every array child for a key. A keyed Fragment
+		  // carries the label without adding a wrapper element to the button.
+		  var iconElement = props.icon ? glyph(props.icon, props.small ? 12 : 14) : null
 		  return h(
 		    'button',
 		    Object.assign(
@@ -414,8 +463,8 @@ window.__ModuleLoader__.load({
 		        title: props.title,
 		        'aria-label': props.ariaLabel || props.title,
 		        children: [
-		          props.icon ? glyph(props.icon, props.small ? 12 : 14) : null,
-		          label === undefined || label === null ? null : label,
+		          iconElement === null ? null : React.cloneElement(iconElement, { key: 'icon' }),
+		          label === undefined || label === null ? null : h(React.Fragment, { key: 'label' }, label),
 		        ],
 		      },
 		      extra,
@@ -482,8 +531,17 @@ window.__ModuleLoader__.load({
 		  )
 		}
 		
-		function note(props) {
-		  return h('div', { className: util.cx('ot-note', props.variant ? 'ot-note-' + props.variant : null) }, props.children)
+		/**
+		 * A neutral block for a message that belongs in the page.
+		 *
+		 * Two call shapes exist in this codebase — `note({ variant, children })` and
+		 * `note({ variant }, text)` — and the second one used to render an empty box,
+		 * which is exactly how a failed action came to look like a no-op. Accepting both
+		 * is cheaper than auditing every call site, and it cannot regress the first.
+		 */
+		function note(props, children) {
+		  var content = children === undefined ? props.children : children
+		  return h('div', { className: util.cx('ot-note', props.variant ? 'ot-note-' + props.variant : null) }, content)
 		}
 		
 		function card(props) {
@@ -1060,9 +1118,51 @@ window.__ModuleLoader__.load({
 		    draft: [],
 		    error: null,
 		  },
+		  /**
+		   * The corner stack, and it now only ever carries *reminders*.
+		   *
+		   * Every action that reported its result used to push a card here as well —
+		   * "已加进日程", "已删除", "已保存关注姓名" — and each one had to be dismissed by
+		   * hand while the page already showed the result (the row is on the timeline,
+		   * the count changed, the field kept its value). A reminder is the one kind of
+		   * message that genuinely arrives from nowhere and needs an action, so it is
+		   * the only kind that still floats over the panel.
+		   */
 		  notices: [],
+		  /**
+		   * The last click that could not do what it promised, shown in the page.
+		   *
+		   * Not a toast: a block in the panel body, belonging to no corner, never on a
+		   * timer. It exists for actions with no card of their own (the header's
+		   * floating-window button, the in-window mini card); actions that do have a
+		   * card render their own error next to themselves.
+		   */
+		  actionReport: null,
 		  floatOpen: false,
 		  /**
+		   * Reading deadlines off course sites.
+		   *
+		   * The password deliberately does **not** live here: it is a field of the login
+		   * form, passed straight to the host, and the host either discards it or hands
+		   * it to DPAPI. Keeping it in the page's shared state would leave it in memory
+		   * for the whole session and show it to every component that reads the store.
+		   */
+		  netddl: {
+		    platform: 'icourse163',
+		    status: null,
+		    /** Which step is running: '' | 'status' | 'login' | 'courses' | 'pull' | 'page' | 'commit' | 'logout'. */
+		    busy: '',
+		    message: '',
+		    /** How the last message should read: 'ok' | 'warn'. */
+		    level: 'ok',
+		    error: '',
+		    /** The host half predates the iframe/login/course fixes; actions would fail. */
+		    hostStale: false,
+		    courses: [],
+		    items: [],
+		    notes: [],
+		    page: null,
+		  },  /**
 		   * Whether the *host* half is older than this page.
 		   *
 		   * The two halves are installed together but loaded at different moments: the
@@ -1121,6 +1221,20 @@ window.__ModuleLoader__.load({
 		
 		async function request(path, options) {
 		  var init = options ? Object.assign({}, options) : {}
+		  /**
+		   * A long operation (a login the user is still finishing) must not leave the
+		   * panel waiting forever if the host dies mid-request: `fetch` has no timeout of
+		   * its own, so a dead socket pins the card at "等你登录…" with no way back.
+		   */
+		  var timeoutMs = init.timeoutMs
+		  delete init.timeoutMs
+		  if (typeof timeoutMs === 'number' && timeoutMs > 0) {
+		    try {
+		      init.signal = AbortSignal.timeout(timeoutMs)
+		    } catch (error) {
+		      delete init.signal
+		    }
+		  }
 		  init.headers = Object.assign({ 'content-type': 'application/json' }, init.headers || {})
 		  var response = await fetch(API + path, init)
 		  var text = await response.text()
@@ -1630,7 +1744,15 @@ window.__ModuleLoader__.load({
 		  return ACTION_LABELS[action] || action
 		}
 		
-		function pushNotice(notice) {
+		/**
+		 * Put one reminder on the floating stack.
+		 *
+		 * Only the feed uses this (see `ingestFeed`), and only for entries the host
+		 * marked as reminders. Everything else that used to report back through a toast
+		 * now either says nothing (the result is the feedback) or says it inline —
+		 * `reportAction` for the few actions with no card, `ui.note` for the rest.
+		 */
+		function pushReminder(notice) {
 		  var id = 'n_' + Date.now() + '_' + Math.round(Math.random() * 1000)
 		  var entry = Object.assign({ id: id, at: Date.now() }, notice)
 		  set({ notices: state.notices.concat([entry]).slice(-4) })
@@ -1640,6 +1762,29 @@ window.__ModuleLoader__.load({
 		    }, entry.ttlMs || 15_000)
 		  }
 		  return id
+		}
+		
+		/**
+		 * Report a click result in the panel itself.
+		 *
+		 * This is what is left of the "tell the user what happened" channel: one line
+		 * in the page body, replaced by the next result and dismissed by hand. It never
+		 * floats over the panel and never fades, so it cannot be the same complaint the
+		 * corner toast was. Successes do not use it at all — the page already changed.
+		 */
+		function reportAction(level, title, body) {
+		  set({
+		    actionReport: {
+		      id: 'r_' + Date.now() + '_' + Math.round(Math.random() * 1000),
+		      level: level || 'error',
+		      title: title || '',
+		      body: body === undefined || body === null ? '' : String(body),
+		    },
+		  })
+		}
+		
+		function dismissActionReport() {
+		  if (state.actionReport !== null) set({ actionReport: null })
 		}
 		
 		function dismissNotice(id) {
@@ -1657,16 +1802,10 @@ window.__ModuleLoader__.load({
 		async function openFloatWindow() {
 		  // The desktop shell denies `window.open` to pages, so the floating widget is a
 		  // host-spawned always-on-top process instead of a browser popup.
+		  //
+		  // The outcome is the caller's to show: the settings card renders it in place,
+		  // and the header button has no card of its own (`reportAction`). No toast.
 		  var payload = await request('/hud', { method: 'POST', body: JSON.stringify({ action: 'start' }) })
-		  if (!payload.ok) {
-		    pushNotice({ level: 'warn', title: '悬浮窗启动失败', body: payload.error || '未知原因' })
-		  } else if (payload.running === false) {
-		    // The widget is not broken — the user closed it. Say so instead of claiming
-		    // a launch that deliberately did not happen.
-		    pushNotice({ level: 'info', title: '悬浮窗保持关闭', body: '你之前用悬浮窗上的 × 关掉了它。点「重新显示」可以再打开。' })
-		  } else {
-		    pushNotice({ level: 'info', title: '悬浮窗已启动', body: '胶囊上的 — 最小化为小圆点，× 关闭；按住窗口任意位置可以拖动。右键或双击还有更多操作。' })
-		  }
 		  set({ floatOpen: payload.ok === true && payload.running !== false, hudMode: payload.mode || null })
 		  return payload
 		}
@@ -1686,10 +1825,9 @@ window.__ModuleLoader__.load({
 		 */
 		async function setFloatMode(mode) {
 		  var action = mode === 'mini' ? 'minimize' : mode === 'closed' ? 'stop' : 'restore'
+		  // The status the card shows is the payload itself; a failed switch is reported
+		  // by the card that asked for it, in place.
 		  var payload = await request('/hud', { method: 'POST', body: JSON.stringify({ action: action }) })
-		  if (payload && payload.ok === false) {
-		    pushNotice({ level: 'warn', title: '悬浮窗操作失败', body: payload.error || '未知原因' })
-		  }
 		  set({ hudMode: payload ? payload.mode || mode : null, floatOpen: payload ? payload.running === true : false })
 		  return payload
 		}
@@ -1749,7 +1887,7 @@ window.__ModuleLoader__.load({
 		  for (var j = fresh.length - 1; j >= 0; j -= 1) {
 		    var item = fresh[j]
 		    if (item.kind === 'reminder' || item.level === 'urgent') {
-		      pushNotice({
+		      pushReminder({
 		        level: item.level === 'urgent' ? 'urgent' : 'info',
 		        title: item.title,
 		        body: item.body,
@@ -1832,8 +1970,338 @@ window.__ModuleLoader__.load({
 		  }
 		}
 		
-		function currentTimer(nowMs) {
-		  var timer = (state.snapshot && state.snapshot.timer) || null
+		/** Merge one field into the network-reader slice without dropping the rest. */
+		function netddlPatch(patch) {
+		  set({ netddl: Object.assign({}, state.netddl, patch) })
+		}
+		
+		/**
+		 * A stale host would run the old login flow and hang for minutes; refuse before
+		 * the request instead of letting the click look like a freeze.
+		 */
+		function requireCurrentNetHost() {
+		  if (state.netddl.hostStale !== true) return
+		  var message = '宿主进程还是旧版「网络 DDL」：先托盘退出 DeepSeek Harness 再打开，然后刷新页面再试。'
+		  netddlPatch({ busy: '', error: message })
+		  throw new Error(message)
+		}
+		
+		/** Ask the host what it knows: browser found, profile dir, saved accounts. */
+		async function refreshNetDdl() {
+		  try {
+		    var status = await request('/netddl/status', { timeoutMs: 10000 })
+		    /**
+		     * A refreshed page always gets the new client bundle, but the host half was
+		     * imported at app start. If it predates the iframe/saved-account login, the
+		     * panel must say so: otherwise the fix looks like it did nothing.
+		     */
+		    var hostStale = !(status && Number(status.api) >= 3)
+		    netddlPatch({
+		      status: status,
+		      hostStale: hostStale,
+		      error: hostStale
+		        ? '宿主进程还是旧版「网络 DDL」——它启动时加载的代码没有这次登录修复。关掉 DeepSeek Harness（托盘退出）再打开，然后刷新页面；只刷新页面换不掉宿主。'
+		        : '',
+		    })
+		    return status
+		  } catch (error) {
+		    var reason = String((error && error.message) || error)
+		    /**
+		     * A 404 here is almost never the user's fault: the page is the half that can
+		     * be refreshed, while the host is loaded once at app start. Ask `/health`
+		     * what this host generation can do before blaming anything else.
+		     */
+		    try {
+		      var health = await request('/health')
+		      if (!(health && Array.isArray(health.capabilities) && health.capabilities.indexOf('web-ddl') >= 0)) {
+		        reason = '宿主进程还不认识「网络 DDL」——它还是启动时加载的旧版本。关掉 DeepSeek Harness（托盘退出）再打开，然后刷新页面。'
+		      }
+		    } catch (probeError) {
+		      /* the original failure is the one worth showing */
+		    }
+		    netddlPatch({ error: reason })
+		    return null
+		  }
+		}
+		
+		function netDdlSetPlatform(platform) {
+		  if (platform === state.netddl.platform) return
+		  netddlPatch({ platform: platform, courses: [], items: [], notes: [], page: null, message: '', error: '' })
+		}
+		
+		/**
+		 * Open the login window and wait for it to succeed.
+		 *
+		 * This call can take a couple of minutes on purpose: the window is handed to the
+		 * user so they can solve a captcha, scan a QR code, or type an SMS code, and the
+		 * host keeps asking the site until it says the session is real. The panel says
+		 * so rather than looking frozen.
+		 */
+		async function netDdlLogin(options) {
+		  requireCurrentNetHost()
+		  var body = options || {}
+		  netddlPatch({
+		    busy: 'login',
+		    error: '',
+		    level: 'ok',
+		    // Two phases behind one message: the host takes a few seconds to launch the
+		    // browser, and a window that has not appeared yet otherwise reads as a hang.
+		    message: '正在启动浏览器窗口（第一次要几秒）。窗口出来后在里面登录——扫码、短信验证、拖滑块都行，登录成功这里会自己继续…',
+		  })
+		  try {
+		    var payload = await request('/netddl/login', {
+		      method: 'POST',
+		      body: JSON.stringify({ platform: state.netddl.platform, url: body.url || '', username: body.username || '', password: body.password || '', remember: body.remember !== false }),
+		      // The host waits for the person to finish a captcha / SMS for up to 150 s.
+		      timeoutMs: 200_000,
+		    })
+		    netddlPatch({
+		      busy: '',
+		      level: payload.loggedIn === true ? 'ok' : 'warn',
+		      message:
+		        payload.loggedIn === true
+		          ? '登录成功，这把浏览器档案会记住它。' +
+		            (payload.usedSaved
+		              ? '（用的是记住的账号）'
+		              : payload.remembered
+		                ? '密码已用 DPAPI 加密保存。'
+		                : payload.rememberNote || '')
+		          : payload.note || payload.error || '没等到登录成功。',
+		      // A refusal (headless install, no browser) is an explanation, not a failure
+		      // of the page: keep it in the same place the success message lives.
+		      error: '',
+		    })
+		    void refreshNetDdl()
+		    return payload
+		  } catch (error) {
+		    netddlPatch({ busy: '', error: String((error && error.message) || error) })
+		    throw error
+		  }
+		}
+		
+		async function netDdlCheck() {
+		  requireCurrentNetHost()
+		  netddlPatch({ busy: 'check', error: '', message: '' })
+		  try {
+		    var payload = await request('/netddl/check', { method: 'POST', body: JSON.stringify({ platform: state.netddl.platform }), timeoutMs: 60_000 })
+		    netddlPatch({
+		      busy: '',
+		      level: payload.loggedIn === true ? 'ok' : 'warn',
+		      message: payload.loggedIn === true ? '登录还有效。' : payload.unknown === true ? payload.note || '浏览器还没启动：先登录，或直接抓一次——抓的时候会顺手确认登录态。' : '已经掉登录了，重新登一次。',
+		    })
+		    return payload
+		  } catch (error) {
+		    netddlPatch({ busy: '', error: String((error && error.message) || error) })
+		    throw error
+		  }
+		}
+		
+		/** List the courses on the account, so the user picks what to read. */
+		async function netDdlScanCourses() {
+		  requireCurrentNetHost()
+		  netddlPatch({ busy: 'courses', error: '', message: '正在读「我的课程」…', items: [], notes: [], page: null })
+		  try {
+		    var payload = await request('/netddl/courses', { method: 'POST', body: JSON.stringify({ platform: state.netddl.platform }), timeoutMs: 150_000 })
+		    var courses = util.safeArray(payload.courses).map(function (course) {
+		      // A course whose term ended cannot have a future deadline; showing it is
+		      // still useful ("my course list is complete"), but ticking it would only
+		      // make the pull read a closed page.
+		      return Object.assign({}, course, { checked: course.ended !== true })
+		    })
+		    netddlPatch({
+		      busy: '',
+		      courses: courses,
+		      level: payload.ok === true ? 'ok' : 'warn',
+		      message: payload.ok === true ? '找到 ' + courses.length + ' 门课。' : payload.error || '没读到课程。',
+		      error: '',
+		      status: state.netddl.status,
+		    })
+		    void refreshNetDdl()
+		    return payload
+		  } catch (error) {
+		    netddlPatch({ busy: '', error: String((error && error.message) || error) })
+		    throw error
+		  }
+		}
+		
+		function netDdlToggleCourse(id) {
+		  var courses = state.netddl.courses.map(function (course) {
+		    return course.id === id ? Object.assign({}, course, { checked: course.checked !== true }) : course
+		  })
+		  netddlPatch({ courses: courses })
+		}
+		
+		function netDdlCheckAll(include) {
+		  var courses = state.netddl.courses.map(function (course) {
+		    return Object.assign({}, course, { checked: include === true })
+		  })
+		  netddlPatch({ courses: courses })
+		}
+		
+		/**
+		 * Read every ticked course's deadline page.
+		 *
+		 * Nothing lands on the timeline here: the result is a proposal the user ticks
+		 * through, exactly like a document read. A scraper that writes straight to the
+		 * schedule would make a bad selector look like a scheduling decision.
+		 */
+		async function netDdlPull(options) {
+		  requireCurrentNetHost()
+		  var body = options || {}
+		  var chosen = state.netddl.courses.filter(function (course) {
+		    return course.checked === true
+		  })
+		  if (chosen.length === 0) throw new Error('先勾选至少一门课。')
+		  netddlPatch({ busy: 'pull', error: '', message: '正在逐门课读截止时间，课程多的话要等一会儿…' })
+		  try {
+		    var payload = await request('/netddl/pull', {
+		      method: 'POST',
+		      body: JSON.stringify({ platform: state.netddl.platform, courses: chosen, horizonDays: body.horizonDays || 180 }),
+		      timeoutMs: 300_000,
+		    })
+		    var nowMs = Date.now()
+		    var items = util.safeArray(payload.items).map(function (item, index) {
+		      // The deadline page keeps a few rows from earlier today (a submission that
+		      // closed at noon); show them, but do not tick a deadline that has passed.
+		      var future = typeof item.dueMs === 'number' ? item.dueMs >= nowMs : true
+		      return Object.assign({}, item, { key: item.key || 'w' + index, include: future })
+		    })
+		    netddlPatch({
+		      busy: '',
+		      items: items,
+		      notes: util.safeArray(payload.notes),
+		      page: null,
+		      level: items.length > 0 ? 'ok' : 'warn',
+		      message: items.length + ' 个截止时间，勾掉不想要的再入库。',
+		      error: '',
+		    })
+		    return payload
+		  } catch (error) {
+		    netddlPatch({ busy: '', error: String((error && error.message) || error) })
+		    throw error
+		  }
+		}
+		
+		/** Read one arbitrary URL, filling a login form when credentials are given. */
+		async function netDdlReadPage(options) {
+		  requireCurrentNetHost()
+		  var body = options || {}
+		  netddlPatch({ busy: 'page', error: '', message: '正在打开这个页面…', items: [], notes: [], page: null, courses: [] })
+		  try {
+		    var payload = await request('/netddl/page', {
+		      method: 'POST',
+		      body: JSON.stringify({
+		        url: body.url,
+		        username: body.username || '',
+		        password: body.password || '',
+		        remember: body.remember !== false,
+		        label: body.label || '',
+		        horizonDays: body.horizonDays || 180,
+		      }),
+		      timeoutMs: 200_000,
+		    })
+		    var items = util.safeArray(payload.items).map(function (item, index) {
+		      return Object.assign({}, item, { key: item.key || 'w' + index, include: true })
+		    })
+		    netddlPatch({
+		      busy: '',
+		      items: items,
+		      notes: util.safeArray(payload.notes),
+		      page: payload.page || null,
+		      level: items.length > 0 ? 'ok' : 'warn',
+		      message: (payload.loginNote ? payload.loginNote + ' ' : '') + items.length + ' 个截止时间。',
+		      error: '',
+		    })
+		    return payload
+		  } catch (error) {
+		    netddlPatch({ busy: '', error: String((error && error.message) || error) })
+		    throw error
+		  }
+		}
+		
+		function netDdlToggleItem(key) {
+		  var items = state.netddl.items.map(function (item) {
+		    return item.key === key ? Object.assign({}, item, { include: item.include === false }) : item
+		  })
+		  netddlPatch({ items: items })
+		}
+		
+		function netDdlSelectAll(include) {
+		  var items = state.netddl.items.map(function (item) {
+		    return Object.assign({}, item, { include: include === true })
+		  })
+		  netddlPatch({ items: items })
+		}
+		
+		/**
+		 * Put the ticked deadlines on the schedule and open the earliest day.
+		 *
+		 * Same reasoning as the document flow: the day comes from the rows, so a
+		 * December deadline read in November does not leave the user staring at an
+		 * unchanged November timeline.
+		 */
+		async function netDdlCommit() {
+		  var included = state.netddl.items.filter(function (item) {
+		    return item.include !== false
+		  })
+		  if (included.length === 0) throw new Error('先勾选至少一个截止时间。')
+		  netddlPatch({ busy: 'commit', error: '', message: '正在写进时间轴…' })
+		  try {
+		    /**
+		     * Ask for the day the earliest deadline lands on, not the day that happens to
+		     * be open: a December deadline filed in November should leave the user looking
+		     * at December, and the host builds the snapshot from the view it is asked for.
+		     */
+		    var earliest = included
+		      .map(function (item) {
+		        return item.dueDate
+		      })
+		      .filter(function (date) {
+		        return typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)
+		      })
+		      .sort()[0]
+		    var query =
+		      earliest !== undefined
+		        ? '/netddl/commit?day=' + encodeURIComponent(earliest) + '&month=' + encodeURIComponent(earliest.slice(0, 7))
+		        : '/netddl/commit'
+		    var payload = await request(query, {
+		      method: 'POST',
+		      body: JSON.stringify({ items: included, platform: state.netddl.platform }),
+		    })
+		    var day = payload.firstDate || earliest || state.day
+		    set({
+		      snapshot: payload.snapshot || state.snapshot,
+		      day: day,
+		      month: String(day).slice(0, 7),
+		      netddl: Object.assign({}, state.netddl, {
+		        busy: '',
+		        items: [],
+		        notes: [],
+		        message: '已加入 ' + (payload.added || 0) + ' 条' + (payload.skipped && payload.skipped.length > 0 ? '；' + payload.skipped.length + ' 条已经在日程里，没有重复添加' : '') + '。',
+		        error: '',
+		      }),
+		    })
+		    return payload
+		  } catch (error) {
+		    netddlPatch({ busy: '', error: String((error && error.message) || error) })
+		    throw error
+		  }
+		}
+		
+		async function netDdlLogout() {
+		  netddlPatch({ busy: 'logout', error: '', message: '' })
+		  try {
+		    var payload = await request('/netddl/logout', { method: 'POST', body: '{}' })
+		    netddlPatch({ busy: '', message: payload.ok === true ? '浏览器档案已清空，下次要重新登录。' : payload.error || '没清掉。', courses: [], items: [], page: null })
+		    void refreshNetDdl()
+		    return payload
+		  } catch (error) {
+		    netddlPatch({ busy: '', error: String((error && error.message) || error) })
+		    throw error
+		  }
+		}
+		
+		function currentTimer(nowMs) {  var timer = (state.snapshot && state.snapshot.timer) || null
 		  if (timer === null) return null
 		  var remaining = timer.remainingMs || 0
 		  if (timer.running && timer.endsAt) {
@@ -1887,8 +2355,10 @@ window.__ModuleLoader__.load({
 		  askCompanion: askCompanion,
 		  refreshAssistantStatus: refreshAssistantStatus,
 		  conversationHistory: conversationHistory,
-		  pushNotice: pushNotice,
+		  pushReminder: pushReminder,
 		  dismissNotice: dismissNotice,
+		  reportAction: reportAction,
+		  dismissActionReport: dismissActionReport,
 		  clearFeed: clearFeed,
 		  openFloatWindow: openFloatWindow,
 		  stopFloatWindow: stopFloatWindow,
@@ -1897,6 +2367,19 @@ window.__ModuleLoader__.load({
 		  reportUiEvent: reportUiEvent,
 		  reportOverlayLayout: reportOverlayLayout,
 		  checkHostBuild: checkHostBuild,
+		  refreshNetDdl: refreshNetDdl,
+		  netDdlSetPlatform: netDdlSetPlatform,
+		  netDdlLogin: netDdlLogin,
+		  netDdlCheck: netDdlCheck,
+		  netDdlScanCourses: netDdlScanCourses,
+		  netDdlToggleCourse: netDdlToggleCourse,
+		  netDdlCheckAll: netDdlCheckAll,
+		  netDdlPull: netDdlPull,
+		  netDdlReadPage: netDdlReadPage,
+		  netDdlToggleItem: netDdlToggleItem,
+		  netDdlSelectAll: netDdlSelectAll,
+		  netDdlCommit: netDdlCommit,
+		  netDdlLogout: netDdlLogout,
 		  bootstrap: bootstrap,
 		  shutdown: shutdown,
 		  currentTimer: currentTimer,
@@ -2260,11 +2743,10 @@ window.__ModuleLoader__.load({
 		      })
 		      .then(function (day) {
 		        setBusy(false)
-		        props.store.pushNotice({
-		          level: 'success',
-		          title: '已加进日程',
-		          body: title + ' · ' + draft.date + (draft.start ? ' ' + draft.start : ''),
-		        })
+		        // No "已加进日程" toast. The form closes, the panel jumps to the day it
+		        // landed on, and the row is right there — that *is* the confirmation.
+		        // A floating card repeating it was the thing users had to dismiss after
+		        // every single add.
 		        if (typeof props.onSaved === 'function') props.onSaved(day)
 		      })
 		      .catch(function (failure) {
@@ -2414,13 +2896,19 @@ window.__ModuleLoader__.load({
 		  var busyPair = React.useState(false)
 		  var busy = busyPair[0]
 		  var setBusy = busyPair[1]
+		  // Timer and settings failures are shown against the ring they belong to; the
+		  // corner card they used to live in is gone.
+		  var errorPair = React.useState('')
+		  var error = errorPair[0]
+		  var setError = errorPair[1]
 		
 		  function run(action, extra) {
 		    setBusy(true)
+		    setError('')
 		    props.store
 		      .timerAction(action, extra)
-		      .catch(function (error) {
-		        props.store.pushNotice({ level: 'warn', title: '计时器操作失败', body: String((error && error.message) || error) })
+		      .catch(function (failure) {
+		        setError(String((failure && failure.message) || failure))
 		      })
 		      .then(function () {
 		        setBusy(false)
@@ -2428,8 +2916,9 @@ window.__ModuleLoader__.load({
 		  }
 		
 		  function save(patch) {
-		    props.store.saveSettings({ pomodoro: patch }).catch(function (error) {
-		      props.store.pushNotice({ level: 'warn', title: '保存失败', body: String((error && error.message) || error) })
+		    setError('')
+		    props.store.saveSettings({ pomodoro: patch }).catch(function (failure) {
+		      setError('设置没能保存：' + String((failure && failure.message) || failure))
 		    })
 		  }
 		
@@ -2524,6 +3013,7 @@ window.__ModuleLoader__.load({
 		            ),
 		            h('span', { className: 'ot-sub ot-mono' }, timer.completedToday + '/' + goal),
 		          ),
+		          error !== '' ? ui.note({ variant: 'error' }, error) : null,
 		        ),
 		      ),
 		    ),
@@ -2603,13 +3093,36 @@ window.__ModuleLoader__.load({
 		  var pair = React.useState(false)
 		  var busy = pair[0]
 		  var setBusy = pair[1]
+		  // Where the click failed is where it says so: under this row's own buttons.
+		  // It used to be a corner toast that covered the page and had to be dismissed.
+		  var errorPair = React.useState('')
+		  var error = errorPair[0]
+		  var setError = errorPair[1]
 		
 		  function act(action, body) {
 		    setBusy(true)
+		    setError('')
 		    store
 		      .eventAction(action, Object.assign({ id: event.id }, body || {}))
-		      .catch(function (error) {
-		        store.pushNotice({ level: 'warn', title: '操作失败', body: String((error && error.message) || error) })
+		      .catch(function (failure) {
+		        setError(String((failure && failure.message) || failure))
+		      })
+		      .then(function () {
+		        setBusy(false)
+		      })
+		  }
+		
+		  /** Deleting is the same shape: the row disappears, or says why it did not. */
+		  function remove() {
+		    if (typeof props.onDelete !== 'function') return
+		    setBusy(true)
+		    setError('')
+		    Promise.resolve()
+		      .then(function () {
+		        return props.onDelete(event)
+		      })
+		      .catch(function (failure) {
+		        setError(String((failure && failure.message) || failure))
 		      })
 		      .then(function () {
 		        setBusy(false)
@@ -2639,6 +3152,11 @@ window.__ModuleLoader__.load({
 		  // they behave like typed rows — but they are not something the user wrote.
 		  if (event.source && event.source.sheet === 'AI 读资料') {
 		    tags.push(h('span', { className: 'ot-tag ot-tag-ai', key: 'ai', title: 'AI 从资料里读出来的日程' }, 'AI 读出'))
+		  }
+		  // Deadlines read off a course site: no file behind them either, and the user
+		  // needs to know the date came from the site rather than from a roster.
+		  if (event.source && event.source.sheet === '网络 DDL') {
+		    tags.push(h('span', { className: 'ot-tag ot-tag-web', key: 'web', title: '从网上（课程平台 / 网页）读到的截止时间' }, '网络 DDL'))
 		  }
 		  if (util.safeArray(event.warnings).length > 0) {
 		    tags.push(
@@ -2725,16 +3243,21 @@ window.__ModuleLoader__.load({
 		        // the next file scan, which is the file doing its job, not a bug to hide.
 		        // A row the model read off a document has no file behind it either, so it
 		        // is deletable for the same reason.
-		        event.source && (event.source.sheet === '手动添加' || event.source.sheet === 'AI 读资料')
+		        event.source && (event.source.sheet === '手动添加' || event.source.sheet === 'AI 读资料' || event.source.sheet === '网络 DDL')
 		          ? h(
 		              'button',
 		              {
 		                type: 'button',
 		                className: 'ot-btn ot-btn-sm ot-btn-ghost',
 		                disabled: busy,
-		                title: event.source.sheet === 'AI 读资料' ? '删掉这条 AI 读出来的日程' : '删掉这条自己加的日程',
+		                title:
+		                  event.source.sheet === 'AI 读资料'
+		                    ? '删掉这条 AI 读出来的日程'
+		                    : event.source.sheet === '网络 DDL'
+		                      ? '删掉这条从网上读到的截止时间'
+		                      : '删掉这条自己加的日程',
 		                onClick: function () {
-		                  if (typeof props.onDelete === 'function') props.onDelete(event)
+		                  remove()
 		                },
 		              },
 		              ui.glyph('close', 12),
@@ -2758,6 +3281,7 @@ window.__ModuleLoader__.load({
 		            )
 		          : null,
 		      ),
+		      error !== '' ? ui.note({ variant: 'error' }, error) : null,
 		    ),
 		  )
 		}
@@ -2818,7 +3342,7 @@ window.__ModuleLoader__.load({
 		      { className: 'ot-countdown' },
 		      isCurrent
 		        ? h('div', { className: 'ot-countdown-value' }, String(Math.max(0, next.minutesUntilEnd || 0)))
-		        : h('div', { className: 'ot-countdown-value' }, util.formatClock(remainingMs)),
+		        : h('div', { className: 'ot-countdown-value' }, util.formatCountdown(remainingMs)),
 		      h('div', { className: 'ot-countdown-label' }, isCurrent ? '分钟后结束' : '后开始'),
 		    ),
 		  )
@@ -2839,6 +3363,24 @@ window.__ModuleLoader__.load({
 		  // empty state; keeping the flag here means those three share one form instead
 		  // of three copies that drift apart.
 		  var [adding, setAdding] = React.useState(false)
+		  // A re-read of the roster reports where the button is, not in a corner. The
+		  // success needs no line at all: the counts and the rows below are the result.
+		  var [reimporting, setReimporting] = React.useState(false)
+		  var [reimportError, setReimportError] = React.useState('')
+		
+		  function reimport() {
+		    if (reimporting) return
+		    setReimporting(true)
+		    setReimportError('')
+		    store
+		      .runImport({})
+		      .catch(function (error) {
+		        setReimportError(String((error && error.message) || error))
+		      })
+		      .then(function () {
+		        setReimporting(false)
+		      })
+		  }
 		
 		  var visible = events.filter(function (event) {
 		    if (filter === 'todo') return !event.done && event.phase !== 'past'
@@ -2894,8 +3436,15 @@ window.__ModuleLoader__.load({
 		          setShowCalendar(!showCalendar)
 		        },
 		      }, '日历'),
-		      ui.button({ small: true, icon: 'refresh', title: '重新读取 Excel', onClick: function () { void props.onReimport() } }),
+		      ui.button({
+		        small: true,
+		        icon: 'refresh',
+		        disabled: reimporting,
+		        title: reimporting ? '正在重新读取 Excel…' : '重新读取 Excel',
+		        onClick: reimport,
+		      }),
 		    ),
+		    reimportError !== '' ? ui.note({ variant: 'error' }, '重新抓取失败：' + reimportError) : null,
 		    adding
 		      ? h(manual.ManualEventForm, {
 		          store: store,
@@ -2906,6 +3455,11 @@ window.__ModuleLoader__.load({
 		          },
 		          onSaved: function (savedDay) {
 		            setAdding(false)
+		            // The new row is the confirmation now that no toast announces it, so
+		            // nothing may hide it: the "已完成" filter would (a fresh row is not
+		            // done), and a form opened on one day must not leave it off-screen on
+		            // another.
+		            setFilter('all')
 		            // Land on the day the event went to, calendar open, so the new row is
 		            // visible in the timeline below rather than off-screen on another date.
 		            setShowCalendar(true)
@@ -3002,15 +3556,10 @@ window.__ModuleLoader__.load({
 		              showOwner: true,
 		              snoozeMinutes: util.safeArray(snapshot && snapshot.settings.reminders.snoozeMinutes)[0] || 5,
 		              onFocus: props.onFocus,
+		              // The row keeps the promise so it can report its own failure; the
+		              // deleted row disappearing is the success message.
 		              onDelete: function (event) {
-		                store
-		                  .removeEvent(event.id)
-		                  .then(function () {
-		                    store.pushNotice({ level: 'info', title: '已删除', body: event.title })
-		                  })
-		                  .catch(function (error) {
-		                    store.pushNotice({ level: 'warn', title: '删除失败', body: String((error && error.message) || error) })
-		                  })
+		                return store.removeEvent(event.id)
 		              },
 		            })
 		          }),
@@ -3455,17 +4004,20 @@ window.__ModuleLoader__.load({
 		  var actions = []
 		  if (ready) {
 		    actions.push(
-		      ui.button({ variant: 'primary', icon: 'check', disabled: busy, onClick: props.onConfirm }, '确认并导入'),
-		      ui.button({ icon: 'refresh', small: true, disabled: busy, onClick: props.onRepick }, '换一个文件'),
-		      ui.button({ variant: 'ghost', small: true, disabled: busy, onClick: props.onDetails }, '看看读表细节'),
+		      ui.button({ key: 'confirm', variant: 'primary', icon: 'check', disabled: busy, onClick: props.onConfirm }, '确认并导入'),
+		      ui.button({ key: 'repick', icon: 'refresh', small: true, disabled: busy, onClick: props.onRepick }, '换一个文件'),
+		      ui.button({ key: 'details', variant: 'ghost', small: true, disabled: busy, onClick: props.onDetails }, '看看读表细节'),
 		    )
 		  } else if (status === 'done') {
 		    actions.push(
-		      ui.button({ variant: 'primary', icon: 'plus', onClick: props.onAnother }, '再导入一份'),
-		      props.onOpenTimeline ? ui.button({ icon: 'calendar', small: true, onClick: props.onOpenTimeline }, '查看日程时间轴') : null,
+		      ui.button({ key: 'another', variant: 'primary', icon: 'plus', onClick: props.onAnother }, '再导入一份'),
+		      props.onOpenTimeline ? ui.button({ key: 'timeline', icon: 'calendar', small: true, onClick: props.onOpenTimeline }, '查看日程时间轴') : null,
 		    )
 		  } else if (status === 'error') {
-		    actions.push(ui.button({ icon: 'refresh', small: true, onClick: props.onRetry }, '再读一次'), ui.button({ variant: 'ghost', small: true, onClick: props.onReset }, '重新选文件'))
+		    actions.push(
+		      ui.button({ key: 'retry', icon: 'refresh', small: true, onClick: props.onRetry }, '再读一次'),
+		      ui.button({ key: 'reset', variant: 'ghost', small: true, onClick: props.onReset }, '重新选文件'),
+		    )
 		  }
 		
 		  return h(
@@ -3562,6 +4114,18 @@ window.__ModuleLoader__.load({
 		  var detail = null
 		  if (ready) {
 		    var lines = []
+		    // A commit that failed comes back as `ready` + `error`: the draft is still
+		    // here, so the reason belongs in this bar rather than in a disappeared toast.
+		    if (state.error) {
+		      lines.push(
+		        h(
+		          'div',
+		          { className: 'ot-confirm-line ot-warn-text', key: 'failed' },
+		          ui.glyph('close', 12),
+		          h('span', null, state.error),
+		        ),
+		      )
+		    }
 		    if (plan) {
 		      lines.push(
 		        h('div', { className: 'ot-confirm-line', key: 'plan' }, ui.glyph('calendar', 12), h('span', null, describeExtractPlan(plan))),
@@ -3817,6 +4381,15 @@ window.__ModuleLoader__.load({
 		  )
 		  var nameDraft = namePair[0]
 		  var setNameDraft = namePair[1]
+		  // The two things this page can fail at before a request exists: a blank name,
+		  // and a file the browser cannot hand over. They are shown under the field they
+		  // belong to instead of in a corner card.
+		  var nameErrorPair = React.useState('')
+		  var nameError = nameErrorPair[0]
+		  var setNameError = nameErrorPair[1]
+		  var readErrorPair = React.useState('')
+		  var readError = readErrorPair[0]
+		  var setReadError = readErrorPair[1]
 		
 		  var fileInput = React.useRef(null)
 		  /** The details card, so "看看读表细节" can bring it into view. */
@@ -3882,16 +4455,21 @@ window.__ModuleLoader__.load({
 		        return value !== ''
 		      })
 		    if (parts.length === 0) {
-		      store.pushNotice({ level: 'warn', title: '姓名不能为空', body: '至少填一个用于过滤 Excel 的名字。' })
+		      setNameError('至少填一个用于过滤 Excel 的名字。')
 		      return
 		    }
+		    setNameError('')
 		    store
 		      .saveSettings({ profile: { name: parts[0], aliases: parts.slice(1) } })
 		      .then(function () {
-		        store.pushNotice({ level: 'info', title: '已保存关注姓名', body: parts.join(' / ') })
+		        // Saving changes what the panel is filtering by, so make the header chip
+		        // and the "当前生效" line say the new value now. That is the confirmation;
+		        // a "已保存关注姓名" toast on top of it was pure noise. A refresh that
+		        // fails must not be reported as "the save failed" — the save succeeded.
+		        return store.refresh().catch(function () {})
 		      })
 		      .catch(function (error) {
-		        store.pushNotice({ level: 'warn', title: '保存失败', body: String((error && error.message) || error) })
+		        setNameError('保存失败：' + String((error && error.message) || error))
 		      })
 		  }
 		
@@ -3913,9 +4491,11 @@ window.__ModuleLoader__.load({
 		   */
 		  function analyze(pathValue) {
 		    clearDraft()
-		    void store.analyzeWorkbook({ path: pathValue === undefined ? path : pathValue }).catch(function (error) {
-		      store.pushNotice({ level: 'warn', title: '读表失败', body: String((error && error.message) || error) })
-		    })
+		    setReadError('')
+		    // A failure already lands in `importState.error`, which this page renders in
+		    // the confirmation bar and in the details card. A corner toast on top of it
+		    // was a second copy of the same sentence.
+		    void store.analyzeWorkbook({ path: pathValue === undefined ? path : pathValue }).catch(function () {})
 		  }
 		
 		  /** Upload path: the browser has the bytes but never the file path. */
@@ -3943,6 +4523,7 @@ window.__ModuleLoader__.load({
 		  function readAnotherFile(file) {
 		    if (!file) return
 		    setPath(file.name)
+		    setReadError('')
 		    if (isExcelFile(file.name)) {
 		      clearDraft()
 		      store.set({
@@ -3957,7 +4538,16 @@ window.__ModuleLoader__.load({
 		          return store.analyzeWorkbook({ file: { name: file.name, base64: base64 } })
 		        })
 		        .catch(function (error) {
-		          store.pushNotice({ level: 'warn', title: '读表失败', body: String((error && error.message) || error) })
+		          // A request that failed has already been recorded in `importState.error`,
+		          // which the confirmation bar renders. This catch only has something to
+		          // say when the bytes never left the browser — the state is still
+		          // `analyzing` in that case, because no request ever started.
+		          if (store.get().importState.status === 'analyzing') {
+		            setReadError('读不了「' + file.name + '」：' + String((error && error.message) || error))
+		            store.set({
+		              importState: Object.assign({}, store.get().importState, { status: 'idle', message: '', error: null }),
+		            })
+		          }
 		        })
 		      return
 		    }
@@ -3966,7 +4556,10 @@ window.__ModuleLoader__.load({
 		        return store.extractSource({ file: { name: file.name, base64: base64 } })
 		      })
 		      .catch(function (error) {
-		        store.pushNotice({ level: 'warn', title: '读资料失败', body: String((error && error.message) || error) })
+		        // Same split as above: with a request behind it, the reading bar says why.
+		        if (store.get().extractState.status === 'idle') {
+		          setReadError('读不了「' + file.name + '」：' + String((error && error.message) || error))
+		        }
 		      })
 		  }
 		
@@ -3984,24 +4577,22 @@ window.__ModuleLoader__.load({
 		      return
 		    }
 		    clearDraft()
-		    void store.extractSource({ path: trimmed }).catch(function (error) {
-		      store.pushNotice({ level: 'warn', title: '读资料失败', body: String((error && error.message) || error) })
-		    })
+		    setReadError('')
+		    void store.extractSource({ path: trimmed }).catch(function () {})
 		  }
 		
 		  /** Read pasted text — the "I got this in a group chat" path. */
 		  function readPastedText() {
 		    var text = String(paste || '').trim()
 		    if (text === '') return
-		    void store.extractSource({ text: text }).catch(function (error) {
-		      store.pushNotice({ level: 'warn', title: '读文字失败', body: String((error && error.message) || error) })
-		    })
+		    setReadError('')
+		    void store.extractSource({ text: text }).catch(function () {})
 		  }
 		
 		  function commitReading() {
-		    void store.commitExtraction().catch(function (error) {
-		      store.pushNotice({ level: 'warn', title: '加入日程失败', body: String((error && error.message) || error) })
-		    })
+		    // `commitExtraction` keeps the draft and records why it failed; `ExtractBar`
+		    // renders that reason in the bar above the rows.
+		    void store.commitExtraction().catch(function () {})
 		  }
 		
 		  /** Back to "pick a file", keeping everything already on the schedule. */
@@ -4033,9 +4624,9 @@ window.__ModuleLoader__.load({
 		        // this step feel like a popup instead of a confirmation.
 		        setShowAdvanced(false)
 		      })
-		      .catch(function (error) {
-		        store.pushNotice({ level: 'warn', title: '导入失败', body: String((error && error.message) || error) })
-		      })
+		      // A failed import is recorded in `importState.error`, which the confirmation
+		      // bar turns into "这次没能读完这份表" with the reason under it.
+		      .catch(function () {})
 		  }
 		
 		  /** Drop back to the file picker without losing the configured rosters. */
@@ -4083,6 +4674,7 @@ window.__ModuleLoader__.load({
 		  }
 		
 		  function doPreview() {
+		    setReadError('')
 		    void store
 		      .previewWorkbook({
 		        path: path,
@@ -4090,9 +4682,8 @@ window.__ModuleLoader__.load({
 		        mapping: overrides,
 		        timeRules: analysis && matrixLayout(analysis.layout) ? util.safeArray(analysis.timeRules) : undefined,
 		      })
-		      .catch(function (error) {
-		        store.pushNotice({ level: 'warn', title: '读取失败', body: String((error && error.message) || error) })
-		      })
+		      // `previewWorkbook` records the error in `importState`, where the bar reads it.
+		      .catch(function () {})
 		  }
 		
 		  function setOverride(field, value) {
@@ -4522,6 +5113,7 @@ window.__ModuleLoader__.load({
 		          }),
 		          ui.button({ variant: 'primary', icon: 'check', onClick: saveProfile }, '保存'),
 		        ),
+		        nameError !== '' ? h('div', { style: { marginTop: 8 } }, ui.note({ variant: 'error' }, nameError)) : null,
 		        h(
 		          'div',
 		          { className: 'ot-sub', style: { marginTop: 6 } },
@@ -4597,6 +5189,8 @@ window.__ModuleLoader__.load({
 		            },
 		          }),
 		        ),
+		
+		        readError !== '' ? h('div', { style: { marginTop: 8 } }, ui.note({ variant: 'error' }, readError)) : null,
 		
 		        h(
 		          'details',
@@ -4802,6 +5396,507 @@ window.__ModuleLoader__.load({
 		
 		});
 
+		__otDefine("./netddl.js", (module, exports, require) => {
+		/** Orbit Time client — deadlines read off the web.
+		 *
+		 * The Excel pipeline answers "what does the roster say", the document reader
+		 * answers "what does this file say", and this answers "what does the site I have
+		 * to log into say". Three sources, one destination: the timeline.
+		 *
+		 * The shape of the flow is deliberate:
+		 *
+		 *   log in → pick courses → read → *review* → commit
+		 *
+		 * Reading never writes to the schedule. A scraper that commits on its own makes a
+		 * bad selector indistinguishable from a scheduling decision, and the user only
+		 * finds out when a wrong item fires a reminder at 23:30.
+		 *
+		 * The password is component state, not store state: it goes straight from the
+		 * input to the host, which either discards it or encrypts it with DPAPI. Nothing
+		 * here keeps it after the request settles.
+		 */
+		
+		var util = require('./util.js')
+		var ui = require('./ui.js')
+		var React = util.React
+		var h = util.h
+		
+		var PLATFORM_LABELS = {
+		  icourse163: '中国大学MOOC',
+		  generic: '任意网页',
+		}
+		
+		function readNetddl(store) {
+		  var state = store.get()
+		  return state.netddl || { platform: 'icourse163', status: null, busy: '', message: '', error: '', courses: [], items: [], notes: [], page: null }
+		}
+		
+		/** `23:30` or `全天`; a deadline with no clock is the end of its day. */
+		function whenLabel(item) {
+		  return item.dueTime ? item.dueTime : '全天'
+		}
+		
+		function daysUntil(dateKey) {
+		  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(dateKey || ''))) return null
+		  var target = new Date(dateKey + 'T00:00:00')
+		  var today = new Date()
+		  today.setHours(0, 0, 0, 0)
+		  return Math.round((target.getTime() - today.getTime()) / 86_400_000)
+		}
+		
+		/** "还有 3 天" / "今天" / "已经过了" — the number that makes a list actionable. */
+		function countdownLabel(dateKey) {
+		  var days = daysUntil(dateKey)
+		  if (days === null) return ''
+		  if (days < 0) return '已过期'
+		  if (days === 0) return '今天'
+		  if (days === 1) return '明天'
+		  if (days <= 14) return days + ' 天后'
+		  return ''
+		}
+		
+		function StatusLine(props) {
+		  var status = props.status
+		  if (status === null || status === undefined) {
+		    return h(
+		      'div',
+		      { className: 'ot-net-status' },
+		      h(
+		        'span',
+		        { className: 'ot-sub' },
+		        '正在和宿主握手…（如果一直是这样，刷新页面；刷新后还这样说明宿主是启动时加载的旧版本，要重启 DeepSeek Harness）',
+		      ),
+		      h(
+		        'span',
+		        { className: 'ot-net-actions' },
+		        ui.button({
+		          small: true,
+		          variant: 'ghost',
+		          icon: 'refresh',
+		          onClick: function () {
+		            props.onRefresh()
+		          },
+		        }, '再握一次'),
+		      ),
+		    )
+		  }
+		  var browser = status.browser || {}
+		  var saved = util.safeArray(status.credentials)
+		  var pieces = []
+		  pieces.push(browser.found === true ? '浏览器：' + (browser.label || 'Edge') : '没找到 Edge / Chrome')
+		  if (browser.running === true) pieces.push(browser.headless === true ? '正在运行（无窗口）' : '正在运行（有窗口）')
+		  else pieces.push('未启动')
+		  // Which mode this install runs in, whether or not the browser is up — the
+		  // difference decides whether a login can even show a window.
+		  if (browser.mode === 'headless') pieces.push('模式：无窗口（登录需要窗口）')
+		  if (typeof status.count === 'number') pieces.push('已入库 ' + status.count + ' 条')
+		  if (saved.length > 0) pieces.push('记住的账号：' + saved.map(function (entry) { return entry.username || entry.id }).join(' / '))
+		  return h(
+		    'div',
+		    { className: 'ot-net-status' },
+		    h('span', { className: 'ot-sub' }, pieces.join(' · ')),
+		    h(
+		      'span',
+		      { className: 'ot-sub ot-net-path', title: status.profileDir || '' },
+		      '登录档案：' + String(status.profileDir || '').replace(/^.*[\\/]storages[\\/]/, '…\\'),
+		    ),
+		  )
+		}
+		
+		/** One row of the review list: what will be written, and whether it is ticked. */
+		function DeadlineRow(props) {
+		  var item = props.item
+		  var ticked = item.include !== false
+		  var countdown = countdownLabel(item.dueDate)
+		  return h(
+		    'label',
+		    { className: util.cx('ot-net-row', ticked ? null : 'ot-net-row-off') },
+		    h('input', {
+		      type: 'checkbox',
+		      checked: ticked,
+		      onChange: function () {
+		        props.onToggle(item.key)
+		      },
+		    }),
+		    h(
+		      'span',
+		      { className: 'ot-net-when' },
+		      h('b', null, item.dueDate),
+		      h('span', { className: 'ot-net-clock' }, whenLabel(item)),
+		      countdown !== '' ? h('i', { className: 'ot-net-count' }, countdown) : null,
+		    ),
+		    h(
+		      'span',
+		      { className: 'ot-net-what' },
+		      h('span', { className: 'ot-net-title' }, (item.kind ? '[' + item.kind + '] ' : '') + item.title),
+		      item.course ? h('span', { className: 'ot-tag' }, item.course) : null,
+		      item.url ? h('a', { className: 'ot-net-link', href: item.url, target: '_blank', rel: 'noreferrer', onClick: function (event) { event.stopPropagation() } }, '原页面') : null,
+		    ),
+		    h('span', { className: 'ot-net-conf', title: item.evidence || '' }, Math.round((item.confidence || 0) * 100) + '%'),
+		  )
+		}
+		
+		function CourseRow(props) {
+		  var course = props.course
+		  var ticked = course.checked === true
+		  return h(
+		    'label',
+		    { className: util.cx('ot-net-course', ticked ? null : 'ot-net-row-off') },
+		    h('input', {
+		      type: 'checkbox',
+		      checked: ticked,
+		      onChange: function () {
+		        props.onToggle(course.id)
+		      },
+		    }),
+		    h('span', { className: 'ot-net-course-name' }, course.name),
+		    course.ended
+		      ? h('span', { className: 'ot-tag', title: '学期已结束' + (course.termEnd ? '（' + course.termEnd + '）' : '') }, '已结束')
+		      : null,
+		    course.url ? null : h('span', { className: 'ot-tag ot-tag-manual', title: '没有课程页链接，会走课程接口读' }, '接口'),
+		  )
+		}
+		
+		function LoginCard(props) {
+		  var net = props.net
+		  var busy = net.busy !== ''
+		  var status = net.status || {}
+		  var browser = status.browser || {}
+		  var headlessMode = browser.mode === 'headless'
+		  var pair = React.useState('')
+		  var username = pair[0]
+		  var setUsername = pair[1]
+		  var passPair = React.useState('')
+		  var password = passPair[0]
+		  var setPassword = passPair[1]
+		  var rememberPair = React.useState(true)
+		  var remember = rememberPair[0]
+		  var setRemember = rememberPair[1]
+		  var saved = util.safeArray(status.credentials)
+		  /**
+		   * Put the remembered account in the field once the status arrives. The password
+		   * stays empty and is never sent to the page: the host reads it from DPAPI when
+		   * the button is clicked.
+		   */
+		  React.useEffect(function () {
+		    if (username !== '' || saved.length === 0) return
+		    var remembered = saved[0].username || ''
+		    if (remembered !== '') setUsername(remembered)
+		    // eslint-disable-next-line react-hooks/exhaustive-deps
+		  }, [net.status])
+		
+		  function submit(event) {
+		    if (event && typeof event.preventDefault === 'function') event.preventDefault()
+		    if (busy) return
+		    props.store
+		      .netDdlLogin({ username: username.trim(), password: password, remember: remember })
+		      .then(function (payload) {
+		        // Once the host has the password (or has decided not to keep it), the page
+		        // has no reason to hold it any longer.
+		        if (payload && payload.loggedIn) setPassword('')
+		      })
+		      .catch(function () {
+		        /* the error is already on the net slice */
+		      })
+		  }
+		
+		  return h(
+		    'section',
+		    { className: 'ot-card ot-card-pad' },
+		    h('h3', { className: 'ot-card-title' }, h('i', { className: 'ot-dot' }), '登录一次，之后靠浏览器档案'),
+		    h(
+		      'p',
+		      { className: 'ot-sub' },
+		      '点下面的按钮会弹出一个 Edge 窗口。账号密码留空就用记住的那份，填了就用这里的；能自动填就自动填，要扫码 / 短信验证 / 拖滑块，就在那个窗口里完成——登录成功了这里会自己继续。',
+		    ),
+		    saved.length > 0
+		      ? h(
+		        'p',
+		        { className: 'ot-sub' },
+		        '已记住：' + saved.map(function (entry) { return entry.username || entry.id }).join(' / ') + '。两栏都留空，点「打开登录窗口」会自动用这份登录。',
+		      )
+		      : null,
+		    /**
+		     * Say it before the click, not after the wait: with a headless install the
+		     * window cannot exist, and the host would refuse after a few seconds of
+		     * "正在启动窗口…" that looks exactly like the hang this note prevents.
+		     */
+		    headlessMode
+		      ? ui.note({ variant: 'warn' }, '这台机器配置成了无窗口浏览器（netddl.headless = true），登录窗口打不开。把 cordis.patch.yml 里那条删掉或改成 false 再重启 DeepSeek Harness；也可以先在命令行跑一次 `pnpm run ddl -- login`（同一个档案），之后无窗口也能抓。')
+		      : null,
+		    h(
+		      'form',
+		      { className: 'ot-net-login', onSubmit: submit },
+		      ui.textField({
+		        label: '账号（手机号 / 邮箱）',
+		        value: username,
+		        placeholder: '留空用记住的账号；没有再在窗口里手动登录',
+		        onChange: setUsername,
+		      }),
+		      h(
+		        'div',
+		        { className: 'ot-field' },
+		        h('span', { className: 'ot-field-label' }, '密码'),
+		        h('input', {
+		          className: 'ot-input',
+		          type: 'password',
+		          value: password,
+		          autoComplete: 'off',
+		          placeholder: '只用于填表；勾了「记住」才加密存本机',
+		          onChange: function (event) {
+		            setPassword(event.target.value)
+		          },
+		        }),
+		      ),
+		      h(
+		        'div',
+		        { className: 'ot-net-login-foot' },
+		        ui.switchRow({ label: '记住密码（Windows DPAPI 加密，只在本机可用）', checked: remember, onChange: setRemember }),
+		        h('div', { className: 'ot-headspace' }),
+		        ui.button({ variant: 'primary', icon: 'orbit', disabled: busy, onClick: submit }, busy && net.busy === 'login' ? '等你登录…' : '打开登录窗口'),
+		        ui.button({ variant: 'ghost', icon: 'refresh', disabled: busy, onClick: function () { props.store.netDdlCheck().catch(function () {}) } }, '检查登录'),
+		        ui.button({ variant: 'ghost', icon: 'close', disabled: busy, onClick: function () { props.store.netDdlLogout().catch(function () {}) } }, '清除登录'),
+		      ),
+		    ),
+		  )
+		}
+		
+		function CourseCard(props) {
+		  var net = props.net
+		  var busy = net.busy !== ''
+		  var courses = util.safeArray(net.courses)
+		  var chosen = courses.filter(function (course) {
+		    return course.checked === true
+		  })
+		  return h(
+		    'section',
+		    { className: 'ot-card ot-card-pad' },
+		    h('h3', { className: 'ot-card-title' }, h('i', { className: 'ot-dot' }), '你的课程'),
+		    h(
+		      'div',
+		      { className: 'ot-net-actions' },
+		      ui.button({ icon: 'refresh', disabled: busy, onClick: function () { props.store.netDdlScanCourses().catch(function () {}) } }, busy && net.busy === 'courses' ? '正在读…' : '读我的课程'),
+		      courses.length > 0 ? ui.button({ variant: 'ghost', onClick: function () { props.store.netDdlCheckAll(true) } }, '全选') : null,
+		      courses.length > 0 ? ui.button({ variant: 'ghost', onClick: function () { props.store.netDdlCheckAll(false) } }, '全不选') : null,
+		      h('div', { className: 'ot-headspace' }),
+		      ui.button({ variant: 'primary', icon: 'clock', disabled: busy || chosen.length === 0, onClick: function () { props.store.netDdlPull({}).catch(function () {}) } }, busy && net.busy === 'pull' ? '正在抓…' : '抓这些课的截止时间'),
+		    ),
+		    courses.length === 0
+		      ? h('p', { className: 'ot-sub' }, '先「读我的课程」，或者直接去「任意网页」贴一个课程页地址。')
+		      : h('div', { className: 'ot-net-courses' }, courses.map(function (course) {
+		        return h(CourseRow, { key: course.id || course.name, course: course, onToggle: function (id) { props.store.netDdlToggleCourse(id) } })
+		      })),
+		  )
+		}
+		
+		function PageCard(props) {
+		  var net = props.net
+		  var busy = net.busy !== ''
+		  var urlPair = React.useState('')
+		  var url = urlPair[0]
+		  var setUrl = urlPair[1]
+		  var userPair = React.useState('')
+		  var username = userPair[0]
+		  var setUsername = userPair[1]
+		  var passPair = React.useState('')
+		  var password = passPair[0]
+		  var setPassword = passPair[1]
+		
+		  function submit(event) {
+		    if (event && typeof event.preventDefault === 'function') event.preventDefault()
+		    if (busy) return
+		    var target = url.trim()
+		    if (!/^https?:\/\//i.test(target)) {
+		      props.onError('地址要以 http:// 或 https:// 开头。')
+		      return
+		    }
+		    props.store
+		      .netDdlReadPage({ url: target, username: username.trim(), password: password, remember: true })
+		      .then(function (payload) {
+		        if (payload && payload.loginNote && payload.items && payload.items.length > 0) setPassword('')
+		      })
+		      .catch(function () {
+		        /* reported through the net slice */
+		      })
+		  }
+		
+		  return h(
+		    'section',
+		    { className: 'ot-card ot-card-pad' },
+		    h('h3', { className: 'ot-card-title' }, h('i', { className: 'ot-dot' }), '抓一个网页'),
+		    h('p', { className: 'ot-sub' }, '作业页、教务系统、课程公告都行。如果它有登录表单，账号密码会先填进去；填不了的验证就交给你。'),
+		    h(
+		      'form',
+		      { className: 'ot-net-page', onSubmit: submit },
+		      h(
+		        'div',
+		        { className: 'ot-field ot-net-url' },
+		        h('span', { className: 'ot-field-label' }, '页面地址'),
+		        h('input', {
+		          className: 'ot-input',
+		          type: 'text',
+		          value: url,
+		          placeholder: 'https://… （要看到截止时间的那个页面）',
+		          onChange: function (event) {
+		            setUrl(event.target.value)
+		          },
+		        }),
+		      ),
+		      ui.textField({ label: '账号（可选）', value: username, placeholder: '这个页面要登录才填', onChange: setUsername }),
+		      h(
+		        'div',
+		        { className: 'ot-field' },
+		        h('span', { className: 'ot-field-label' }, '密码（可选）'),
+		        h('input', {
+		          className: 'ot-input',
+		          type: 'password',
+		          value: password,
+		          autoComplete: 'off',
+		          onChange: function (event) {
+		            setPassword(event.target.value)
+		          },
+		        }),
+		      ),
+		      h(
+		        'div',
+		        { className: 'ot-net-actions' },
+		        ui.button({ variant: 'primary', icon: 'spark', disabled: busy, onClick: submit }, busy && net.busy === 'page' ? '正在读…' : '抓这个页面'),
+		      ),
+		    ),
+		  )
+		}
+		
+		function ResultCard(props) {
+		  var net = props.net
+		  var items = util.safeArray(net.items)
+		  if (items.length === 0) return null
+		  var chosen = items.filter(function (item) {
+		    return item.include !== false
+		  })
+		  var busy = net.busy !== ''
+		  return h(
+		    'section',
+		    { className: 'ot-card ot-card-pad ot-net-result' },
+		    h(
+		      'h3',
+		      { className: 'ot-card-title' },
+		      h('i', { className: 'ot-dot' }),
+		      '读到的截止时间（' + items.length + '）',
+		      h(
+		        'span',
+		        { className: 'ot-net-actions' },
+		        ui.button({ small: true, variant: 'ghost', onClick: function () { props.store.netDdlSelectAll(true) } }, '全选'),
+		        ui.button({ small: true, variant: 'ghost', onClick: function () { props.store.netDdlSelectAll(false) } }, '全不选'),
+		      ),
+		    ),
+		    h('div', { className: 'ot-net-rows' }, items.map(function (item) {
+		      return h(DeadlineRow, { key: item.key, item: item, onToggle: function (key) { props.store.netDdlToggleItem(key) } })
+		    })),
+		    h(
+		      'div',
+		      { className: 'ot-net-commit' },
+		      h('span', { className: 'ot-sub' }, '勾选的会写进时间轴，并带上「网络 DDL」标；以后重新导入 Excel 也不会冲掉。'),
+		      h('div', { className: 'ot-headspace' }),
+		      ui.button({ variant: 'primary', icon: 'check', disabled: busy || chosen.length === 0, onClick: function () { props.store.netDdlCommit().catch(function () {}) } }, busy && net.busy === 'commit' ? '正在写…' : '加进日程（' + chosen.length + ' 条）'),
+		    ),
+		  )
+		}
+		
+		function NetDdlView(props) {
+		  var net = props.netddl
+		  var busy = net.busy !== ''
+		
+		  React.useEffect(function () {
+		    if (net.status !== null) return
+		    var cancelled = false
+		    var timer = null
+		    /**
+		     * The status is read once when the tab opens, but a page can be refreshed
+		     * while the host is still starting; one retry turns that race into a loaded
+		     * card instead of "还没和宿主对上话" until the next manual refresh.
+		     */
+		    props.store.refreshNetDdl().then(function (status) {
+		      if (cancelled || status !== null) return
+		      timer = setTimeout(function () {
+		        if (!cancelled) props.store.refreshNetDdl()
+		      }, 1500)
+		    })
+		    return function () {
+		      cancelled = true
+		      if (timer !== null) clearTimeout(timer)
+		    }
+		    // The login flow can be long; the status is cheap, so ask once when the tab
+		    // opens and let the user refresh explicitly after that.
+		    // eslint-disable-next-line react-hooks/exhaustive-deps
+		  }, [])
+		
+		  var tabs = Object.keys(PLATFORM_LABELS).map(function (id) {
+		    return h(
+		      'button',
+		      {
+		        key: id,
+		        type: 'button',
+		        className: util.cx('ot-net-tab', net.platform === id ? 'ot-net-tab-on' : null),
+		        disabled: busy,
+		        onClick: function () {
+		          props.store.netDdlSetPlatform(id)
+		        },
+		      },
+		      PLATFORM_LABELS[id],
+		    )
+		  })
+		
+		  return h(
+		    'div',
+		    { className: 'ot-netddl' },
+		    h(
+		      'section',
+		      { className: 'ot-card ot-card-pad' },
+		      h('h3', { className: 'ot-card-title' }, h('i', { className: 'ot-dot' }), '从网上读截止时间'),
+		      h('p', { className: 'ot-sub' }, '登录一次，之后每次打开这个页签点「抓」就行。读到的每一条都要你勾过才进日程。'),
+		      h('div', { className: 'ot-net-tabs' }, tabs),
+		      h(StatusLine, {
+		        status: net.status,
+		        onRefresh: function () {
+		          props.store.refreshNetDdl()
+		        },
+		      }),
+		      net.message !== '' ? ui.note({ variant: net.level === 'warn' ? 'warn' : 'ok' }, net.message) : null,
+		      net.error !== '' ? ui.note({ variant: 'warn' }, net.error) : null,
+		      util.safeArray(net.notes).length > 0
+		        ? h('div', { className: 'ot-net-notes' }, net.notes.map(function (note, index) {
+		          return h('div', { key: 'n' + index, className: 'ot-sub' }, '· ' + note)
+		        }))
+		        : null,
+		      net.page !== null && net.page !== undefined
+		        ? h(
+		          'div',
+		          { className: 'ot-sub ot-net-pageinfo' },
+		          '读的是：' + (net.page.title || '(没有标题)') + ' · ' + net.page.chars + ' 字 · ' + net.page.payloads + ' 个 JSON 响应',
+		          net.page.screenshot ? h('span', null, ' · 截图：' + net.page.screenshot) : null,
+		        )
+		        : null,
+		    ),
+		    net.platform === 'icourse163' ? h(LoginCard, { store: props.store, net: net }) : null,
+		    net.platform === 'icourse163' ? h(CourseCard, { store: props.store, net: net }) : null,
+		    net.platform === 'generic'
+		      ? h(PageCard, {
+		        store: props.store,
+		        net: net,
+		        onError: function (message) {
+		          props.store.set({ netddl: Object.assign({}, props.store.get().netddl, { error: message }) })
+		        },
+		      })
+		      : null,
+		    h(ResultCard, { store: props.store, net: net }),
+		  )
+		}
+		
+		exports.NetDdlView = NetDdlView
+		exports.PLATFORM_LABELS = PLATFORM_LABELS
+		
+		});
+
 		__otDefine("./settings.js", (module, exports, require) => {
 		/** Orbit Time client — settings, floating-window control, and the activity feed. */
 		
@@ -4832,6 +5927,11 @@ window.__ModuleLoader__.load({
 		  var busyPair = React.useState(false)
 		  var busy = busyPair[0]
 		  var setBusy = busyPair[1]
+		  // The card already owns a status chip and three mode buttons, so a failure
+		  // belongs right here rather than in a floating card over the whole panel.
+		  var errorPair = React.useState('')
+		  var error = errorPair[0]
+		  var setError = errorPair[1]
 		
 		  React.useEffect(
 		    function () {
@@ -4849,13 +5949,20 @@ window.__ModuleLoader__.load({
 		
 		  function start() {
 		    setBusy(true)
+		    setError('')
 		    store
 		      .openFloatWindow()
 		      .then(function (payload) {
-		        setStatus({ ok: payload.ok, running: payload.running === true, mode: payload.mode || 'pill' })
+		        var started = payload !== null && payload !== undefined && payload.ok === true
+		        setStatus({
+		          ok: started,
+		          running: payload !== null && payload !== undefined && payload.running === true,
+		          mode: (payload && payload.mode) || 'pill',
+		        })
+		        if (!started) setError((payload && payload.error) || '宿主没有回应。')
 		      })
-		      .catch(function (error) {
-		        store.pushNotice({ level: 'warn', title: '悬浮窗启动失败', body: String((error && error.message) || error) })
+		      .catch(function (failure) {
+		        setError('悬浮窗没能启动：' + String((failure && failure.message) || failure))
 		      })
 		      .then(function () {
 		        setBusy(false)
@@ -4864,12 +5971,15 @@ window.__ModuleLoader__.load({
 		
 		  function stop() {
 		    setBusy(true)
+		    setError('')
 		    store
 		      .stopFloatWindow()
 		      .then(function () {
 		        setStatus({ ok: true, running: false, mode: 'closed', closedByUser: true })
 		      })
-		      .catch(function () {})
+		      .catch(function (failure) {
+		        setError('悬浮窗没能关闭：' + String((failure && failure.message) || failure))
+		      })
 		      .then(function () {
 		        setBusy(false)
 		      })
@@ -4881,13 +5991,19 @@ window.__ModuleLoader__.load({
 		
 		  function switchMode(next) {
 		    setBusy(true)
+		    setError('')
 		    store
 		      .setFloatMode(next)
 		      .then(function (payload) {
-		        setStatus({ ok: payload.ok !== false, running: payload.running === true, mode: payload.mode || next })
+		        setStatus({
+		          ok: payload !== null && payload !== undefined && payload.ok !== false,
+		          running: payload !== null && payload !== undefined && payload.running === true,
+		          mode: (payload && payload.mode) || next,
+		        })
+		        if (payload && payload.ok === false) setError(payload.error ? payload.error : '宿主没有回应。')
 		      })
-		      .catch(function (error) {
-		        store.pushNotice({ level: 'warn', title: '悬浮窗操作失败', body: String((error && error.message) || error) })
+		      .catch(function (failure) {
+		        setError('悬浮窗没能切换：' + String((failure && failure.message) || failure))
 		      })
 		      .then(function () {
 		        setBusy(false)
@@ -4916,6 +6032,7 @@ window.__ModuleLoader__.load({
 		        ui.button({ variant: running ? undefined : 'primary', icon: 'expand', disabled: busy, onClick: start }, running ? '重新启动' : '重新显示'),
 		        running ? ui.button({ icon: 'close', disabled: busy, onClick: stop }, '关闭悬浮窗') : null,
 		      ),
+		      error !== '' ? ui.note({ variant: 'error' }, error) : null,
 		      h(
 		        'div',
 		        { className: 'ot-seg' },
@@ -5098,6 +6215,12 @@ window.__ModuleLoader__.load({
 		  var pair = React.useState(null)
 		  var replyDraft = pair[0]
 		  var setReplyDraft = pair[1]
+		  // Resetting reminders changes nothing on screen — the evidence is the next
+		  // reminder, which may be an hour away. Say it once, here, under the button:
+		  // the corner card this replaced was one more thing to dismiss.
+		  var resetPair = React.useState('')
+		  var resetNote = resetPair[0]
+		  var setResetNote = resetPair[1]
 		  var messages = util.safeArray(snapshot && snapshot.feed).filter(function (entry) {
 		    return entry.kind === 'reminder'
 		  })
@@ -5142,15 +6265,19 @@ window.__ModuleLoader__.load({
 		            variant: 'ghost',
 		            icon: 'reset',
 		            onClick: function () {
+		              setResetNote('')
 		              void store
 		                .request('/events', { method: 'POST', body: JSON.stringify({ action: 'reset', id: '__all__' }) })
-		                .catch(function () {})
 		                .then(function () {
-		                  store.pushNotice({ level: 'info', title: '已重置提醒状态', body: '所有日程的提醒会重新计时。' })
+		                  setResetNote('所有日程的提醒会重新计时。')
+		                })
+		                .catch(function (failure) {
+		                  setResetNote('没能重置：' + String((failure && failure.message) || failure))
 		                })
 		            },
 		          }, '重置提醒状态'),
 		        ),
+		        resetNote !== '' ? ui.note({ children: resetNote }) : null,
 		        h('input', {
 		          className: 'ot-input',
 		          type: 'text',
@@ -5183,6 +6310,7 @@ window.__ModuleLoader__.load({
 		var companion = require('./companion.js')
 		var importView = require('./import-view.js')
 		var settings = require('./settings.js')
+		var netddl = require('./netddl.js')
 		var drag = require('./drag.js')
 		var React = util.React
 		var h = util.h
@@ -5191,6 +6319,7 @@ window.__ModuleLoader__.load({
 		  { id: 'timeline', label: '日程时间轴' },
 		  { id: 'pomodoro', label: '番茄专注' },
 		  { id: 'companion', label: 'AI 助手' },
+		  { id: 'netddl', label: '网络 DDL' },
 		  { id: 'settings', label: '设置 / 导入' },
 		]
 		
@@ -5333,6 +6462,16 @@ window.__ModuleLoader__.load({
 		
 		/* ------------------------------------------------------------------ notices */
 		
+		/**
+		 * The floating stack — reminders only.
+		 *
+		 * It used to be the general feedback channel: every successful click pushed a
+		 * card here ("已加进日程", "已删除", "已保存关注姓名"), each with its own 关闭
+		 * button, each duplicating something the page already showed. The panel is a
+		 * place; a result belongs where the action happened. What is left floating is
+		 * the reminder, which arrives on its own schedule and carries the two actions
+		 * that only make sense at the moment it appears.
+		 */
 		function Notices() {
 		  var state = util.useStore(store.store)
 		  var notices = util.safeArray(state.notices)
@@ -5384,6 +6523,30 @@ window.__ModuleLoader__.load({
 		  )
 		}
 		
+		/**
+		 * The in-page result line.
+		 *
+		 * This is all that remains of "click, then it reports back": a block in the
+		 * panel body — in the layout, scrolls with the page, never faded on a timer,
+		 * never parked in a corner. Only actions with no card of their own use it.
+		 */
+		function ActionReport(props) {
+		  var report = props.report
+		  if (!report) return null
+		  return h(
+		    'div',
+		    { className: 'ot-inline-report', 'data-level': report.level || 'error', role: 'status' },
+		    ui.glyph(report.level === 'info' ? 'clock' : 'close', 13),
+		    h(
+		      'div',
+		      { className: 'ot-inline-report-text' },
+		      report.title ? h('strong', null, report.title) : null,
+		      report.body ? h('span', null, report.body) : null,
+		    ),
+		    ui.button({ small: true, iconOnly: true, variant: 'ghost', icon: 'close', title: '关掉这条提示', onClick: props.onDismiss }),
+		  )
+		}
+		
 		/* --------------------------------------------------------------- main panel */
 		
 		function Dashboard() {
@@ -5413,14 +6576,30 @@ window.__ModuleLoader__.load({
 		    }
 		  }
 		
-		  function reimport() {
-		    void store.store
-		      .runImport({})
-		      .then(function (result) {
-		        store.store.pushNotice({ level: 'info', title: '已重新抓取', body: result.importedCount + ' 条日程' })
+		  /**
+		   * The header's floating-window button.
+		   *
+		   * It has no card of its own to report into, so a refusal lands in the page's
+		   * result line. The three outcomes are different and only one is an error:
+		   * started, refused by the host, and "deliberately stayed closed because you
+		   * closed it with the widget's ×".
+		   */
+		  function openHud() {
+		    store.store
+		      .openFloatWindow()
+		      .then(function (payload) {
+		        if (!payload || payload.ok !== true) {
+		          store.store.reportAction('error', '悬浮窗没能打开', (payload && payload.error) || '宿主没有回应。')
+		        } else if (payload.running === false) {
+		          store.store.reportAction(
+		            'info',
+		            '悬浮窗没有启动',
+		            '宿主返回的是「没有在运行」。去「设置 / 导入 → 悬浮窗与界面」可以看当前状态并重新打开。',
+		          )
+		        }
 		      })
 		      .catch(function (error) {
-		        store.store.pushNotice({ level: 'warn', title: '重新抓取失败', body: String((error && error.message) || error) })
+		        store.store.reportAction('error', '悬浮窗没能打开', String((error && error.message) || error))
 		      })
 		  }
 		
@@ -5481,15 +6660,18 @@ window.__ModuleLoader__.load({
 		          snapshot.readCount > 0
 		            ? h('span', { className: 'ot-chip ot-chip-ai', title: '这些是 AI 从资料里读出来的，重新导入 Excel 也不会被覆盖' }, ui.glyph('robot', 11), 'AI 读出 ' + snapshot.readCount + ' 条')
 		            : null,
+		          // Deadlines read off the network. Counted apart from both: "the site
+		          // said so" is not "I typed it".
+		          snapshot.webCount > 0
+		            ? h('span', { className: 'ot-chip ot-chip-web', title: '这些是从网上（课程平台 / 网页）读到的截止时间' }, ui.glyph('orbit', 11), '网络 DDL ' + snapshot.webCount + ' 条')
+		            : null,
 		          h('span', { className: 'ot-chip' }, ui.glyph('clock', 11), snapshot.serverTime.label),
 		          ui.button({
 		            small: true,
 		            iconOnly: true,
 		            icon: 'expand',
 		            title: '打开置顶悬浮小窗',
-		            onClick: function () {
-		              store.store.openFloatWindow()
-		            },
+		            onClick: openHud,
 		          }),
 		        ),
 		      ),
@@ -5522,6 +6704,7 @@ window.__ModuleLoader__.load({
 		    h(
 		      'div',
 		      { className: 'ot-body', ref: scroller },
+		      h(ActionReport, { report: state.actionReport, onDismiss: store.store.dismissActionReport }),
 		      tab === 'timeline'
 		        ? h(timeline.TimelineView, {
 		            store: store.store,
@@ -5532,7 +6715,6 @@ window.__ModuleLoader__.load({
 		            undated: snapshot.day.undated,
 		            now: now,
 		            onFocus: focusOn,
-		            onReimport: reimport,
 		          })
 		        : null,
 		      tab === 'pomodoro' && timer
@@ -5553,6 +6735,12 @@ window.__ModuleLoader__.load({
 		            snapshot: snapshot,
 		            settings: snapshot.settings,
 		            ownerNames: ownerNames,
+		          })
+		        : null,
+		      tab === 'netddl'
+		        ? h(netddl.NetDdlView, {
+		            store: store.store,
+		            netddl: state.netddl,
 		          })
 		        : null,
 		      tab === 'settings'
@@ -5730,23 +6918,20 @@ window.__ModuleLoader__.load({
 		    reportUi('expand-window')
 		    store.store
 		      .openFloatWindow()
+		      .then(function (payload) {
+		        if (!payload || payload.ok !== true) {
+		          store.store.reportAction('error', '悬浮窗没能打开', (payload && payload.error) || '宿主没有回应。')
+		        }
+		      })
 		      .catch(function (error) {
-		        store.store.pushNotice({
-		          level: 'warn',
-		          title: '悬浮窗启动失败',
-		          body: String((error && error.message) || error),
-		        })
+		        store.store.reportAction('error', '悬浮窗没能打开', String((error && error.message) || error))
 		      })
 		  }
 		
 		  function timerCommand(action, extra) {
 		    store.store.reportUiEvent('timer:' + action)
 		    return store.store.timerAction(action, extra).catch(function (error) {
-		      store.store.pushNotice({
-		        level: 'warn',
-		        title: '计时器操作失败',
-		        body: String((error && error.message) || error),
-		      })
+		      store.store.reportAction('error', '计时器操作失败', String((error && error.message) || error))
 		    })
 		  }
 		
@@ -5816,7 +7001,7 @@ window.__ModuleLoader__.load({
 		      h(
 		        'div',
 		        { className: 'ot-float-mini-body' },
-		        h('div', { className: 'ot-float-mini-time' }, next ? util.formatClock(remainingMs) : '--:--'),
+		        h('div', { className: 'ot-float-mini-time' }, next ? util.formatCountdownShort(remainingMs) : '--:--'),
 		        h('div', { className: 'ot-float-mini-meta', title: next ? next.title : '今天没有日程' }, next ? next.title : '今天没有日程'),
 		      ),
 		      h(
@@ -5942,6 +7127,7 @@ window.__ModuleLoader__.load({
 		
 		exports.Dashboard = Dashboard
 		exports.Notices = Notices
+		exports.ActionReport = ActionReport
 		exports.FloatingWidget = FloatingWidget
 		exports.TABS = TABS
 		
@@ -6127,8 +7313,8 @@ window.__ModuleLoader__.load({
 		 * ---------------
 		 * A Chinese path reaches the config as byte-per-character nonsense:
 		 *
-		 *   C:\...\示例支部早打卡排班表.xlsx
-		 *   C:\...\ç¤ºä¾‹æ”¯éƒ¨æ—©æ‰“å¡æŽ’ç­è¡¨.xlsx
+		 *   C:\...\示例部门早打卡排班表.xlsx
+		 *   C:\...\ç¤ºä¾‹éƒ¨é—¨æ—©æ‰“å¡æŽ’ç­è¡¨.xlsx
 		 *
 		 * That second string is the first one's UTF-8 bytes read through a single-byte
 		 * code page. Once such a value is persisted, the plugin faithfully re-saves it
@@ -6400,6 +7586,7 @@ window.__ModuleLoader__.load({
 		exports["./timeline.js"] = __otRequire("./timeline.js");
 		exports["./companion.js"] = __otRequire("./companion.js");
 		exports["./import-view.js"] = __otRequire("./import-view.js");
+		exports["./netddl.js"] = __otRequire("./netddl.js");
 		exports["./settings.js"] = __otRequire("./settings.js");
 		exports["./panel.js"] = __otRequire("./panel.js");
 		exports["./index.js"] = __otRequire("./index.js");

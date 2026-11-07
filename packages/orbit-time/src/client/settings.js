@@ -27,6 +27,11 @@ function HudCard(props) {
   var busyPair = React.useState(false)
   var busy = busyPair[0]
   var setBusy = busyPair[1]
+  // The card already owns a status chip and three mode buttons, so a failure
+  // belongs right here rather than in a floating card over the whole panel.
+  var errorPair = React.useState('')
+  var error = errorPair[0]
+  var setError = errorPair[1]
 
   React.useEffect(
     function () {
@@ -44,13 +49,20 @@ function HudCard(props) {
 
   function start() {
     setBusy(true)
+    setError('')
     store
       .openFloatWindow()
       .then(function (payload) {
-        setStatus({ ok: payload.ok, running: payload.running === true, mode: payload.mode || 'pill' })
+        var started = payload !== null && payload !== undefined && payload.ok === true
+        setStatus({
+          ok: started,
+          running: payload !== null && payload !== undefined && payload.running === true,
+          mode: (payload && payload.mode) || 'pill',
+        })
+        if (!started) setError((payload && payload.error) || '宿主没有回应。')
       })
-      .catch(function (error) {
-        store.pushNotice({ level: 'warn', title: '悬浮窗启动失败', body: String((error && error.message) || error) })
+      .catch(function (failure) {
+        setError('悬浮窗没能启动：' + String((failure && failure.message) || failure))
       })
       .then(function () {
         setBusy(false)
@@ -59,12 +71,15 @@ function HudCard(props) {
 
   function stop() {
     setBusy(true)
+    setError('')
     store
       .stopFloatWindow()
       .then(function () {
         setStatus({ ok: true, running: false, mode: 'closed', closedByUser: true })
       })
-      .catch(function () {})
+      .catch(function (failure) {
+        setError('悬浮窗没能关闭：' + String((failure && failure.message) || failure))
+      })
       .then(function () {
         setBusy(false)
       })
@@ -76,13 +91,19 @@ function HudCard(props) {
 
   function switchMode(next) {
     setBusy(true)
+    setError('')
     store
       .setFloatMode(next)
       .then(function (payload) {
-        setStatus({ ok: payload.ok !== false, running: payload.running === true, mode: payload.mode || next })
+        setStatus({
+          ok: payload !== null && payload !== undefined && payload.ok !== false,
+          running: payload !== null && payload !== undefined && payload.running === true,
+          mode: (payload && payload.mode) || next,
+        })
+        if (payload && payload.ok === false) setError(payload.error ? payload.error : '宿主没有回应。')
       })
-      .catch(function (error) {
-        store.pushNotice({ level: 'warn', title: '悬浮窗操作失败', body: String((error && error.message) || error) })
+      .catch(function (failure) {
+        setError('悬浮窗没能切换：' + String((failure && failure.message) || failure))
       })
       .then(function () {
         setBusy(false)
@@ -111,6 +132,7 @@ function HudCard(props) {
         ui.button({ variant: running ? undefined : 'primary', icon: 'expand', disabled: busy, onClick: start }, running ? '重新启动' : '重新显示'),
         running ? ui.button({ icon: 'close', disabled: busy, onClick: stop }, '关闭悬浮窗') : null,
       ),
+      error !== '' ? ui.note({ variant: 'error' }, error) : null,
       h(
         'div',
         { className: 'ot-seg' },
@@ -293,6 +315,12 @@ function SettingsView(props) {
   var pair = React.useState(null)
   var replyDraft = pair[0]
   var setReplyDraft = pair[1]
+  // Resetting reminders changes nothing on screen — the evidence is the next
+  // reminder, which may be an hour away. Say it once, here, under the button:
+  // the corner card this replaced was one more thing to dismiss.
+  var resetPair = React.useState('')
+  var resetNote = resetPair[0]
+  var setResetNote = resetPair[1]
   var messages = util.safeArray(snapshot && snapshot.feed).filter(function (entry) {
     return entry.kind === 'reminder'
   })
@@ -337,15 +365,19 @@ function SettingsView(props) {
             variant: 'ghost',
             icon: 'reset',
             onClick: function () {
+              setResetNote('')
               void store
                 .request('/events', { method: 'POST', body: JSON.stringify({ action: 'reset', id: '__all__' }) })
-                .catch(function () {})
                 .then(function () {
-                  store.pushNotice({ level: 'info', title: '已重置提醒状态', body: '所有日程的提醒会重新计时。' })
+                  setResetNote('所有日程的提醒会重新计时。')
+                })
+                .catch(function (failure) {
+                  setResetNote('没能重置：' + String((failure && failure.message) || failure))
                 })
             },
           }, '重置提醒状态'),
         ),
+        resetNote !== '' ? ui.note({ children: resetNote }) : null,
         h('input', {
           className: 'ot-input',
           type: 'text',

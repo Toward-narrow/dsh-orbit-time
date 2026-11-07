@@ -5,8 +5,8 @@
  * ---------------
  * A Chinese path reaches the config as byte-per-character nonsense:
  *
- *   C:\...\示例支部早打卡排班表.xlsx
- *   C:\...\ç¤ºä¾‹æ”¯éƒ¨æ—©æ‰“å¡æŽ’ç­è¡¨.xlsx
+ *   C:\...\示例部门早打卡排班表.xlsx
+ *   C:\...\ç¤ºä¾‹éƒ¨é—¨æ—©æ‰“å¡æŽ’ç­è¡¨.xlsx
  *
  * That second string is the first one's UTF-8 bytes read through a single-byte
  * code page. Once such a value is persisted, the plugin faithfully re-saves it

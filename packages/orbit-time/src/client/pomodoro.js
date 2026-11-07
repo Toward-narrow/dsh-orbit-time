@@ -42,13 +42,19 @@ function PomodoroView(props) {
   var busyPair = React.useState(false)
   var busy = busyPair[0]
   var setBusy = busyPair[1]
+  // Timer and settings failures are shown against the ring they belong to; the
+  // corner card they used to live in is gone.
+  var errorPair = React.useState('')
+  var error = errorPair[0]
+  var setError = errorPair[1]
 
   function run(action, extra) {
     setBusy(true)
+    setError('')
     props.store
       .timerAction(action, extra)
-      .catch(function (error) {
-        props.store.pushNotice({ level: 'warn', title: '计时器操作失败', body: String((error && error.message) || error) })
+      .catch(function (failure) {
+        setError(String((failure && failure.message) || failure))
       })
       .then(function () {
         setBusy(false)
@@ -56,8 +62,9 @@ function PomodoroView(props) {
   }
 
   function save(patch) {
-    props.store.saveSettings({ pomodoro: patch }).catch(function (error) {
-      props.store.pushNotice({ level: 'warn', title: '保存失败', body: String((error && error.message) || error) })
+    setError('')
+    props.store.saveSettings({ pomodoro: patch }).catch(function (failure) {
+      setError('设置没能保存：' + String((failure && failure.message) || failure))
     })
   }
 
@@ -152,6 +159,7 @@ function PomodoroView(props) {
             ),
             h('span', { className: 'ot-sub ot-mono' }, timer.completedToday + '/' + goal),
           ),
+          error !== '' ? ui.note({ variant: 'error' }, error) : null,
         ),
       ),
     ),

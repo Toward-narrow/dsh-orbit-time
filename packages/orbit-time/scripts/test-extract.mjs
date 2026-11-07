@@ -322,7 +322,7 @@ if (existsSync(docx)) {
     }
     if (payload.source.type !== 'Word 文档') throw new Error(`type=${payload.source.type}`)
     const call = model.calls[model.calls.length - 1]
-    if (!call.system.includes('示例支部')) throw new Error('the document text did not reach the prompt')
+    if (!call.system.includes('示例部门')) throw new Error('the document text did not reach the prompt')
     if (!call.system.includes('|')) throw new Error('the table was not rendered as columns')
     if (payload.analysis.events.length !== 1) throw new Error(`events=${payload.analysis.events.length}`)
     return `${payload.source.chars} chars of text`

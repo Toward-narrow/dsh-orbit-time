@@ -193,6 +193,10 @@ function createButtonElement(props, children) {
   // fixed action row built as an array — logs a missing-key warning.
   if (props.key !== undefined && props.key !== null) extra.key = props.key
   var label = children === undefined || children === null ? props.children : children
+  // `children` is an array because that is the only shape that keeps the label
+  // (see above), and React asks every array child for a key. A keyed Fragment
+  // carries the label without adding a wrapper element to the button.
+  var iconElement = props.icon ? glyph(props.icon, props.small ? 12 : 14) : null
   return h(
     'button',
     Object.assign(
@@ -204,8 +208,8 @@ function createButtonElement(props, children) {
         title: props.title,
         'aria-label': props.ariaLabel || props.title,
         children: [
-          props.icon ? glyph(props.icon, props.small ? 12 : 14) : null,
-          label === undefined || label === null ? null : label,
+          iconElement === null ? null : React.cloneElement(iconElement, { key: 'icon' }),
+          label === undefined || label === null ? null : h(React.Fragment, { key: 'label' }, label),
         ],
       },
       extra,
@@ -272,8 +276,17 @@ function textField(props) {
   )
 }
 
-function note(props) {
-  return h('div', { className: util.cx('ot-note', props.variant ? 'ot-note-' + props.variant : null) }, props.children)
+/**
+ * A neutral block for a message that belongs in the page.
+ *
+ * Two call shapes exist in this codebase — `note({ variant, children })` and
+ * `note({ variant }, text)` — and the second one used to render an empty box,
+ * which is exactly how a failed action came to look like a no-op. Accepting both
+ * is cheaper than auditing every call site, and it cannot regress the first.
+ */
+function note(props, children) {
+  var content = children === undefined ? props.children : children
+  return h('div', { className: util.cx('ot-note', props.variant ? 'ot-note-' + props.variant : null) }, content)
 }
 
 function card(props) {

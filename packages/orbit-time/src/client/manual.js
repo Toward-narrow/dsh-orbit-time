@@ -113,11 +113,10 @@ function ManualEventForm(props) {
       })
       .then(function (day) {
         setBusy(false)
-        props.store.pushNotice({
-          level: 'success',
-          title: '已加进日程',
-          body: title + ' · ' + draft.date + (draft.start ? ' ' + draft.start : ''),
-        })
+        // No "已加进日程" toast. The form closes, the panel jumps to the day it
+        // landed on, and the row is right there — that *is* the confirmation.
+        // A floating card repeating it was the thing users had to dismiss after
+        // every single add.
         if (typeof props.onSaved === 'function') props.onSaved(day)
       })
       .catch(function (failure) {

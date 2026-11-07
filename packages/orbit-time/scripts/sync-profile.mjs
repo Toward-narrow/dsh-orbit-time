@@ -31,7 +31,7 @@ if (!existsSync(join(profileDir, 'cordis.yml'))) {
 const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
 const target = join(profileDir, 'node_modules', pkg.name)
 
-for (const required of ['lib/index.js', 'lib/client.js', 'lib/hud.ps1', 'lib/parse-xlsx.py', 'lib/read-document.py', 'lib/shared-repair.cjs']) {
+for (const required of ['lib/index.js', 'lib/client.js', 'lib/hud.ps1', 'lib/parse-xlsx.py', 'lib/read-document.py', 'lib/shared-repair.cjs', 'lib/netddl/index.js']) {
   if (!existsSync(join(root, required))) {
     console.error(`sync-profile: ${required} is missing — run the build first`)
     process.exit(1)
@@ -41,13 +41,16 @@ for (const required of ['lib/index.js', 'lib/client.js', 'lib/hud.ps1', 'lib/par
 rmSync(target, { recursive: true, force: true })
 mkdirSync(dirname(target), { recursive: true })
 
-// Ship only what the loader needs: the manifest, the two halves, and the two
-// runtime assets. No src, no scripts, no node_modules.
+// Ship only what the loader needs: the manifest, the two halves, and the runtime
+// assets. No src, no scripts, no node_modules.
 cpSync(join(root, 'package.json'), join(target, 'package.json'))
 mkdirSync(join(target, 'lib'), { recursive: true })
 for (const file of ['index.js', 'client.js', 'hud.ps1', 'parse-xlsx.py', 'read-document.py', 'shared-repair.cjs']) {
   cpSync(join(root, 'lib', file), join(target, 'lib', file))
 }
+// The network reader is a directory of small ESM modules (browser driver,
+// parsers, orchestrator) rather than one file.
+cpSync(join(root, 'lib', 'netddl'), join(target, 'lib', 'netddl'), { recursive: true })
 
 // The Cordis entry lives in cordis.patch.yml (the profile's patch layer), which
 // is what every other plugin entry in this profile uses. Declaring the package

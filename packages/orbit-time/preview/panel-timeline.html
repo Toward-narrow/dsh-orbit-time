@@ -23,7 +23,17 @@
   /* The real main panel is roughly this wide next to the sidebar. */
   .preview-frame { position: relative; width: 940px; height: 940px; margin: 0 auto; }
   .preview-frame > .ot-root { position: relative; height: 940px; }
-  /* Orbit Time — dashboard styles.
+  /* A screenshot is a still of the settled page. Headless Chrome writes the
+     frame while the entrance animations are still running, which is why a
+     capture used to come out washed out: the whole panel was caught at
+     partial opacity. Collapsing the durations lands on the final state. */
+  .ot-root *, .ot-root *::before, .ot-root *::after {
+    animation-duration: 0.001ms !important;
+    animation-delay: 0s !important;
+    transition-duration: 0.001ms !important;
+  }
+
+  /** Orbit Time â€” dashboard styles.
    Every colour resolves through a --dsw-alias-* theme token when the harness
    provides one, and falls back to a self-contained palette otherwise, so the
    panel reads correctly in both light and dark themes. */
@@ -186,7 +196,7 @@
 
 /* --------------------------------------------------------- segmented control */
 
-/* Three mutually exclusive choices (完整胶囊 / 最小圆点 / 关闭) read better as one
+/* Three mutually exclusive choices (å®Œæ•´èƒ¶å›Š / æœ€å°åœ†ç‚¹ / å…³é—­) read better as one
    control than as three unrelated buttons, and the sliding highlight makes the
    current state obvious at a glance. */
 .ot-seg {
@@ -567,6 +577,8 @@
   font-size: 26px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+  /* "5 天 3 小时" is one statement; wrapped between 天 and 小时 it reads as two. */
+  white-space: nowrap;
   letter-spacing: -0.02em;
   background: linear-gradient(120deg, var(--ot-accent), var(--ot-accent-3));
   -webkit-background-clip: text;
@@ -1182,8 +1194,8 @@
   color: var(--ot-text);
 }
 
-/* Days outside the month stay clickable — they are real days with real
-   schedules — but recede so the month itself reads as the subject. */
+/* Days outside the month stay clickable â€” they are real days with real
+   schedules â€” but recede so the month itself reads as the subject. */
 .ot-cal-cell[data-outside="true"] {
   opacity: 0.42;
 }
@@ -1229,7 +1241,7 @@
 }
 
 /* Every schedule on the day is ticked off: the day still counts, it is just
-   done — a hollow dot says that without pretending the day is empty. */
+   done â€” a hollow dot says that without pretending the day is empty. */
 .ot-cal-mark-done {
   background: transparent;
   box-shadow: inset 0 0 0 1px var(--ot-success);
@@ -1648,7 +1660,7 @@
   font-size: 13.5px;
   font-weight: 650;
   /* A long file name must wrap instead of pushing the confidence pill off the
-     card — the toast this replaced did exactly that, and then got clipped by the
+     card â€” the toast this replaced did exactly that, and then got clipped by the
      window edge on top of it. */
   min-width: 0;
   overflow-wrap: anywhere;
@@ -1771,7 +1783,7 @@
 }
 
 .ot-details > summary::before {
-  content: "▸";
+  content: "â–¸";
   font-size: 10px;
   transition: transform 0.18s ease;
 }
@@ -2026,6 +2038,52 @@
   color: color-mix(in srgb, var(--ot-success) 82%, var(--ot-text));
 }
 
+/* The in-page result line — what replaced the corner toast for click results.
+   It is a normal block in the panel body: it takes its place in the layout,
+   scrolls with the page, and never fades on a timer. Only a click that could
+   not do what it promised uses it; a success is visible as the changed page. */
+.ot-inline-report {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin-bottom: 10px;
+  padding: 9px 11px;
+  border: 1px solid color-mix(in srgb, var(--ot-danger) 42%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--ot-danger) 10%, transparent);
+  color: color-mix(in srgb, var(--ot-danger) 80%, var(--ot-text));
+  font-size: 11.5px;
+}
+
+.ot-inline-report[data-level="info"] {
+  border-color: color-mix(in srgb, var(--ot-accent) 38%, transparent);
+  background: color-mix(in srgb, var(--ot-accent) 10%, transparent);
+  color: color-mix(in srgb, var(--ot-accent) 78%, var(--ot-text));
+}
+
+.ot-inline-report > svg {
+  margin-top: 1px;
+  flex: none;
+}
+
+.ot-inline-report-text {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ot-inline-report-text strong {
+  color: var(--ot-text);
+  font-size: 12px;
+  font-weight: 640;
+}
+
+.ot-inline-report-text span {
+  color: var(--ot-text-dim);
+}
+
 .ot-switch {
   display: inline-flex;
   align-items: center;
@@ -2125,8 +2183,8 @@
 
 /* `shell.overlay` entries are click-through until they opt back in, so every
    interactive surface in this layer declares `pointer-events: auto` explicitly.
-   The notice STACK stays inert — a full-width transparent box that swallowed
-   clicks would break the app underneath — and each notice re-enables itself. */
+   The notice STACK stays inert â€” a full-width transparent box that swallowed
+   clicks would break the app underneath â€” and each notice re-enables itself. */
 
 /* The stack fills its containing block and aligns its cards to the bottom-right
    corner instead of positioning itself with `bottom: 18px`.
@@ -2134,7 +2192,7 @@
    `bottom` looked equivalent and is not: if anything between the overlay layer
    and the document establishes a containing block for `position: fixed` (a
    transform, a filter, `contain`, a zoomed ancestor), `bottom` is measured
-   against *that* box. The cards then land wherever that box ends — in the app
+   against *that* box. The cards then land wherever that box ends â€” in the app
    this put an import confirmation under the window's caption buttons, clipped by
    the title bar. With `inset: 0` the stack can only ever be as large as that
    containing block, so its cards stay inside it whatever it turns out to be, and
@@ -2192,7 +2250,7 @@
   cursor: pointer;
 }
 
-/* The grip is the *only* place a drag starts — see the drag behaviour notes in
+/* The grip is the *only* place a drag starts â€” see the drag behaviour notes in
    `drag.js`. Everything else on the card keeps its own click, which is what
    "clicking a button sometimes starts a drag instead" needed. */
 .ot-grip {
@@ -2427,8 +2485,8 @@
    
    Flex used to distribute this: the grip, the ring, the text and the two buttons
    all competed for 248 px, and with the text able to shrink to nothing the two
-   buttons ended up *left of the grip* with the clock running under them — which
-   is exactly what "按钮和数字有重叠" looks like on screen. Declaring the columns
+   buttons ended up *left of the grip* with the clock running under them â€” which
+   is exactly what "æŒ‰é’®å’Œæ•°å­—æœ‰é‡å " looks like on screen. Declaring the columns
    makes the geometry a fact instead of an outcome: 30 px of grip, 34 px of ring,
    the buttons at their natural width, and the text taking whatever is left.
    `scripts/../.tools/browser-click.mjs` measures every lane and fails if two of
@@ -2486,8 +2544,8 @@
   background: color-mix(in srgb, var(--ot-text) 8%, transparent);
 }
 
-/* Grow and close, side by side at the right edge — the same pair the expanded
-   card carries, so "收起" is one click from either state. */
+/* Grow and close, side by side at the right edge â€” the same pair the expanded
+   card carries, so "æ”¶èµ·" is one click from either state. */
 .ot-float-mini-actions {
   display: flex;
   align-items: center;
@@ -2511,6 +2569,7 @@
   font-size: 18px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .ot-float-mini-meta {
@@ -2584,6 +2643,395 @@
   overflow-x: hidden;
 }
 
+/* ------------------------------------------------- reading documents â†’ events */
+
+/* A row read out of a document: same timeline as any other row, different origin. */
+.ot-tag-ai {
+  background: color-mix(in srgb, var(--ot-accent-2) 18%, transparent);
+  color: color-mix(in srgb, var(--ot-accent-2) 84%, var(--ot-text));
+}
+
+.ot-chip-ai {
+  background: color-mix(in srgb, var(--ot-accent-2) 18%, transparent);
+  color: color-mix(in srgb, var(--ot-accent-2) 84%, var(--ot-text));
+}
+
+.ot-textarea {
+  margin-top: 8px;
+  width: 100%;
+  min-height: 84px;
+  resize: vertical;
+  line-height: 1.55;
+  font: inherit;
+}
+
+.ot-extract-source {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--ot-layer-2) 72%, transparent);
+  border: 1px solid var(--ot-border);
+  color: var(--ot-text-dim);
+}
+
+.ot-extract-source strong {
+  color: var(--ot-text);
+  font-size: 12.5px;
+  font-weight: 620;
+  overflow-wrap: anywhere;
+}
+
+.ot-extract {
+  margin-top: 12px;
+}
+
+.ot-extract-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: var(--ot-text-dim);
+}
+
+.ot-extract-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  /* A reading can be twenty rows; the page keeps its scroll position and the
+     list scrolls inside its own box instead of pushing the reminders card away. */
+  max-height: 420px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.ot-extract-row {
+  display: flex;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid var(--ot-border);
+  background: color-mix(in srgb, var(--ot-layer-2) 62%, transparent);
+  transition: opacity 0.2s ease, border-color 0.2s ease;
+}
+
+.ot-extract-row[data-included="false"] {
+  opacity: 0.5;
+  border-style: dashed;
+}
+
+.ot-extract-check {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  padding-top: 3px;
+  cursor: pointer;
+}
+
+.ot-extract-check input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--ot-accent);
+  cursor: pointer;
+}
+
+.ot-extract-check .ot-pill {
+  font-size: 9.5px;
+  padding: 1px 5px;
+  white-space: nowrap;
+}
+
+.ot-extract-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ot-extract-title {
+  font-weight: 580;
+}
+
+.ot-extract-when {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ot-extract-when .ot-input {
+  min-width: 0;
+}
+
+.ot-extract-date {
+  flex: 1 1 46%;
+}
+
+.ot-extract-time {
+  flex: 1 1 22%;
+  padding-left: 6px;
+  padding-right: 4px;
+}
+
+.ot-extract-place {
+  font-size: 12px;
+}
+
+.ot-extract-note {
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--ot-text-dim);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.ot-extract-foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+/* --------------------------------------------------------- network deadlines */
+
+/* The tab is a page of forms, so it stacks cards with the same rhythm as the
+   settings tab rather than inventing a new layout. */
+.ot-netddl {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px 2px 18px;
+}
+
+/* A row the site said was due, not one a roster produced. Same shape as the
+   other origin tags so a scan down the timeline reads consistently. */
+.ot-tag-web {
+  background: color-mix(in srgb, var(--ot-accent-2) 18%, transparent);
+  color: color-mix(in srgb, var(--ot-accent-2) 84%, var(--ot-text));
+}
+
+.ot-chip-web {
+  background: color-mix(in srgb, var(--ot-accent-2) 18%, transparent);
+  color: color-mix(in srgb, var(--ot-accent-2) 84%, var(--ot-text));
+}
+
+.ot-net-tabs {
+  display: inline-flex;
+  gap: 4px;
+  padding: 3px;
+  margin: 8px 0 10px;
+  border: 1px solid var(--ot-border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--ot-layer-2) 55%, transparent);
+  align-self: flex-start;
+}
+
+.ot-net-tab {
+  padding: 5px 14px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--ot-text-dim);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.ot-net-tab:hover {
+  color: var(--ot-text);
+}
+
+.ot-net-tab-on {
+  background: color-mix(in srgb, var(--ot-accent) 20%, transparent);
+  color: color-mix(in srgb, var(--ot-accent) 88%, var(--ot-text));
+  font-weight: 600;
+}
+
+.ot-net-status {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 8px;
+}
+
+.ot-net-path {
+  font-size: 11px;
+  opacity: 0.75;
+  word-break: break-all;
+}
+
+.ot-net-login,
+.ot-net-page {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr);
+  gap: 10px 14px;
+  margin-top: 8px;
+}
+
+.ot-net-page .ot-net-url {
+  grid-column: 1 / -1;
+}
+
+.ot-net-login-foot,
+.ot-net-actions,
+.ot-net-commit {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ot-net-commit {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--ot-border);
+}
+
+.ot-net-notes {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  opacity: 0.85;
+}
+
+.ot-net-pageinfo {
+  margin-top: 6px;
+  font-size: 11px;
+}
+
+.ot-net-courses {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 6px 12px;
+  margin-top: 10px;
+}
+
+.ot-net-course {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border: 1px solid var(--ot-border);
+  border-radius: 9px;
+  cursor: pointer;
+}
+
+.ot-net-course:hover {
+  border-color: var(--ot-border-strong);
+}
+
+.ot-net-course-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The review list: one deadline per row, ticked by default. */
+.ot-net-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+  max-height: 420px;
+  overflow: auto;
+}
+
+.ot-net-row {
+  display: grid;
+  grid-template-columns: auto 132px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--ot-border);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--ot-layer-2) 40%, transparent);
+  cursor: pointer;
+}
+
+.ot-net-row:hover {
+  border-color: var(--ot-border-strong);
+}
+
+.ot-net-row-off {
+  opacity: 0.45;
+}
+
+.ot-net-when {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.ot-net-when b {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ot-net-clock {
+  color: var(--ot-text-dim);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ot-net-count {
+  font-size: 10.5px;
+  font-style: normal;
+  color: var(--ot-warn);
+}
+
+.ot-net-what {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.ot-net-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.ot-net-link {
+  color: var(--ot-accent);
+  font-size: 11px;
+  text-decoration: none;
+  border-bottom: 1px dotted currentColor;
+}
+
+.ot-net-conf {
+  color: var(--ot-text-dim);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 720px) {
+  .ot-net-login,
+  .ot-net-page {
+    grid-template-columns: 1fr;
+  }
+
+  .ot-net-row {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .ot-net-when {
+    grid-column: 2 / 3;
+  }
+}
+
 /* -------------------------------------------------------- reduced motion */
 
 @media (prefers-reduced-motion: reduce) {
@@ -2599,4 +3047,4 @@
 }
 
 </style></head>
-<body><div class="preview-frame"><div class="ot-root"><div class="ot-root"><div class="ot-aurora"></div><header class="ot-header"><div class="ot-headrow"><h1 class="ot-title">Orbit Time</h1><span class="ot-subtitle">今天 · 6 条日程</span><div class="ot-headspace"></div><div class="ot-headmeta"><span class="ot-chip ot-chip-owner" title="Excel 里只抓取这些名字的行"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M12 3.5 13.9 9.6 20 11.5l-6.1 1.9L12 19.5l-1.9-6.1L4 11.5l6.1-1.9z"></path></svg>张三 / 张老师</span><span class="ot-chip ot-chip-live" title="C:\Users\User\Desktop\2026春季学期值班与课程安排表.xlsx">已同步 12 条</span><span class="ot-chip ot-chip-manual" title="这些是你自己加的，重新导入 Excel 也不会被覆盖"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M12 6v12M6 12h12"></path></svg>自己加的 1 条</span><span class="ot-chip"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3.2 2"></path></svg>22:06</span><button type="button" class="ot-btn ot-btn-sm ot-btn-icon" title="打开置顶悬浮小窗" aria-label="打开置顶悬浮小窗"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M14 4.5h5.5V10M10 19.5H4.5V14M19.5 4.5 13 11M4.5 19.5 11 13"></path></svg></button></div></div></header><nav class="ot-tabs" role="tablist"><button type="button" class="ot-tab" data-active="true">日程时间轴<span class="ot-badge">12</span></button><button type="button" class="ot-tab" data-active="false">日程时间轴 · 日历</button><button type="button" class="ot-tab" data-active="false">日程时间轴 · 加一条</button><button type="button" class="ot-tab" data-active="false">番茄专注<span class="ot-badge">18:00</span></button><button type="button" class="ot-tab" data-active="false">AI 助手</button><button type="button" class="ot-tab" data-active="false">设置 / 导入</button></nav><div class="ot-body"><div class="ot-view"><div class="ot-daybar"><div class="ot-daylist"><button type="button" class="ot-daychip" data-active="false" title=""><span>周四</span><b>22</b></button><button type="button" class="ot-daychip" data-active="false" title=""><span>周五</span><b>23</b></button><button type="button" class="ot-daychip" data-active="true" title="英语听力、高等数学 A、项目周会、数据结构实验、1:1 沟通、交实验报告"><span>今天</span><b>24</b><i></i></button><button type="button" class="ot-daychip" data-active="false" title="教研活动、客户拜访"><span>周日</span><b>25</b><i></i></button><button type="button" class="ot-daychip" data-active="false" title=""><span>周一</span><b>26</b></button><button type="button" class="ot-daychip" data-active="false" title=""><span>周二</span><b>27</b></button><button type="button" class="ot-daychip" data-active="false" title=""><span>周三</span><b>28</b></button></div><div class="ot-headspace"></div><button type="button" class="ot-btn ot-btn-sm" title="不经过 Excel，直接给自己加一条日程" aria-label="不经过 Excel，直接给自己加一条日程"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M12 6v12M6 12h12"></path></svg>加一条</button><button type="button" class="ot-btn ot-btn-sm" title="按月份看已经导入的日程安排在哪几天" aria-label="按月份看已经导入的日程安排在哪几天"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"></rect><path d="M3.5 10h17M8 3.5v3.5M16 3.5v3.5"></path></svg>日历</button><button type="button" class="ot-btn ot-btn-sm" title="重新读取 Excel" aria-label="重新读取 Excel"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M20 11a8 8 0 1 0-2.4 5.7M20 5.5V11h-5.5"></path></svg></button></div><div class="ot-card ot-next"><div class="ot-next-main"><div class="ot-next-time"><span class="ot-next-start">21:00</span><span class="ot-next-count">进行中 · 剩余 44 分钟</span></div><div class="ot-next-title" title="数据结构实验">数据结构实验</div><div class="ot-next-meta">21:00–22:50 · 实验楼 B210 · 计算机 · 陈老师</div><div class="ot-progress"><i style="width:60%"></i></div></div><div class="ot-countdown"><div class="ot-countdown-value">44</div><div class="ot-countdown-label">分钟后结束</div></div></div><div style="height:12px"></div><div class="ot-grid ot-grid-4"><div class="ot-stat ot-enter"><div class="ot-stat-label"><span style="margin-right:5px;vertical-align:-2px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"></rect><path d="M3.5 10h17M8 3.5v3.5M16 3.5v3.5"></path></svg></span>今天日程</div><div class="ot-stat-value">6</div><div class="ot-stat-foot">周六</div></div><div class="ot-stat ot-enter"><div class="ot-stat-label"><span style="margin-right:5px;vertical-align:-2px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3.2 2"></path></svg></span>总时长</div><div class="ot-stat-value">12.3 h</div><div class="ot-stat-foot">含休息间隙</div></div><div class="ot-stat ot-enter"><div class="ot-stat-label"><span style="margin-right:5px;vertical-align:-2px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"></path></svg></span>已完成</div><div class="ot-stat-value">4.9 h</div><div class="ot-stat-foot">40% 的日程时间</div></div><div class="ot-stat ot-enter"><div class="ot-stat-label"><span style="margin-right:5px;vertical-align:-2px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M12 3.5 13.9 9.6 20 11.5l-6.1 1.9L12 19.5l-1.9-6.1L4 11.5l6.1-1.9z"></path></svg></span>下一个空档</div><div class="ot-stat-value">22:41</div><div class="ot-stat-foot">可放 5 个番茄</div></div></div><div style="height:12px"></div><div class="ot-row" style="margin-bottom:10px"><span class="ot-sub">共 6 条</span><div class="ot-headspace"></div><button type="button" class="ot-btn ot-btn-sm ot-btn-primary">全部</button><button type="button" class="ot-btn ot-btn-sm ot-btn-ghost">未完成</button><button type="button" class="ot-btn ot-btn-sm ot-btn-ghost">已完成</button></div><div class="ot-tl"><article class="ot-ev ot-enter" data-phase="past" data-done="false" data-event-id="ev_"><i class="ot-ev-node"></i><div class="ot-ev-time"><div class="ot-ev-start">08:00</div><div class="ot-ev-end">08:45</div></div><div class="ot-ev-card"><div class="ot-ev-head"><span class="ot-ev-title" title="英语听力">英语听力</span><span class="ot-ev-when">已结束</span></div><div class="ot-tags"><span class="ot-tag"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M12 21s6.5-5.7 6.5-10.5A6.5 6.5 0 0 0 5.5 10.5C5.5 15.3 12 21 12 21z"></path><circle cx="12" cy="10.4" r="2.4"></circle></svg>语音室 2</span><span class="ot-tag">王老师</span><span class="ot-tag ot-tag-owner">张三</span></div><div class="ot-ev-actions"><button type="button" class="ot-btn ot-btn-sm ot-btn-ghost"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"></path></svg>完成</button><button type="button" class="ot-btn ot-btn-sm ot-btn-ghost" title="把这条日程整体推后 10 分钟">+10 分</button></div></div></article><article class="ot-ev ot-enter" data-phase="past" data-done="false" data-event-id="ev_A"><i class="ot-ev-node"></i><div class="ot-ev-time"><div class="ot-ev-start">10:00</div><div class="ot-ev-end">11:30</div></div><div class="ot-ev-card"><div class="ot-ev-head"><span class="ot-ev-title" title="高等数学 A">高等数学 A</span><span class="ot-ev-when">已结束</span></div><div class="ot-tags"><span class="ot-tag"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M12 21s6.5-5.7 6.5-10.5A6.5 6.5 0 0 0 5.5 10.5C5.5 15.3 12 21 12 21z"></path><circle cx="12" cy="10.4" r="2.4"></circle></svg>三教 305</span><span class="ot-tag">李老师</span><span class="ot-tag">数学</span><span class="ot-tag ot-tag-owner">张三</span></div><div class="ot-ev-notes" title="带上上次作业，这次讲傅里叶级数">带上上次作业，这次讲傅里叶级数</div><div class="ot-ev-actions"><button type="button" class="ot-btn ot-btn-sm ot-btn-ghost"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"></path></svg>完成</button><button type="button" class="ot-btn ot-btn-sm ot-btn-ghost" title="把这条日程整体推后 10 分钟">+10 分</button></div></div></article><article class="ot-ev" data-phase="past" data-done="false" data-event-id="ev_"><i class="ot-ev-node"></i><div class="ot-ev-time"><div class="ot-ev-start">17:00</div><div class="ot-ev-end">17:30</div></div><div class="ot-ev-card"><div class="ot-ev-head"><span class="ot-ev-title" title="交实验报告">交实验报告</span><span class="ot-ev-when">已结束</span></div><div class="ot-tags"><span class="ot-tag"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M12 21s6.5-5.7 6.5-10.5A6.5 6.5 0 0 0 5.5 10.5C5.5 15.3 12 21 12 21z"></path><circle cx="12" cy="10.4" r="2.4"></circle></svg>实验楼 B210</span><span class="ot-tag ot-tag-owner">张三</span><span class="ot-tag ot-tag-manual">自己加的</span></div><div class="ot-ev-actions"><button type="button" class="ot-btn ot-btn-sm ot-btn-ghost"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"></path></svg>完成</button><button type="button" class="ot-btn ot-btn-sm ot-btn-ghost" title="把这条日程整体推后 10 分钟">+10 分</button><button type="button" class="ot-btn ot-btn-sm ot-btn-ghost" title="删掉这条自己加的日程"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M6.5 6.5 17.5 17.5M17.5 6.5 6.5 17.5"></path></svg>删除</button></div></div></article><article class="ot-ev" data-phase="current" data-done="false" data-event-id="ev_"><i class="ot-ev-node"></i><div class="ot-ev-time"><div class="ot-ev-start">19:30</div><div class="ot-ev-end">20:30</div></div><div class="ot-ev-card"><div class="ot-ev-head"><span class="ot-ev-title" title="项目周会">项目周会</span><span class="ot-ev-when">剩余 0 分</span></div><div class="ot-tags"><span class="ot-tag"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M12 21s6.5-5.7 6.5-10.5A6.5 6.5 0 0 0 5.5 10.5C5.5 15.3 12 21 12 21z"></path><circle cx="12" cy="10.4" r="2.4"></circle></svg>线上腾讯会议</span><span class="ot-tag">会议</span><span class="ot-tag ot-tag-owner">张三</span></div><div class="ot-ev-notes" title="同步本周进度与风险">同步本周进度与风险</div><div class="ot-ev-actions"><button type="button" class="ot-btn ot-btn-sm ot-btn-ghost"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"></path></svg>完成</button><button type="button" class="ot-btn ot-btn-sm ot-btn-ghost"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M6 9.5a6 6 0 0 1 12 0c0 4 1.5 5.5 1.5 5.5h-15S6 13.5 6 9.5z"></path><path d="M10 18.5a2 2 0 0 0 4 0"></path></svg>稍后 5 分</button><button type="button" class="ot-btn ot-btn-sm ot-btn-ghost" title="把这条日程整体推后 10 分钟">+10 分</button></div></div></article><article class="ot-ev" data-phase="current" data-done="false" data-event-id="ev_"><i class="ot-ev-node"></i><div class="ot-ev-time"><div class="ot-ev-start">21:00</div><div class="ot-ev-end">22:50</div></div><div class="ot-ev-card"><div class="ot-ev-head"><span class="ot-ev-title" title="数据结构实验">数据结构实验</span><span class="ot-ev-when">剩余 44 分</span></div><div class="ot-tags"><span class="ot-tag"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M12 21s6.5-5.7 6.5-10.5A6.5 6.5 0 0 0 5.5 10.5C5.5 15.3 12 21 12 21z"></path><circle cx="12" cy="10.4" r="2.4"></circle></svg>实验楼 B210</span><span class="ot-tag">陈老师</span><span class="ot-tag">计算机</span><span class="ot-tag ot-tag-owner">张三</span></div><div class="ot-ev-notes" title="提前装好环境">提前装好环境</div><div class="ot-ev-actions"><button type="button" class="ot-btn ot-btn-sm ot-btn-ghost"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"></path></svg>完成</button><button type="button" class="ot-btn ot-btn-sm ot-btn-ghost"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M6 9.5a6 6 0 0 1 12 0c0 4 1.5 5.5 1.5 5.5h-15S6 13.5 6 9.5z"></path><path d="M10 18.5a2 2 0 0 0 4 0"></path></svg>稍后 5 分</button><button type="button" class="ot-btn ot-btn-sm ot-btn-ghost" title="把这条日程整体推后 10 分钟">+10 分</button></div></div></article><article class="ot-ev ot-enter" data-phase="upcoming" data-done="false" data-event-id="ev_11"><i class="ot-ev-node"></i><div class="ot-ev-time"><div class="ot-ev-start">23:00</div><div class="ot-ev-end">23:30</div></div><div class="ot-ev-card"><div class="ot-ev-head"><span class="ot-ev-title" title="1:1 沟通">1:1 沟通</span><span class="ot-ev-when">54 分钟后</span></div><div class="ot-tags"><span class="ot-tag"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M12 21s6.5-5.7 6.5-10.5A6.5 6.5 0 0 0 5.5 10.5C5.5 15.3 12 21 12 21z"></path><circle cx="12" cy="10.4" r="2.4"></circle></svg>会议室 A</span><span class="ot-tag">沟通</span><span class="ot-tag ot-tag-owner">张三</span></div><div class="ot-ev-actions"><button type="button" class="ot-btn ot-btn-sm ot-btn-ghost"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"></path></svg>完成</button><button type="button" class="ot-btn ot-btn-sm ot-btn-ghost"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M6 9.5a6 6 0 0 1 12 0c0 4 1.5 5.5 1.5 5.5h-15S6 13.5 6 9.5z"></path><path d="M10 18.5a2 2 0 0 0 4 0"></path></svg>稍后 5 分</button><button type="button" class="ot-btn ot-btn-sm ot-btn-ghost" title="把这条日程整体推后 10 分钟">+10 分</button><button type="button" class="ot-btn ot-btn-sm ot-btn-ghost" title="用这条日程开始一个番茄"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M7 4.5 19 12 7 19.5z" fill="currentColor" stroke="none"></path></svg>番茄</button></div></div></article></div><div style="margin-top:14px"><section class="ot-card ot-card-pad"><h3 class="ot-card-title"><i class="ot-dot"></i>未定时间的日程</h3><div class="ot-tl"><article class="ot-ev" data-phase="undated" data-done="false" data-event-id="ev_"><i class="ot-ev-node"></i><div class="ot-ev-time"><div class="ot-ev-start">—</div></div><div class="ot-ev-card"><div class="ot-ev-head"><span class="ot-ev-title" title="待定：补交材料">待定：补交材料</span></div><div class="ot-tags"><span class="ot-tag ot-tag-owner">张三</span></div><div class="ot-ev-actions"><button type="button" class="ot-btn ot-btn-sm ot-btn-ghost"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"></path></svg>完成</button><button type="button" class="ot-btn ot-btn-sm ot-btn-ghost"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M6 9.5a6 6 0 0 1 12 0c0 4 1.5 5.5 1.5 5.5h-15S6 13.5 6 9.5z"></path><path d="M10 18.5a2 2 0 0 0 4 0"></path></svg>稍后 5 分</button></div></div></article></div></section></div><div style="height:8px"></div></div></div><div class="ot-notices"><div class="ot-notice-stack"><div class="ot-notice-stack"><div class="ot-notice" data-level="urgent"><div class="ot-notice-title">⏰ 5 分钟后开始 · 数据结构实验</div><div class="ot-notice-body">21:00 · 实验楼 B210 · 计算机</div><div class="ot-notice-actions"><button type="button" class="ot-btn ot-btn-sm"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"></path></svg>已完成</button><button type="button" class="ot-btn ot-btn-sm"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3.2 2"></path></svg>5 分钟后再提醒</button><button type="button" class="ot-btn ot-btn-ghost ot-btn-sm"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M6.5 6.5 17.5 17.5M17.5 6.5 6.5 17.5"></path></svg>关闭</button></div></div></div></div></div></div></div></body></html>
+<body><div class="preview-frame"><div class="ot-root"><div class="ot-root"><div class="ot-aurora"></div><header class="ot-header"><div class="ot-headrow"><h1 class="ot-title">Orbit Time</h1><span class="ot-subtitle">今天 · 6 条日程</span><div class="ot-headspace"></div><div class="ot-headmeta"><span class="ot-chip ot-chip-owner" title="Excel 里只抓取这些名字的行"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M12 3.5 13.9 9.6 20 11.5l-6.1 1.9L12 19.5l-1.9-6.1L4 11.5l6.1-1.9z"></path></svg>张三 / 张老师</span><span class="ot-chip ot-chip-live" title="C:\Users\User\Desktop\2026春季学期值班与课程安排表.xlsx">已同步 12 条</span><span class="ot-chip ot-chip-manual" title="这些是你自己加的，重新导入 Excel 也不会被覆盖"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M12 6v12M6 12h12"></path></svg>自己加的 1 条</span><span class="ot-chip"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3.2 2"></path></svg>20:26</span><button type="button" class="ot-btn ot-btn-sm ot-btn-icon" title="打开置顶悬浮小窗" aria-label="打开置顶悬浮小窗"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M14 4.5h5.5V10M10 19.5H4.5V14M19.5 4.5 13 11M4.5 19.5 11 13"></path></svg></button></div></div></header><nav class="ot-tabs" role="tablist"><button type="button" class="ot-tab" data-active="true">日程时间轴<span class="ot-badge">12</span></button><button type="button" class="ot-tab" data-active="false">日程时间轴 · 日历</button><button type="button" class="ot-tab" data-active="false">日程时间轴 · 加一条</button><button type="button" class="ot-tab" data-active="false">番茄专注<span class="ot-badge">18:00</span></button><button type="button" class="ot-tab" data-active="false">AI 助手</button><button type="button" class="ot-tab" data-active="false">网络 DDL</button><button type="button" class="ot-tab" data-active="false">设置 / 导入</button></nav><div class="ot-body"><div class="ot-view"><div class="ot-daybar"><div class="ot-daylist"><button type="button" class="ot-daychip" data-active="false" title=""><span>周四</span><b>5</b></button><button type="button" class="ot-daychip" data-active="false" title=""><span>周五</span><b>6</b></button><button type="button" class="ot-daychip" data-active="true" title="英语听力、高等数学 A、项目周会、数据结构实验、1:1 沟通、交实验报告"><span>今天</span><b>7</b><i></i></button><button type="button" class="ot-daychip" data-active="false" title="教研活动、客户拜访"><span>周日</span><b>8</b><i></i></button><button type="button" class="ot-daychip" data-active="false" title=""><span>周一</span><b>9</b></button><button type="button" class="ot-daychip" data-active="false" title=""><span>周二</span><b>10</b></button><button type="button" class="ot-daychip" data-active="false" title=""><span>周三</span><b>11</b></button></div><div class="ot-headspace"></div><button type="button" class="ot-btn ot-btn-sm" title="不经过 Excel，直接给自己加一条日程" aria-label="不经过 Excel，直接给自己加一条日程"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M12 6v12M6 12h12"></path></svg>加一条</button><button type="button" class="ot-btn ot-btn-sm" title="按月份看已经导入的日程安排在哪几天" aria-label="按月份看已经导入的日程安排在哪几天"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"></rect><path d="M3.5 10h17M8 3.5v3.5M16 3.5v3.5"></path></svg>日历</button><button type="button" class="ot-btn ot-btn-sm" title="重新读取 Excel" aria-label="重新读取 Excel"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M20 11a8 8 0 1 0-2.4 5.7M20 5.5V11h-5.5"></path></svg></button></div><div class="ot-card ot-next"><div class="ot-next-main"><div class="ot-next-time"><span class="ot-next-start">21:00</span><span class="ot-next-count">34 分钟后</span></div><div class="ot-next-title" title="数据结构实验">数据结构实验</div><div class="ot-next-meta">21:00–22:50 · 实验楼 B210 · 计算机 · 陈老师</div><div class="ot-progress"><i style="width:0%"></i></div></div><div class="ot-countdown"><div class="ot-countdown-value">33:18</div><div class="ot-countdown-label">后开始</div></div></div><div style="height:12px"></div><div class="ot-grid ot-grid-4"><div class="ot-stat ot-enter"><div class="ot-stat-label"><span style="margin-right:5px;vertical-align:-2px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"></rect><path d="M3.5 10h17M8 3.5v3.5M16 3.5v3.5"></path></svg></span>今天日程</div><div class="ot-stat-value">6</div><div class="ot-stat-foot">周六</div></div><div class="ot-stat ot-enter"><div class="ot-stat-label"><span style="margin-right:5px;vertical-align:-2px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3.2 2"></path></svg></span>总时长</div><div class="ot-stat-value">12.3 h</div><div class="ot-stat-foot">含休息间隙</div></div><div class="ot-stat ot-enter"><div class="ot-stat-label"><span style="margin-right:5px;vertical-align:-2px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"></path></svg></span>已完成</div><div class="ot-stat-value">3.7 h</div><div class="ot-stat-foot">30% 的日程时间</div></div><div class="ot-stat ot-enter"><div class="ot-stat-label"><span style="margin-right:5px;vertical-align:-2px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M12 3.5 13.9 9.6 20 11.5l-6.1 1.9L12 19.5l-1.9-6.1L4 11.5l6.1-1.9z"></path></svg></span>下一个空档</div><div class="ot-stat-value">21:01</div><div class="ot-stat-foot">可放 5 个番茄</div></div></div><div style="height:12px"></div><div class="ot-row" style="margin-bottom:10px"><span class="ot-sub">共 6 条</span><div class="ot-headspace"></div><button type="button" class="ot-btn ot-btn-sm ot-btn-primary">全部</button><button type="button" class="ot-btn ot-btn-sm ot-btn-ghost">未完成</button><button type="button" class="ot-btn ot-btn-sm ot-btn-ghost">已完成</button></div><div class="ot-tl"><article class="ot-ev ot-enter" data-phase="past" data-done="false" data-event-id="ev_"><i class="ot-ev-node"></i><div class="ot-ev-time"><div class="ot-ev-start">08:00</div><div class="ot-ev-end">08:45</div></div><div class="ot-ev-card"><div class="ot-ev-head"><span class="ot-ev-title" title="英语听力">英语听力</span><span class="ot-ev-when">已结束</span></div><div class="ot-tags"><span class="ot-tag"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M12 21s6.5-5.7 6.5-10.5A6.5 6.5 0 0 0 5.5 10.5C5.5 15.3 12 21 12 21z"></path><circle cx="12" cy="10.4" r="2.4"></circle></svg>语音室 2</span><span class="ot-tag">王老师</span><span class="ot-tag ot-tag-owner">张三</span></div><div class="ot-ev-actions"><button type="button" class="ot-btn ot-btn-sm ot-btn-ghost"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"></path></svg>完成</button><button type="button" class="ot-btn ot-btn-sm ot-btn-ghost" title="把这条日程整体推后 10 分钟">+10 分</button></div></div></article><article class="ot-ev ot-enter" data-phase="past" data-done="false" data-event-id="ev_A"><i class="ot-ev-node"></i><div class="ot-ev-time"><div class="ot-ev-start">10:00</div><div class="ot-ev-end">11:30</div></div><div class="ot-ev-card"><div class="ot-ev-head"><span class="ot-ev-title" title="高等数学 A">高等数学 A</span><span class="ot-ev-when">已结束</span></div><div class="ot-tags"><span class="ot-tag"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M12 21s6.5-5.7 6.5-10.5A6.5 6.5 0 0 0 5.5 10.5C5.5 15.3 12 21 12 21z"></path><circle cx="12" cy="10.4" r="2.4"></circle></svg>三教 305</span><span class="ot-tag">李老师</span><span class="ot-tag">数学</span><span class="ot-tag ot-tag-owner">张三</span></div><div class="ot-ev-notes" title="带上上次作业，这次讲傅里叶级数">带上上次作业，这次讲傅里叶级数</div><div class="ot-ev-actions"><button type="button" class="ot-btn ot-btn-sm ot-btn-ghost"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"></path></svg>完成</button><button type="button" class="ot-btn ot-btn-sm ot-btn-ghost" title="把这条日程整体推后 10 分钟">+10 分</button></div></div></article><article class="ot-ev" data-phase="past" data-done="false" data-event-id="ev_"><i class="ot-ev-node"></i><div class="ot-ev-time"><div class="ot-ev-start">17:00</div><div class="ot-ev-end">17:30</div></div><div class="ot-ev-card"><div class="ot-ev-head"><span class="ot-ev-title" title="交实验报告">交实验报告</span><span class="ot-ev-when">已结束</span></div><div class="ot-tags"><span class="ot-tag"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M12 21s6.5-5.7 6.5-10.5A6.5 6.5 0 0 0 5.5 10.5C5.5 15.3 12 21 12 21z"></path><circle cx="12" cy="10.4" r="2.4"></circle></svg>实验楼 B210</span><span class="ot-tag ot-tag-owner">张三</span><span class="ot-tag ot-tag-manual">自己加的</span></div><div class="ot-ev-actions"><button type="button" class="ot-btn ot-btn-sm ot-btn-ghost"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"></path></svg>完成</button><button type="button" class="ot-btn ot-btn-sm ot-btn-ghost" title="把这条日程整体推后 10 分钟">+10 分</button><button type="button" class="ot-btn ot-btn-sm ot-btn-ghost" title="删掉这条自己加的日程"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M6.5 6.5 17.5 17.5M17.5 6.5 6.5 17.5"></path></svg>删除</button></div></div></article><article class="ot-ev" data-phase="current" data-done="false" data-event-id="ev_"><i class="ot-ev-node"></i><div class="ot-ev-time"><div class="ot-ev-start">19:30</div><div class="ot-ev-end">20:30</div></div><div class="ot-ev-card"><div class="ot-ev-head"><span class="ot-ev-title" title="项目周会">项目周会</span><span class="ot-ev-when">剩余 4 分</span></div><div class="ot-tags"><span class="ot-tag"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M12 21s6.5-5.7 6.5-10.5A6.5 6.5 0 0 0 5.5 10.5C5.5 15.3 12 21 12 21z"></path><circle cx="12" cy="10.4" r="2.4"></circle></svg>线上腾讯会议</span><span class="ot-tag">会议</span><span class="ot-tag ot-tag-owner">张三</span></div><div class="ot-ev-notes" title="同步本周进度与风险">同步本周进度与风险</div><div class="ot-ev-actions"><button type="button" class="ot-btn ot-btn-sm ot-btn-ghost"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"></path></svg>完成</button><button type="button" class="ot-btn ot-btn-sm ot-btn-ghost"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M6 9.5a6 6 0 0 1 12 0c0 4 1.5 5.5 1.5 5.5h-15S6 13.5 6 9.5z"></path><path d="M10 18.5a2 2 0 0 0 4 0"></path></svg>稍后 5 分</button><button type="button" class="ot-btn ot-btn-sm ot-btn-ghost" title="把这条日程整体推后 10 分钟">+10 分</button></div></div></article><article class="ot-ev" data-phase="upcoming" data-done="false" data-event-id="ev_"><i class="ot-ev-node"></i><div class="ot-ev-time"><div class="ot-ev-start">21:00</div><div class="ot-ev-end">22:50</div></div><div class="ot-ev-card"><div class="ot-ev-head"><span class="ot-ev-title" title="数据结构实验">数据结构实验</span><span class="ot-ev-when">34 分钟后</span></div><div class="ot-tags"><span class="ot-tag"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M12 21s6.5-5.7 6.5-10.5A6.5 6.5 0 0 0 5.5 10.5C5.5 15.3 12 21 12 21z"></path><circle cx="12" cy="10.4" r="2.4"></circle></svg>实验楼 B210</span><span class="ot-tag">陈老师</span><span class="ot-tag">计算机</span><span class="ot-tag ot-tag-owner">张三</span></div><div class="ot-ev-notes" title="提前装好环境">提前装好环境</div><div class="ot-ev-actions"><button type="button" class="ot-btn ot-btn-sm ot-btn-ghost"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"></path></svg>完成</button><button type="button" class="ot-btn ot-btn-sm ot-btn-ghost"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M6 9.5a6 6 0 0 1 12 0c0 4 1.5 5.5 1.5 5.5h-15S6 13.5 6 9.5z"></path><path d="M10 18.5a2 2 0 0 0 4 0"></path></svg>稍后 5 分</button><button type="button" class="ot-btn ot-btn-sm ot-btn-ghost" title="把这条日程整体推后 10 分钟">+10 分</button><button type="button" class="ot-btn ot-btn-sm ot-btn-ghost" title="用这条日程开始一个番茄"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M7 4.5 19 12 7 19.5z" fill="currentColor" stroke="none"></path></svg>番茄</button></div></div></article><article class="ot-ev ot-enter" data-phase="upcoming" data-done="false" data-event-id="ev_11"><i class="ot-ev-node"></i><div class="ot-ev-time"><div class="ot-ev-start">23:00</div><div class="ot-ev-end">23:30</div></div><div class="ot-ev-card"><div class="ot-ev-head"><span class="ot-ev-title" title="1:1 沟通">1:1 沟通</span><span class="ot-ev-when">2 小时 34 分后</span></div><div class="ot-tags"><span class="ot-tag"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M12 21s6.5-5.7 6.5-10.5A6.5 6.5 0 0 0 5.5 10.5C5.5 15.3 12 21 12 21z"></path><circle cx="12" cy="10.4" r="2.4"></circle></svg>会议室 A</span><span class="ot-tag">沟通</span><span class="ot-tag ot-tag-owner">张三</span></div><div class="ot-ev-actions"><button type="button" class="ot-btn ot-btn-sm ot-btn-ghost"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"></path></svg>完成</button><button type="button" class="ot-btn ot-btn-sm ot-btn-ghost"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M6 9.5a6 6 0 0 1 12 0c0 4 1.5 5.5 1.5 5.5h-15S6 13.5 6 9.5z"></path><path d="M10 18.5a2 2 0 0 0 4 0"></path></svg>稍后 5 分</button><button type="button" class="ot-btn ot-btn-sm ot-btn-ghost" title="把这条日程整体推后 10 分钟">+10 分</button><button type="button" class="ot-btn ot-btn-sm ot-btn-ghost" title="用这条日程开始一个番茄"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M7 4.5 19 12 7 19.5z" fill="currentColor" stroke="none"></path></svg>番茄</button></div></div></article></div><div style="margin-top:14px"><section class="ot-card ot-card-pad"><h3 class="ot-card-title"><i class="ot-dot"></i>未定时间的日程</h3><div class="ot-tl"><article class="ot-ev" data-phase="undated" data-done="false" data-event-id="ev_"><i class="ot-ev-node"></i><div class="ot-ev-time"><div class="ot-ev-start">—</div></div><div class="ot-ev-card"><div class="ot-ev-head"><span class="ot-ev-title" title="待定：补交材料">待定：补交材料</span></div><div class="ot-tags"><span class="ot-tag ot-tag-owner">张三</span></div><div class="ot-ev-actions"><button type="button" class="ot-btn ot-btn-sm ot-btn-ghost"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"></path></svg>完成</button><button type="button" class="ot-btn ot-btn-sm ot-btn-ghost"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M6 9.5a6 6 0 0 1 12 0c0 4 1.5 5.5 1.5 5.5h-15S6 13.5 6 9.5z"></path><path d="M10 18.5a2 2 0 0 0 4 0"></path></svg>稍后 5 分</button></div></div></article></div></section></div><div style="height:8px"></div></div></div><div class="ot-notices"><div class="ot-notice-stack"><div class="ot-notice-stack"><div class="ot-notice" data-level="urgent"><div class="ot-notice-title">⏰ 5 分钟后开始 · 数据结构实验</div><div class="ot-notice-body">21:00 · 实验楼 B210 · 计算机</div><div class="ot-notice-actions"><button type="button" class="ot-btn ot-btn-sm"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"></path></svg>已完成</button><button type="button" class="ot-btn ot-btn-sm"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3.2 2"></path></svg>5 分钟后再提醒</button><button type="button" class="ot-btn ot-btn-ghost ot-btn-sm"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M6.5 6.5 17.5 17.5M17.5 6.5 6.5 17.5"></path></svg>关闭</button></div></div></div></div></div></div></div></body></html>

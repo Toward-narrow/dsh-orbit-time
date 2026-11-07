@@ -64,10 +64,10 @@ function seedLegacy(temp) {
   writeFileSync(join(dir, 'config.json'), JSON.stringify({ profile: { name: '张三' } }), 'utf8')
   writeFileSync(
     join(dir, 'runtime.json'),
-    JSON.stringify({ events: [{ id: 'ev_1', title: '示例支部早打卡值班', date: '2026-10-28', start: '07:00', end: '07:30' }] }),
+    JSON.stringify({ events: [{ id: 'ev_1', title: '示例部门早打卡值班', date: '2026-10-28', start: '07:00', end: '07:30' }] }),
     'utf8',
   )
-  writeFileSync(join(dir, 'uploads', '示例支部早打卡排班表.xlsx'), 'legacy-bytes', 'utf8')
+  writeFileSync(join(dir, 'uploads', '示例部门早打卡排班表.xlsx'), 'legacy-bytes', 'utf8')
   return dir
 }
 

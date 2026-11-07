@@ -151,17 +151,20 @@ function ConfirmBar(props) {
   var actions = []
   if (ready) {
     actions.push(
-      ui.button({ variant: 'primary', icon: 'check', disabled: busy, onClick: props.onConfirm }, '确认并导入'),
-      ui.button({ icon: 'refresh', small: true, disabled: busy, onClick: props.onRepick }, '换一个文件'),
-      ui.button({ variant: 'ghost', small: true, disabled: busy, onClick: props.onDetails }, '看看读表细节'),
+      ui.button({ key: 'confirm', variant: 'primary', icon: 'check', disabled: busy, onClick: props.onConfirm }, '确认并导入'),
+      ui.button({ key: 'repick', icon: 'refresh', small: true, disabled: busy, onClick: props.onRepick }, '换一个文件'),
+      ui.button({ key: 'details', variant: 'ghost', small: true, disabled: busy, onClick: props.onDetails }, '看看读表细节'),
     )
   } else if (status === 'done') {
     actions.push(
-      ui.button({ variant: 'primary', icon: 'plus', onClick: props.onAnother }, '再导入一份'),
-      props.onOpenTimeline ? ui.button({ icon: 'calendar', small: true, onClick: props.onOpenTimeline }, '查看日程时间轴') : null,
+      ui.button({ key: 'another', variant: 'primary', icon: 'plus', onClick: props.onAnother }, '再导入一份'),
+      props.onOpenTimeline ? ui.button({ key: 'timeline', icon: 'calendar', small: true, onClick: props.onOpenTimeline }, '查看日程时间轴') : null,
     )
   } else if (status === 'error') {
-    actions.push(ui.button({ icon: 'refresh', small: true, onClick: props.onRetry }, '再读一次'), ui.button({ variant: 'ghost', small: true, onClick: props.onReset }, '重新选文件'))
+    actions.push(
+      ui.button({ key: 'retry', icon: 'refresh', small: true, onClick: props.onRetry }, '再读一次'),
+      ui.button({ key: 'reset', variant: 'ghost', small: true, onClick: props.onReset }, '重新选文件'),
+    )
   }
 
   return h(
@@ -258,6 +261,18 @@ function ExtractBar(props) {
   var detail = null
   if (ready) {
     var lines = []
+    // A commit that failed comes back as `ready` + `error`: the draft is still
+    // here, so the reason belongs in this bar rather than in a disappeared toast.
+    if (state.error) {
+      lines.push(
+        h(
+          'div',
+          { className: 'ot-confirm-line ot-warn-text', key: 'failed' },
+          ui.glyph('close', 12),
+          h('span', null, state.error),
+        ),
+      )
+    }
     if (plan) {
       lines.push(
         h('div', { className: 'ot-confirm-line', key: 'plan' }, ui.glyph('calendar', 12), h('span', null, describeExtractPlan(plan))),
@@ -513,6 +528,15 @@ function ImportView(props) {
   )
   var nameDraft = namePair[0]
   var setNameDraft = namePair[1]
+  // The two things this page can fail at before a request exists: a blank name,
+  // and a file the browser cannot hand over. They are shown under the field they
+  // belong to instead of in a corner card.
+  var nameErrorPair = React.useState('')
+  var nameError = nameErrorPair[0]
+  var setNameError = nameErrorPair[1]
+  var readErrorPair = React.useState('')
+  var readError = readErrorPair[0]
+  var setReadError = readErrorPair[1]
 
   var fileInput = React.useRef(null)
   /** The details card, so "看看读表细节" can bring it into view. */
@@ -578,16 +602,21 @@ function ImportView(props) {
         return value !== ''
       })
     if (parts.length === 0) {
-      store.pushNotice({ level: 'warn', title: '姓名不能为空', body: '至少填一个用于过滤 Excel 的名字。' })
+      setNameError('至少填一个用于过滤 Excel 的名字。')
       return
     }
+    setNameError('')
     store
       .saveSettings({ profile: { name: parts[0], aliases: parts.slice(1) } })
       .then(function () {
-        store.pushNotice({ level: 'info', title: '已保存关注姓名', body: parts.join(' / ') })
+        // Saving changes what the panel is filtering by, so make the header chip
+        // and the "当前生效" line say the new value now. That is the confirmation;
+        // a "已保存关注姓名" toast on top of it was pure noise. A refresh that
+        // fails must not be reported as "the save failed" — the save succeeded.
+        return store.refresh().catch(function () {})
       })
       .catch(function (error) {
-        store.pushNotice({ level: 'warn', title: '保存失败', body: String((error && error.message) || error) })
+        setNameError('保存失败：' + String((error && error.message) || error))
       })
   }
 
@@ -609,9 +638,11 @@ function ImportView(props) {
    */
   function analyze(pathValue) {
     clearDraft()
-    void store.analyzeWorkbook({ path: pathValue === undefined ? path : pathValue }).catch(function (error) {
-      store.pushNotice({ level: 'warn', title: '读表失败', body: String((error && error.message) || error) })
-    })
+    setReadError('')
+    // A failure already lands in `importState.error`, which this page renders in
+    // the confirmation bar and in the details card. A corner toast on top of it
+    // was a second copy of the same sentence.
+    void store.analyzeWorkbook({ path: pathValue === undefined ? path : pathValue }).catch(function () {})
   }
 
   /** Upload path: the browser has the bytes but never the file path. */
@@ -639,6 +670,7 @@ function ImportView(props) {
   function readAnotherFile(file) {
     if (!file) return
     setPath(file.name)
+    setReadError('')
     if (isExcelFile(file.name)) {
       clearDraft()
       store.set({
@@ -653,7 +685,16 @@ function ImportView(props) {
           return store.analyzeWorkbook({ file: { name: file.name, base64: base64 } })
         })
         .catch(function (error) {
-          store.pushNotice({ level: 'warn', title: '读表失败', body: String((error && error.message) || error) })
+          // A request that failed has already been recorded in `importState.error`,
+          // which the confirmation bar renders. This catch only has something to
+          // say when the bytes never left the browser — the state is still
+          // `analyzing` in that case, because no request ever started.
+          if (store.get().importState.status === 'analyzing') {
+            setReadError('读不了「' + file.name + '」：' + String((error && error.message) || error))
+            store.set({
+              importState: Object.assign({}, store.get().importState, { status: 'idle', message: '', error: null }),
+            })
+          }
         })
       return
     }
@@ -662,7 +703,10 @@ function ImportView(props) {
         return store.extractSource({ file: { name: file.name, base64: base64 } })
       })
       .catch(function (error) {
-        store.pushNotice({ level: 'warn', title: '读资料失败', body: String((error && error.message) || error) })
+        // Same split as above: with a request behind it, the reading bar says why.
+        if (store.get().extractState.status === 'idle') {
+          setReadError('读不了「' + file.name + '」：' + String((error && error.message) || error))
+        }
       })
   }
 
@@ -680,24 +724,22 @@ function ImportView(props) {
       return
     }
     clearDraft()
-    void store.extractSource({ path: trimmed }).catch(function (error) {
-      store.pushNotice({ level: 'warn', title: '读资料失败', body: String((error && error.message) || error) })
-    })
+    setReadError('')
+    void store.extractSource({ path: trimmed }).catch(function () {})
   }
 
   /** Read pasted text — the "I got this in a group chat" path. */
   function readPastedText() {
     var text = String(paste || '').trim()
     if (text === '') return
-    void store.extractSource({ text: text }).catch(function (error) {
-      store.pushNotice({ level: 'warn', title: '读文字失败', body: String((error && error.message) || error) })
-    })
+    setReadError('')
+    void store.extractSource({ text: text }).catch(function () {})
   }
 
   function commitReading() {
-    void store.commitExtraction().catch(function (error) {
-      store.pushNotice({ level: 'warn', title: '加入日程失败', body: String((error && error.message) || error) })
-    })
+    // `commitExtraction` keeps the draft and records why it failed; `ExtractBar`
+    // renders that reason in the bar above the rows.
+    void store.commitExtraction().catch(function () {})
   }
 
   /** Back to "pick a file", keeping everything already on the schedule. */
@@ -729,9 +771,9 @@ function ImportView(props) {
         // this step feel like a popup instead of a confirmation.
         setShowAdvanced(false)
       })
-      .catch(function (error) {
-        store.pushNotice({ level: 'warn', title: '导入失败', body: String((error && error.message) || error) })
-      })
+      // A failed import is recorded in `importState.error`, which the confirmation
+      // bar turns into "这次没能读完这份表" with the reason under it.
+      .catch(function () {})
   }
 
   /** Drop back to the file picker without losing the configured rosters. */
@@ -779,6 +821,7 @@ function ImportView(props) {
   }
 
   function doPreview() {
+    setReadError('')
     void store
       .previewWorkbook({
         path: path,
@@ -786,9 +829,8 @@ function ImportView(props) {
         mapping: overrides,
         timeRules: analysis && matrixLayout(analysis.layout) ? util.safeArray(analysis.timeRules) : undefined,
       })
-      .catch(function (error) {
-        store.pushNotice({ level: 'warn', title: '读取失败', body: String((error && error.message) || error) })
-      })
+      // `previewWorkbook` records the error in `importState`, where the bar reads it.
+      .catch(function () {})
   }
 
   function setOverride(field, value) {
@@ -1218,6 +1260,7 @@ function ImportView(props) {
           }),
           ui.button({ variant: 'primary', icon: 'check', onClick: saveProfile }, '保存'),
         ),
+        nameError !== '' ? h('div', { style: { marginTop: 8 } }, ui.note({ variant: 'error' }, nameError)) : null,
         h(
           'div',
           { className: 'ot-sub', style: { marginTop: 6 } },
@@ -1293,6 +1336,8 @@ function ImportView(props) {
             },
           }),
         ),
+
+        readError !== '' ? h('div', { style: { marginTop: 8 } }, ui.note({ variant: 'error' }, readError)) : null,
 
         h(
           'details',

@@ -25,13 +25,36 @@ function EventRow(props) {
   var pair = React.useState(false)
   var busy = pair[0]
   var setBusy = pair[1]
+  // Where the click failed is where it says so: under this row's own buttons.
+  // It used to be a corner toast that covered the page and had to be dismissed.
+  var errorPair = React.useState('')
+  var error = errorPair[0]
+  var setError = errorPair[1]
 
   function act(action, body) {
     setBusy(true)
+    setError('')
     store
       .eventAction(action, Object.assign({ id: event.id }, body || {}))
-      .catch(function (error) {
-        store.pushNotice({ level: 'warn', title: '操作失败', body: String((error && error.message) || error) })
+      .catch(function (failure) {
+        setError(String((failure && failure.message) || failure))
+      })
+      .then(function () {
+        setBusy(false)
+      })
+  }
+
+  /** Deleting is the same shape: the row disappears, or says why it did not. */
+  function remove() {
+    if (typeof props.onDelete !== 'function') return
+    setBusy(true)
+    setError('')
+    Promise.resolve()
+      .then(function () {
+        return props.onDelete(event)
+      })
+      .catch(function (failure) {
+        setError(String((failure && failure.message) || failure))
       })
       .then(function () {
         setBusy(false)
@@ -61,6 +84,11 @@ function EventRow(props) {
   // they behave like typed rows — but they are not something the user wrote.
   if (event.source && event.source.sheet === 'AI 读资料') {
     tags.push(h('span', { className: 'ot-tag ot-tag-ai', key: 'ai', title: 'AI 从资料里读出来的日程' }, 'AI 读出'))
+  }
+  // Deadlines read off a course site: no file behind them either, and the user
+  // needs to know the date came from the site rather than from a roster.
+  if (event.source && event.source.sheet === '网络 DDL') {
+    tags.push(h('span', { className: 'ot-tag ot-tag-web', key: 'web', title: '从网上（课程平台 / 网页）读到的截止时间' }, '网络 DDL'))
   }
   if (util.safeArray(event.warnings).length > 0) {
     tags.push(
@@ -147,16 +175,21 @@ function EventRow(props) {
         // the next file scan, which is the file doing its job, not a bug to hide.
         // A row the model read off a document has no file behind it either, so it
         // is deletable for the same reason.
-        event.source && (event.source.sheet === '手动添加' || event.source.sheet === 'AI 读资料')
+        event.source && (event.source.sheet === '手动添加' || event.source.sheet === 'AI 读资料' || event.source.sheet === '网络 DDL')
           ? h(
               'button',
               {
                 type: 'button',
                 className: 'ot-btn ot-btn-sm ot-btn-ghost',
                 disabled: busy,
-                title: event.source.sheet === 'AI 读资料' ? '删掉这条 AI 读出来的日程' : '删掉这条自己加的日程',
+                title:
+                  event.source.sheet === 'AI 读资料'
+                    ? '删掉这条 AI 读出来的日程'
+                    : event.source.sheet === '网络 DDL'
+                      ? '删掉这条从网上读到的截止时间'
+                      : '删掉这条自己加的日程',
                 onClick: function () {
-                  if (typeof props.onDelete === 'function') props.onDelete(event)
+                  remove()
                 },
               },
               ui.glyph('close', 12),
@@ -180,6 +213,7 @@ function EventRow(props) {
             )
           : null,
       ),
+      error !== '' ? ui.note({ variant: 'error' }, error) : null,
     ),
   )
 }
@@ -240,7 +274,7 @@ function NextCard(props) {
       { className: 'ot-countdown' },
       isCurrent
         ? h('div', { className: 'ot-countdown-value' }, String(Math.max(0, next.minutesUntilEnd || 0)))
-        : h('div', { className: 'ot-countdown-value' }, util.formatClock(remainingMs)),
+        : h('div', { className: 'ot-countdown-value' }, util.formatCountdown(remainingMs)),
       h('div', { className: 'ot-countdown-label' }, isCurrent ? '分钟后结束' : '后开始'),
     ),
   )
@@ -261,6 +295,24 @@ function TimelineView(props) {
   // empty state; keeping the flag here means those three share one form instead
   // of three copies that drift apart.
   var [adding, setAdding] = React.useState(false)
+  // A re-read of the roster reports where the button is, not in a corner. The
+  // success needs no line at all: the counts and the rows below are the result.
+  var [reimporting, setReimporting] = React.useState(false)
+  var [reimportError, setReimportError] = React.useState('')
+
+  function reimport() {
+    if (reimporting) return
+    setReimporting(true)
+    setReimportError('')
+    store
+      .runImport({})
+      .catch(function (error) {
+        setReimportError(String((error && error.message) || error))
+      })
+      .then(function () {
+        setReimporting(false)
+      })
+  }
 
   var visible = events.filter(function (event) {
     if (filter === 'todo') return !event.done && event.phase !== 'past'
@@ -316,8 +368,15 @@ function TimelineView(props) {
           setShowCalendar(!showCalendar)
         },
       }, '日历'),
-      ui.button({ small: true, icon: 'refresh', title: '重新读取 Excel', onClick: function () { void props.onReimport() } }),
+      ui.button({
+        small: true,
+        icon: 'refresh',
+        disabled: reimporting,
+        title: reimporting ? '正在重新读取 Excel…' : '重新读取 Excel',
+        onClick: reimport,
+      }),
     ),
+    reimportError !== '' ? ui.note({ variant: 'error' }, '重新抓取失败：' + reimportError) : null,
     adding
       ? h(manual.ManualEventForm, {
           store: store,
@@ -328,6 +387,11 @@ function TimelineView(props) {
           },
           onSaved: function (savedDay) {
             setAdding(false)
+            // The new row is the confirmation now that no toast announces it, so
+            // nothing may hide it: the "已完成" filter would (a fresh row is not
+            // done), and a form opened on one day must not leave it off-screen on
+            // another.
+            setFilter('all')
             // Land on the day the event went to, calendar open, so the new row is
             // visible in the timeline below rather than off-screen on another date.
             setShowCalendar(true)
@@ -424,15 +488,10 @@ function TimelineView(props) {
               showOwner: true,
               snoozeMinutes: util.safeArray(snapshot && snapshot.settings.reminders.snoozeMinutes)[0] || 5,
               onFocus: props.onFocus,
+              // The row keeps the promise so it can report its own failure; the
+              // deleted row disappearing is the success message.
               onDelete: function (event) {
-                store
-                  .removeEvent(event.id)
-                  .then(function () {
-                    store.pushNotice({ level: 'info', title: '已删除', body: event.title })
-                  })
-                  .catch(function (error) {
-                    store.pushNotice({ level: 'warn', title: '删除失败', body: String((error && error.message) || error) })
-                  })
+                return store.removeEvent(event.id)
               },
             })
           }),

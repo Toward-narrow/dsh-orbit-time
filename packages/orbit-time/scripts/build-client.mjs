@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+﻿#!/usr/bin/env node
 /**
  * Build `lib/client.js` from src/client/*.js.
  *
@@ -32,6 +32,7 @@ const MODULES = [
   'timeline.js',
   'companion.js',
   'import-view.js',
+  'netddl.js',
   'settings.js',
   'panel.js',
   'index.js',

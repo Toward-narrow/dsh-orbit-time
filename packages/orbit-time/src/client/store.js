@@ -43,9 +43,51 @@ var state = {
     draft: [],
     error: null,
   },
+  /**
+   * The corner stack, and it now only ever carries *reminders*.
+   *
+   * Every action that reported its result used to push a card here as well —
+   * "已加进日程", "已删除", "已保存关注姓名" — and each one had to be dismissed by
+   * hand while the page already showed the result (the row is on the timeline,
+   * the count changed, the field kept its value). A reminder is the one kind of
+   * message that genuinely arrives from nowhere and needs an action, so it is
+   * the only kind that still floats over the panel.
+   */
   notices: [],
+  /**
+   * The last click that could not do what it promised, shown in the page.
+   *
+   * Not a toast: a block in the panel body, belonging to no corner, never on a
+   * timer. It exists for actions with no card of their own (the header's
+   * floating-window button, the in-window mini card); actions that do have a
+   * card render their own error next to themselves.
+   */
+  actionReport: null,
   floatOpen: false,
   /**
+   * Reading deadlines off course sites.
+   *
+   * The password deliberately does **not** live here: it is a field of the login
+   * form, passed straight to the host, and the host either discards it or hands
+   * it to DPAPI. Keeping it in the page's shared state would leave it in memory
+   * for the whole session and show it to every component that reads the store.
+   */
+  netddl: {
+    platform: 'icourse163',
+    status: null,
+    /** Which step is running: '' | 'status' | 'login' | 'courses' | 'pull' | 'page' | 'commit' | 'logout'. */
+    busy: '',
+    message: '',
+    /** How the last message should read: 'ok' | 'warn'. */
+    level: 'ok',
+    error: '',
+    /** The host half predates the iframe/login/course fixes; actions would fail. */
+    hostStale: false,
+    courses: [],
+    items: [],
+    notes: [],
+    page: null,
+  },  /**
    * Whether the *host* half is older than this page.
    *
    * The two halves are installed together but loaded at different moments: the
@@ -104,6 +146,20 @@ function set(patch) {
 
 async function request(path, options) {
   var init = options ? Object.assign({}, options) : {}
+  /**
+   * A long operation (a login the user is still finishing) must not leave the
+   * panel waiting forever if the host dies mid-request: `fetch` has no timeout of
+   * its own, so a dead socket pins the card at "等你登录…" with no way back.
+   */
+  var timeoutMs = init.timeoutMs
+  delete init.timeoutMs
+  if (typeof timeoutMs === 'number' && timeoutMs > 0) {
+    try {
+      init.signal = AbortSignal.timeout(timeoutMs)
+    } catch (error) {
+      delete init.signal
+    }
+  }
   init.headers = Object.assign({ 'content-type': 'application/json' }, init.headers || {})
   var response = await fetch(API + path, init)
   var text = await response.text()
@@ -613,7 +669,15 @@ function labelOfAction(action) {
   return ACTION_LABELS[action] || action
 }
 
-function pushNotice(notice) {
+/**
+ * Put one reminder on the floating stack.
+ *
+ * Only the feed uses this (see `ingestFeed`), and only for entries the host
+ * marked as reminders. Everything else that used to report back through a toast
+ * now either says nothing (the result is the feedback) or says it inline —
+ * `reportAction` for the few actions with no card, `ui.note` for the rest.
+ */
+function pushReminder(notice) {
   var id = 'n_' + Date.now() + '_' + Math.round(Math.random() * 1000)
   var entry = Object.assign({ id: id, at: Date.now() }, notice)
   set({ notices: state.notices.concat([entry]).slice(-4) })
@@ -623,6 +687,29 @@ function pushNotice(notice) {
     }, entry.ttlMs || 15_000)
   }
   return id
+}
+
+/**
+ * Report a click result in the panel itself.
+ *
+ * This is what is left of the "tell the user what happened" channel: one line
+ * in the page body, replaced by the next result and dismissed by hand. It never
+ * floats over the panel and never fades, so it cannot be the same complaint the
+ * corner toast was. Successes do not use it at all — the page already changed.
+ */
+function reportAction(level, title, body) {
+  set({
+    actionReport: {
+      id: 'r_' + Date.now() + '_' + Math.round(Math.random() * 1000),
+      level: level || 'error',
+      title: title || '',
+      body: body === undefined || body === null ? '' : String(body),
+    },
+  })
+}
+
+function dismissActionReport() {
+  if (state.actionReport !== null) set({ actionReport: null })
 }
 
 function dismissNotice(id) {
@@ -640,16 +727,10 @@ async function clearFeed() {
 async function openFloatWindow() {
   // The desktop shell denies `window.open` to pages, so the floating widget is a
   // host-spawned always-on-top process instead of a browser popup.
+  //
+  // The outcome is the caller's to show: the settings card renders it in place,
+  // and the header button has no card of its own (`reportAction`). No toast.
   var payload = await request('/hud', { method: 'POST', body: JSON.stringify({ action: 'start' }) })
-  if (!payload.ok) {
-    pushNotice({ level: 'warn', title: '悬浮窗启动失败', body: payload.error || '未知原因' })
-  } else if (payload.running === false) {
-    // The widget is not broken — the user closed it. Say so instead of claiming
-    // a launch that deliberately did not happen.
-    pushNotice({ level: 'info', title: '悬浮窗保持关闭', body: '你之前用悬浮窗上的 × 关掉了它。点「重新显示」可以再打开。' })
-  } else {
-    pushNotice({ level: 'info', title: '悬浮窗已启动', body: '胶囊上的 — 最小化为小圆点，× 关闭；按住窗口任意位置可以拖动。右键或双击还有更多操作。' })
-  }
   set({ floatOpen: payload.ok === true && payload.running !== false, hudMode: payload.mode || null })
   return payload
 }
@@ -669,10 +750,9 @@ async function stopFloatWindow() {
  */
 async function setFloatMode(mode) {
   var action = mode === 'mini' ? 'minimize' : mode === 'closed' ? 'stop' : 'restore'
+  // The status the card shows is the payload itself; a failed switch is reported
+  // by the card that asked for it, in place.
   var payload = await request('/hud', { method: 'POST', body: JSON.stringify({ action: action }) })
-  if (payload && payload.ok === false) {
-    pushNotice({ level: 'warn', title: '悬浮窗操作失败', body: payload.error || '未知原因' })
-  }
   set({ hudMode: payload ? payload.mode || mode : null, floatOpen: payload ? payload.running === true : false })
   return payload
 }
@@ -732,7 +812,7 @@ function ingestFeed(feed) {
   for (var j = fresh.length - 1; j >= 0; j -= 1) {
     var item = fresh[j]
     if (item.kind === 'reminder' || item.level === 'urgent') {
-      pushNotice({
+      pushReminder({
         level: item.level === 'urgent' ? 'urgent' : 'info',
         title: item.title,
         body: item.body,
@@ -815,8 +895,338 @@ function shutdown() {
   }
 }
 
-function currentTimer(nowMs) {
-  var timer = (state.snapshot && state.snapshot.timer) || null
+/** Merge one field into the network-reader slice without dropping the rest. */
+function netddlPatch(patch) {
+  set({ netddl: Object.assign({}, state.netddl, patch) })
+}
+
+/**
+ * A stale host would run the old login flow and hang for minutes; refuse before
+ * the request instead of letting the click look like a freeze.
+ */
+function requireCurrentNetHost() {
+  if (state.netddl.hostStale !== true) return
+  var message = '宿主进程还是旧版「网络 DDL」：先托盘退出 DeepSeek Harness 再打开，然后刷新页面再试。'
+  netddlPatch({ busy: '', error: message })
+  throw new Error(message)
+}
+
+/** Ask the host what it knows: browser found, profile dir, saved accounts. */
+async function refreshNetDdl() {
+  try {
+    var status = await request('/netddl/status', { timeoutMs: 10000 })
+    /**
+     * A refreshed page always gets the new client bundle, but the host half was
+     * imported at app start. If it predates the iframe/saved-account login, the
+     * panel must say so: otherwise the fix looks like it did nothing.
+     */
+    var hostStale = !(status && Number(status.api) >= 3)
+    netddlPatch({
+      status: status,
+      hostStale: hostStale,
+      error: hostStale
+        ? '宿主进程还是旧版「网络 DDL」——它启动时加载的代码没有这次登录修复。关掉 DeepSeek Harness（托盘退出）再打开，然后刷新页面；只刷新页面换不掉宿主。'
+        : '',
+    })
+    return status
+  } catch (error) {
+    var reason = String((error && error.message) || error)
+    /**
+     * A 404 here is almost never the user's fault: the page is the half that can
+     * be refreshed, while the host is loaded once at app start. Ask `/health`
+     * what this host generation can do before blaming anything else.
+     */
+    try {
+      var health = await request('/health')
+      if (!(health && Array.isArray(health.capabilities) && health.capabilities.indexOf('web-ddl') >= 0)) {
+        reason = '宿主进程还不认识「网络 DDL」——它还是启动时加载的旧版本。关掉 DeepSeek Harness（托盘退出）再打开，然后刷新页面。'
+      }
+    } catch (probeError) {
+      /* the original failure is the one worth showing */
+    }
+    netddlPatch({ error: reason })
+    return null
+  }
+}
+
+function netDdlSetPlatform(platform) {
+  if (platform === state.netddl.platform) return
+  netddlPatch({ platform: platform, courses: [], items: [], notes: [], page: null, message: '', error: '' })
+}
+
+/**
+ * Open the login window and wait for it to succeed.
+ *
+ * This call can take a couple of minutes on purpose: the window is handed to the
+ * user so they can solve a captcha, scan a QR code, or type an SMS code, and the
+ * host keeps asking the site until it says the session is real. The panel says
+ * so rather than looking frozen.
+ */
+async function netDdlLogin(options) {
+  requireCurrentNetHost()
+  var body = options || {}
+  netddlPatch({
+    busy: 'login',
+    error: '',
+    level: 'ok',
+    // Two phases behind one message: the host takes a few seconds to launch the
+    // browser, and a window that has not appeared yet otherwise reads as a hang.
+    message: '正在启动浏览器窗口（第一次要几秒）。窗口出来后在里面登录——扫码、短信验证、拖滑块都行，登录成功这里会自己继续…',
+  })
+  try {
+    var payload = await request('/netddl/login', {
+      method: 'POST',
+      body: JSON.stringify({ platform: state.netddl.platform, url: body.url || '', username: body.username || '', password: body.password || '', remember: body.remember !== false }),
+      // The host waits for the person to finish a captcha / SMS for up to 150 s.
+      timeoutMs: 200_000,
+    })
+    netddlPatch({
+      busy: '',
+      level: payload.loggedIn === true ? 'ok' : 'warn',
+      message:
+        payload.loggedIn === true
+          ? '登录成功，这把浏览器档案会记住它。' +
+            (payload.usedSaved
+              ? '（用的是记住的账号）'
+              : payload.remembered
+                ? '密码已用 DPAPI 加密保存。'
+                : payload.rememberNote || '')
+          : payload.note || payload.error || '没等到登录成功。',
+      // A refusal (headless install, no browser) is an explanation, not a failure
+      // of the page: keep it in the same place the success message lives.
+      error: '',
+    })
+    void refreshNetDdl()
+    return payload
+  } catch (error) {
+    netddlPatch({ busy: '', error: String((error && error.message) || error) })
+    throw error
+  }
+}
+
+async function netDdlCheck() {
+  requireCurrentNetHost()
+  netddlPatch({ busy: 'check', error: '', message: '' })
+  try {
+    var payload = await request('/netddl/check', { method: 'POST', body: JSON.stringify({ platform: state.netddl.platform }), timeoutMs: 60_000 })
+    netddlPatch({
+      busy: '',
+      level: payload.loggedIn === true ? 'ok' : 'warn',
+      message: payload.loggedIn === true ? '登录还有效。' : payload.unknown === true ? payload.note || '浏览器还没启动：先登录，或直接抓一次——抓的时候会顺手确认登录态。' : '已经掉登录了，重新登一次。',
+    })
+    return payload
+  } catch (error) {
+    netddlPatch({ busy: '', error: String((error && error.message) || error) })
+    throw error
+  }
+}
+
+/** List the courses on the account, so the user picks what to read. */
+async function netDdlScanCourses() {
+  requireCurrentNetHost()
+  netddlPatch({ busy: 'courses', error: '', message: '正在读「我的课程」…', items: [], notes: [], page: null })
+  try {
+    var payload = await request('/netddl/courses', { method: 'POST', body: JSON.stringify({ platform: state.netddl.platform }), timeoutMs: 150_000 })
+    var courses = util.safeArray(payload.courses).map(function (course) {
+      // A course whose term ended cannot have a future deadline; showing it is
+      // still useful ("my course list is complete"), but ticking it would only
+      // make the pull read a closed page.
+      return Object.assign({}, course, { checked: course.ended !== true })
+    })
+    netddlPatch({
+      busy: '',
+      courses: courses,
+      level: payload.ok === true ? 'ok' : 'warn',
+      message: payload.ok === true ? '找到 ' + courses.length + ' 门课。' : payload.error || '没读到课程。',
+      error: '',
+      status: state.netddl.status,
+    })
+    void refreshNetDdl()
+    return payload
+  } catch (error) {
+    netddlPatch({ busy: '', error: String((error && error.message) || error) })
+    throw error
+  }
+}
+
+function netDdlToggleCourse(id) {
+  var courses = state.netddl.courses.map(function (course) {
+    return course.id === id ? Object.assign({}, course, { checked: course.checked !== true }) : course
+  })
+  netddlPatch({ courses: courses })
+}
+
+function netDdlCheckAll(include) {
+  var courses = state.netddl.courses.map(function (course) {
+    return Object.assign({}, course, { checked: include === true })
+  })
+  netddlPatch({ courses: courses })
+}
+
+/**
+ * Read every ticked course's deadline page.
+ *
+ * Nothing lands on the timeline here: the result is a proposal the user ticks
+ * through, exactly like a document read. A scraper that writes straight to the
+ * schedule would make a bad selector look like a scheduling decision.
+ */
+async function netDdlPull(options) {
+  requireCurrentNetHost()
+  var body = options || {}
+  var chosen = state.netddl.courses.filter(function (course) {
+    return course.checked === true
+  })
+  if (chosen.length === 0) throw new Error('先勾选至少一门课。')
+  netddlPatch({ busy: 'pull', error: '', message: '正在逐门课读截止时间，课程多的话要等一会儿…' })
+  try {
+    var payload = await request('/netddl/pull', {
+      method: 'POST',
+      body: JSON.stringify({ platform: state.netddl.platform, courses: chosen, horizonDays: body.horizonDays || 180 }),
+      timeoutMs: 300_000,
+    })
+    var nowMs = Date.now()
+    var items = util.safeArray(payload.items).map(function (item, index) {
+      // The deadline page keeps a few rows from earlier today (a submission that
+      // closed at noon); show them, but do not tick a deadline that has passed.
+      var future = typeof item.dueMs === 'number' ? item.dueMs >= nowMs : true
+      return Object.assign({}, item, { key: item.key || 'w' + index, include: future })
+    })
+    netddlPatch({
+      busy: '',
+      items: items,
+      notes: util.safeArray(payload.notes),
+      page: null,
+      level: items.length > 0 ? 'ok' : 'warn',
+      message: items.length + ' 个截止时间，勾掉不想要的再入库。',
+      error: '',
+    })
+    return payload
+  } catch (error) {
+    netddlPatch({ busy: '', error: String((error && error.message) || error) })
+    throw error
+  }
+}
+
+/** Read one arbitrary URL, filling a login form when credentials are given. */
+async function netDdlReadPage(options) {
+  requireCurrentNetHost()
+  var body = options || {}
+  netddlPatch({ busy: 'page', error: '', message: '正在打开这个页面…', items: [], notes: [], page: null, courses: [] })
+  try {
+    var payload = await request('/netddl/page', {
+      method: 'POST',
+      body: JSON.stringify({
+        url: body.url,
+        username: body.username || '',
+        password: body.password || '',
+        remember: body.remember !== false,
+        label: body.label || '',
+        horizonDays: body.horizonDays || 180,
+      }),
+      timeoutMs: 200_000,
+    })
+    var items = util.safeArray(payload.items).map(function (item, index) {
+      return Object.assign({}, item, { key: item.key || 'w' + index, include: true })
+    })
+    netddlPatch({
+      busy: '',
+      items: items,
+      notes: util.safeArray(payload.notes),
+      page: payload.page || null,
+      level: items.length > 0 ? 'ok' : 'warn',
+      message: (payload.loginNote ? payload.loginNote + ' ' : '') + items.length + ' 个截止时间。',
+      error: '',
+    })
+    return payload
+  } catch (error) {
+    netddlPatch({ busy: '', error: String((error && error.message) || error) })
+    throw error
+  }
+}
+
+function netDdlToggleItem(key) {
+  var items = state.netddl.items.map(function (item) {
+    return item.key === key ? Object.assign({}, item, { include: item.include === false }) : item
+  })
+  netddlPatch({ items: items })
+}
+
+function netDdlSelectAll(include) {
+  var items = state.netddl.items.map(function (item) {
+    return Object.assign({}, item, { include: include === true })
+  })
+  netddlPatch({ items: items })
+}
+
+/**
+ * Put the ticked deadlines on the schedule and open the earliest day.
+ *
+ * Same reasoning as the document flow: the day comes from the rows, so a
+ * December deadline read in November does not leave the user staring at an
+ * unchanged November timeline.
+ */
+async function netDdlCommit() {
+  var included = state.netddl.items.filter(function (item) {
+    return item.include !== false
+  })
+  if (included.length === 0) throw new Error('先勾选至少一个截止时间。')
+  netddlPatch({ busy: 'commit', error: '', message: '正在写进时间轴…' })
+  try {
+    /**
+     * Ask for the day the earliest deadline lands on, not the day that happens to
+     * be open: a December deadline filed in November should leave the user looking
+     * at December, and the host builds the snapshot from the view it is asked for.
+     */
+    var earliest = included
+      .map(function (item) {
+        return item.dueDate
+      })
+      .filter(function (date) {
+        return typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)
+      })
+      .sort()[0]
+    var query =
+      earliest !== undefined
+        ? '/netddl/commit?day=' + encodeURIComponent(earliest) + '&month=' + encodeURIComponent(earliest.slice(0, 7))
+        : '/netddl/commit'
+    var payload = await request(query, {
+      method: 'POST',
+      body: JSON.stringify({ items: included, platform: state.netddl.platform }),
+    })
+    var day = payload.firstDate || earliest || state.day
+    set({
+      snapshot: payload.snapshot || state.snapshot,
+      day: day,
+      month: String(day).slice(0, 7),
+      netddl: Object.assign({}, state.netddl, {
+        busy: '',
+        items: [],
+        notes: [],
+        message: '已加入 ' + (payload.added || 0) + ' 条' + (payload.skipped && payload.skipped.length > 0 ? '；' + payload.skipped.length + ' 条已经在日程里，没有重复添加' : '') + '。',
+        error: '',
+      }),
+    })
+    return payload
+  } catch (error) {
+    netddlPatch({ busy: '', error: String((error && error.message) || error) })
+    throw error
+  }
+}
+
+async function netDdlLogout() {
+  netddlPatch({ busy: 'logout', error: '', message: '' })
+  try {
+    var payload = await request('/netddl/logout', { method: 'POST', body: '{}' })
+    netddlPatch({ busy: '', message: payload.ok === true ? '浏览器档案已清空，下次要重新登录。' : payload.error || '没清掉。', courses: [], items: [], page: null })
+    void refreshNetDdl()
+    return payload
+  } catch (error) {
+    netddlPatch({ busy: '', error: String((error && error.message) || error) })
+    throw error
+  }
+}
+
+function currentTimer(nowMs) {  var timer = (state.snapshot && state.snapshot.timer) || null
   if (timer === null) return null
   var remaining = timer.remainingMs || 0
   if (timer.running && timer.endsAt) {
@@ -870,8 +1280,10 @@ exports.store = {
   askCompanion: askCompanion,
   refreshAssistantStatus: refreshAssistantStatus,
   conversationHistory: conversationHistory,
-  pushNotice: pushNotice,
+  pushReminder: pushReminder,
   dismissNotice: dismissNotice,
+  reportAction: reportAction,
+  dismissActionReport: dismissActionReport,
   clearFeed: clearFeed,
   openFloatWindow: openFloatWindow,
   stopFloatWindow: stopFloatWindow,
@@ -880,6 +1292,19 @@ exports.store = {
   reportUiEvent: reportUiEvent,
   reportOverlayLayout: reportOverlayLayout,
   checkHostBuild: checkHostBuild,
+  refreshNetDdl: refreshNetDdl,
+  netDdlSetPlatform: netDdlSetPlatform,
+  netDdlLogin: netDdlLogin,
+  netDdlCheck: netDdlCheck,
+  netDdlScanCourses: netDdlScanCourses,
+  netDdlToggleCourse: netDdlToggleCourse,
+  netDdlCheckAll: netDdlCheckAll,
+  netDdlPull: netDdlPull,
+  netDdlReadPage: netDdlReadPage,
+  netDdlToggleItem: netDdlToggleItem,
+  netDdlSelectAll: netDdlSelectAll,
+  netDdlCommit: netDdlCommit,
+  netDdlLogout: netDdlLogout,
   bootstrap: bootstrap,
   shutdown: shutdown,
   currentTimer: currentTimer,

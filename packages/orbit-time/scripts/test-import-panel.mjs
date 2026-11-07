@@ -122,8 +122,8 @@ const RECORD_ANALYSIS = {
 }
 
 const PREVIEW = {
-  file: 'C:\\Users\\User\\project\\dsh-orbit-time\\示例支部早打卡排班表.xlsx',
-  configuredPath: 'C:\\Users\\User\\project\\dsh-orbit-time\\示例支部早打卡排班表.xlsx',
+  file: 'C:\\Users\\User\\project\\dsh-orbit-time\\示例部门早打卡排班表.xlsx',
+  configuredPath: 'C:\\Users\\User\\project\\dsh-orbit-time\\示例部门早打卡排班表.xlsx',
   sheets: ['Sheet1'],
   sheet: 'Sheet1',
   layout: 'matrixDate',
@@ -191,7 +191,7 @@ check('the verdict leads with what the model decided', () => {
   return 'summary, confidence pill, and model chip all present'
 })
 check('the confirmation is a bar at the top of the page, before anything else', () => {
-  for (const needle of ['ot-confirm', '读完了「示例支部早打卡排班表.xlsx」', '将导入 1 条 · 2026-10-28 → 2026-11-18']) {
+  for (const needle of ['ot-confirm', '读完了「示例部门早打卡排班表.xlsx」', '将导入 1 条 · 2026-10-28 → 2026-11-18']) {
     if (!withAnalysis.includes(needle)) throw new Error(`missing ${needle}`)
   }
   // Before the first card: reading a sheet produces a decision, so it leads.
@@ -222,7 +222,9 @@ check('a grid says why there is nothing to map', () => {
   return 'no phantom "未匹配" selects'
 })
 check('the file step has one obvious action', () => {
-  for (const needle of ['选一个 Excel，AI 直接帮你读', '选择 Excel', '或者直接粘贴文件路径']) {
+  // The page grew from "pick an Excel" to "drop any material", so the copy moved
+  // with it; the assertion is about the three ways in, not the old wording.
+  for (const needle of ['拖一份日程资料进来', '选择文件', '或者直接粘贴文件路径']) {
     if (!withAnalysis.includes(needle)) throw new Error(`missing ${needle}`)
   }
   return 'pick, drop, or paste'
@@ -249,7 +251,7 @@ store.set({
 })
 const fresh = render(makeSnapshot())
 check('the empty state is an instruction, not a blank card', () => {
-  if (!fresh.includes('拖一个 Excel 进来') && !fresh.includes('选一个 Excel')) throw new Error('no guidance on an empty page')
+  if (!fresh.includes('拖一份日程资料进来') && !fresh.includes('拖一个 Excel')) throw new Error('no guidance on an empty page')
   return 'guidance present'
 })
 

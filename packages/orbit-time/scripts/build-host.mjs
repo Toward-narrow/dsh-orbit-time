@@ -12,7 +12,7 @@
  * profile install copies only `lib/`, so a host import that reached outside the
  * package would resolve in the checkout and fail once installed.
  */
-import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -53,6 +53,25 @@ for (const [from, to] of [['repair.cjs', 'shared-repair.cjs']]) {
   }
   copyFileSync(source, join(libDir, to))
   staged += 1
+}
+
+/**
+ * The network reader is a small ESM package, not a single file: the browser
+ * driver, the parsers, and the orchestrator are separately testable. It is
+ * staged as a directory because the host imports it as `./netddl/index.js`.
+ */
+const netddlSrc = join(srcDir, 'netddl')
+const netddlOut = join(libDir, 'netddl')
+if (!existsSync(netddlSrc)) {
+  console.error(`build-host: missing ${netddlSrc}`)
+  process.exitCode = 1
+} else {
+  rmSync(netddlOut, { recursive: true, force: true })
+  mkdirSync(netddlOut, { recursive: true })
+  for (const file of readdirSync(netddlSrc).filter((name) => name.endsWith('.js'))) {
+    copyFileSync(join(netddlSrc, file), join(netddlOut, file))
+    staged += 1
+  }
 }
 
 console.log(`build-host: staged ${staged} runtime asset(s) into ${libDir}`)

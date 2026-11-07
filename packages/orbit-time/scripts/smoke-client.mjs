@@ -282,7 +282,7 @@ function buildMonth() {
       { id: 'now', title: '项目例会', start: '13:00', end: '14:00', place: '三教 305', done: false },
       { id: 'past', title: '英语听力', start: '07:00', end: '08:00', place: '语音室 2', done: true },
     ],
-    '2026-03-17': [{ id: 'duty', title: '示例支部晚自习考勤点名', start: '19:30', end: '20:50', place: 'A101', done: false }],
+    '2026-03-17': [{ id: 'duty', title: '示例部门晚自习考勤点名', start: '19:30', end: '20:50', place: 'A101', done: false }],
   }
   const grid = []
   for (let index = 0; index < 42; index += 1) {
@@ -435,9 +435,10 @@ const storeStub = {
         },
         error: null,
       },
+      // Reminders only: the floating stack stopped carrying click results.
       notices: [
         { id: 'n1', level: 'urgent', title: '⏰ 5 分钟后开始 · 项目例会', body: '13:00 · 三教 305', eventId: 'now' },
-        { id: 'n2', level: 'info', title: '日程已更新', body: '抓取 3 条' },
+        { id: 'n2', level: 'info', title: '🔔 30 分钟后开始 · 项目例会', body: '13:00 · 三教 305', eventId: 'next' },
       ],
       floatOpen: false,
       companion: {
@@ -482,7 +483,7 @@ const storeStub = {
   askCompanion() {
     return Promise.resolve({})
   },
-  pushNotice() {},
+  pushReminder() {},
   dismissNotice() {},
   clearFeed() {
     return Promise.resolve()
@@ -572,7 +573,7 @@ realStore.set({
   },
   notices: [
     { id: 'n1', level: 'urgent', title: '⏰ 5 分钟后开始 · 项目例会', body: '13:00 · 三教 305', eventId: 'now' },
-    { id: 'n2', level: 'info', title: '日程已更新', body: '抓取 3 条' },
+    { id: 'n2', level: 'info', title: '🔔 30 分钟后开始 · 项目例会', body: '13:00 · 三教 305', eventId: 'next' },
   ],
   companion: {
     messages: [
@@ -606,7 +607,7 @@ check('the import confirmation is an in-panel bar with the real import counts', 
       error: null,
       modelNote: '',
       preview: {
-        file: 'C:\\Users\\x\\Desktop\\示例支部晚自习排班表.xlsx',
+        file: 'C:\\Users\\x\\Desktop\\示例部门晚自习排班表.xlsx',
         sheet: 'Sheet1',
         headerRow: 1,
         rowCount: 120,
@@ -630,6 +631,23 @@ check('the import confirmation is an in-panel bar with the real import counts', 
   const noticeHtml = renderToStaticMarkup(h(app.Notices))
   if (!noticeHtml.includes('ot-notice-stack')) throw new Error('the notice stack has no inner container, so it cannot be clamped into the overlay')
   return 'sticky confirm bar, plan counts, no toast'
+})
+
+// Click results do not float. The corner stack is reminders-only now, and the
+// one line that still reports a click result is a block in the page body — the
+// fallback for actions with no card of their own.
+check('a click result is a line in the page, not a card in the corner', () => {
+  if (typeof realStore.pushNotice === 'function') {
+    throw new Error('the toast API is still exported, so any action can still push a floating card')
+  }
+  if (typeof realStore.pushReminder !== 'function') throw new Error('reminders have no channel left')
+  const before = realStore.get().notices
+  realStore.set({ actionReport: { id: 'r1', level: 'error', title: '悬浮窗没能打开', body: '宿主没有回应。' } })
+  const html = renderToStaticMarkup(h(app.Dashboard))
+  if (!html.includes('ot-inline-report')) throw new Error('the in-page result line did not render')
+  if (!html.includes('悬浮窗没能打开')) throw new Error('the result line lost its reason')
+  realStore.set({ actionReport: null, notices: before })
+  return 'inline result line, reminder-only stack'
 })
 
 // The other half of the import page: a document or a picture is read into event
@@ -722,7 +740,6 @@ check('the timeline offers the month calendar, and it is closed by default', () 
       undated: snapshot.day.undated,
       now,
       onFocus: () => {},
-      onReimport: () => {},
     }),
   )
   if (!html.includes('日历')) throw new Error('the day bar has no calendar toggle')
@@ -747,7 +764,7 @@ check('the month calendar marks days that have schedules, and lists the picked d
     'ot-cal-grid',
     'ot-cal-cell',
     'data-marked="true"',
-    '示例支部晚自习考勤点名',
+    '示例部门晚自习考勤点名',
     '2 天有日程 · 共 3 条',
   ]) {
     if (!html.includes(needle)) throw new Error(`calendar markup is missing ${needle}`)
@@ -856,6 +873,30 @@ await check('the calendar puts the month it is browsing on the wire', async () =
   return `${calendarRequests.length} requests, day and month together`
 })
 
+// A countdown has to speak in the unit its horizon deserves. A minutes:seconds
+// clock is right for "23 分钟后" and nonsense for "5 天后": the seconds tick for
+// days and nothing anybody can act on changes with them.
+check('a countdown speaks in the unit its horizon deserves', () => {
+  const u = exports_['./util.js']
+  const cases = [
+    [5 * 86_400_000 + 3 * 3_600_000, '5 天 3 小时'],
+    [86_400_000, '1 天'],
+    [23 * 3_600_000 + 59 * 60_000 + 59_000, '23:59:59'],
+    [59 * 60_000 + 30_000, '59:30'],
+  ]
+  for (const [ms, expected] of cases) {
+    const actual = u.formatCountdown(ms)
+    if (actual !== expected) throw new Error(`formatCountdown(${ms}) = ${actual}, expected ${expected}`)
+  }
+  const short = u.formatCountdownShort(5 * 86_400_000 + 3 * 3_600_000)
+  if (short !== '5天3时') throw new Error(`the mini card form is ${short}`)
+  const relative = u.formatRelative(5 * 1440 + 21 * 60)
+  if (relative !== '5 天 21 小时后') throw new Error(`relative time still counts hours past a day: ${relative}`)
+  // And the panel really uses it rather than its own clock.
+  if (!('formatCountdown' in u) || !('formatCountdownShort' in u)) throw new Error('the countdown helpers are not exported')
+  return 'days above a day, clock below it'
+})
+
 check('the add-event form renders, and adding one sends the date it was opened on', async () => {
   const formModule = exports_['./manual.js']
   // `now` is the panel's millisecond clock, exactly as the timeline passes it.
@@ -893,7 +934,6 @@ check('the add-event form renders, and adding one sends the date it was opened o
       undated: snapshot.day.undated,
       now: Date.now(),
       onFocus: () => {},
-      onReimport: () => {},
     }),
   )
   if (!timelineHtml.includes('ot-daybar')) throw new Error('the timeline did not render')
@@ -980,6 +1020,65 @@ check('pomodoro view renders the ring and controls', () => {  const html = rende
     if (!html.includes(needle)) throw new Error(`pomodoro markup is missing ${needle}`)
   }
   return `${html.length} chars`
+})
+
+/* ---------------------------------------------------------- network deadlines */
+
+const netddlFixture = {
+  platform: 'icourse163',
+  status: {
+    ok: true,
+    browser: { found: true, label: 'Edge', running: false, headless: false },
+    profileDir: 'C:\\Users\\User\\.dsh\\storages\\orbit-time\\webddl\\browser',
+    credentials: [{ id: 'icourse163', username: 'demo@example.com' }],
+    count: 1,
+    sessions: [],
+  },
+  busy: '',
+  message: '找到 2 门课。',
+  error: '',
+  courses: [
+    { id: 'a', name: '数据结构', url: 'https://www.icourse163.org/learn/SCHOOL-1000000001?tid=1000000001', checked: true },
+    { id: 'b', name: '操作系统', url: '', checked: true },
+  ],
+  items: [
+    { key: 'wd_1', course: '数据结构', title: '第一章 单元测验', kind: '测验', dueDate: '2026-11-20', dueTime: '23:30', confidence: 0.92, url: 'https://www.icourse163.org/learn/SCHOOL-1000000001', include: true },
+    { key: 'wd_2', course: '操作系统', title: '进程调度实验报告', kind: '作业', dueDate: '2026-12-05', dueTime: '22:00', confidence: 0.9, include: true },
+  ],
+  notes: ['操作系统：页面上没读到截止时间'],
+  page: null,
+}
+
+check('the network tab shows the login card, the courses, and the rows to confirm', () => {
+  realStore.set({ netddl: netddlFixture })
+  const html = renderToStaticMarkup(h(exports_['./netddl.js'].NetDdlView, { store: realStore, netddl: realStore.get().netddl }))
+  for (const needle of ['中国大学MOOC', '任意网页', 'type="password"', '数据结构', '第一章 单元测验', '2026-11-20', '加进日程（2 条）', 'demo@example.com']) {
+    if (!html.includes(needle)) throw new Error(`network tab markup is missing ${needle}`)
+  }
+  if (html.includes('选中的密码') || html.includes('value="secret"')) throw new Error('the password leaked into markup')
+  return `${html.length} chars`
+})
+
+check('an unticked deadline is excluded from the commit count', () => {
+  const fixture = JSON.parse(JSON.stringify(netddlFixture))
+  fixture.items[1].include = false
+  realStore.set({ netddl: fixture })
+  const html = renderToStaticMarkup(h(exports_['./netddl.js'].NetDdlView, { store: realStore, netddl: realStore.get().netddl }))
+  if (!html.includes('加进日程（1 条）')) throw new Error('the count did not follow the ticks')
+  if (!html.includes('ot-net-row-off')) throw new Error('the unticked row is not marked as off')
+  return '1 条'
+})
+
+check('the any-page mode asks for a URL instead of listing courses', () => {
+  const fixture = JSON.parse(JSON.stringify(netddlFixture))
+  fixture.platform = 'generic'
+  fixture.courses = []
+  realStore.set({ netddl: fixture })
+  const html = renderToStaticMarkup(h(exports_['./netddl.js'].NetDdlView, { store: realStore, netddl: realStore.get().netddl }))
+  if (!html.includes('抓这个页面')) throw new Error('no URL form in the generic mode')
+  if (html.includes('读我的课程')) throw new Error('the course card leaked into the generic mode')
+  if (!html.includes('页面地址')) throw new Error('the URL field is missing')
+  return 'url form only'
 })
 
 check('a render failure shows a card instead of taking the page down', () => {

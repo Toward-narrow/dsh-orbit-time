@@ -31,8 +31,8 @@ const scratch = useLive ? liveState : mkdtempSync(join(tmpdir(), 'ot-analyze-'))
 const misdecode = (text) => Buffer.from(text, 'utf8').toString('latin1')
 
 const WORKSPACE = 'C:\\Users\\User\\project\\dsh-orbit-time'
-const EARLY = `${WORKSPACE}\\示例支部早打卡排班表.xlsx`
-const EVENING = `${WORKSPACE}\\示例支部晚自习排班表 (1).xlsx`
+const EARLY = `${WORKSPACE}\\示例部门早打卡排班表.xlsx`
+const EVENING = `${WORKSPACE}\\示例部门晚自习排班表 (1).xlsx`
 
 const MOJIBAKE_CONFIG = {
   profile: { name: '张三', aliases: [] },
@@ -43,12 +43,12 @@ const MOJIBAKE_CONFIG = {
     sources: [
       {
         path: misdecode(EARLY),
-        subject: misdecode('示例支部早打卡值班'),
+        subject: misdecode('示例部门早打卡值班'),
         timeRules: [{ match: [misdecode('早打卡'), misdecode('打卡')], start: '07:00', end: '07:30' }],
       },
       {
         path: misdecode(EVENING),
-        subject: misdecode('示例支部晚自习考勤'),
+        subject: misdecode('示例部门晚自习考勤'),
         timeRules: [{ match: [misdecode('晚自习'), misdecode('自习')], start: '19:30', end: '20:50' }],
       },
     ],
@@ -153,7 +153,7 @@ if (existsSync(configPath)) {
  * survive that round trip, which is the whole point of doing it this way.
  */
 console.log('\n===== upload path (drag / file picker) =====')
-const uploadName = '示例支部早打卡排班表.xlsx'
+const uploadName = '示例部门早打卡排班表.xlsx'
 const workbook = readFileSync(EARLY)
 const uploaded = await call('/analyze', {
   file: { name: uploadName, base64: workbook.toString('base64') },

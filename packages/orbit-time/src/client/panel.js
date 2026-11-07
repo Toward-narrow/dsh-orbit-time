@@ -8,6 +8,7 @@ var pomodoro = require('./pomodoro.js')
 var companion = require('./companion.js')
 var importView = require('./import-view.js')
 var settings = require('./settings.js')
+var netddl = require('./netddl.js')
 var drag = require('./drag.js')
 var React = util.React
 var h = util.h
@@ -16,6 +17,7 @@ var TABS = [
   { id: 'timeline', label: '日程时间轴' },
   { id: 'pomodoro', label: '番茄专注' },
   { id: 'companion', label: 'AI 助手' },
+  { id: 'netddl', label: '网络 DDL' },
   { id: 'settings', label: '设置 / 导入' },
 ]
 
@@ -158,6 +160,16 @@ function describeCard() {
 
 /* ------------------------------------------------------------------ notices */
 
+/**
+ * The floating stack — reminders only.
+ *
+ * It used to be the general feedback channel: every successful click pushed a
+ * card here ("已加进日程", "已删除", "已保存关注姓名"), each with its own 关闭
+ * button, each duplicating something the page already showed. The panel is a
+ * place; a result belongs where the action happened. What is left floating is
+ * the reminder, which arrives on its own schedule and carries the two actions
+ * that only make sense at the moment it appears.
+ */
 function Notices() {
   var state = util.useStore(store.store)
   var notices = util.safeArray(state.notices)
@@ -209,6 +221,30 @@ function Notices() {
   )
 }
 
+/**
+ * The in-page result line.
+ *
+ * This is all that remains of "click, then it reports back": a block in the
+ * panel body — in the layout, scrolls with the page, never faded on a timer,
+ * never parked in a corner. Only actions with no card of their own use it.
+ */
+function ActionReport(props) {
+  var report = props.report
+  if (!report) return null
+  return h(
+    'div',
+    { className: 'ot-inline-report', 'data-level': report.level || 'error', role: 'status' },
+    ui.glyph(report.level === 'info' ? 'clock' : 'close', 13),
+    h(
+      'div',
+      { className: 'ot-inline-report-text' },
+      report.title ? h('strong', null, report.title) : null,
+      report.body ? h('span', null, report.body) : null,
+    ),
+    ui.button({ small: true, iconOnly: true, variant: 'ghost', icon: 'close', title: '关掉这条提示', onClick: props.onDismiss }),
+  )
+}
+
 /* --------------------------------------------------------------- main panel */
 
 function Dashboard() {
@@ -238,14 +274,30 @@ function Dashboard() {
     }
   }
 
-  function reimport() {
-    void store.store
-      .runImport({})
-      .then(function (result) {
-        store.store.pushNotice({ level: 'info', title: '已重新抓取', body: result.importedCount + ' 条日程' })
+  /**
+   * The header's floating-window button.
+   *
+   * It has no card of its own to report into, so a refusal lands in the page's
+   * result line. The three outcomes are different and only one is an error:
+   * started, refused by the host, and "deliberately stayed closed because you
+   * closed it with the widget's ×".
+   */
+  function openHud() {
+    store.store
+      .openFloatWindow()
+      .then(function (payload) {
+        if (!payload || payload.ok !== true) {
+          store.store.reportAction('error', '悬浮窗没能打开', (payload && payload.error) || '宿主没有回应。')
+        } else if (payload.running === false) {
+          store.store.reportAction(
+            'info',
+            '悬浮窗没有启动',
+            '宿主返回的是「没有在运行」。去「设置 / 导入 → 悬浮窗与界面」可以看当前状态并重新打开。',
+          )
+        }
       })
       .catch(function (error) {
-        store.store.pushNotice({ level: 'warn', title: '重新抓取失败', body: String((error && error.message) || error) })
+        store.store.reportAction('error', '悬浮窗没能打开', String((error && error.message) || error))
       })
   }
 
@@ -306,15 +358,18 @@ function Dashboard() {
           snapshot.readCount > 0
             ? h('span', { className: 'ot-chip ot-chip-ai', title: '这些是 AI 从资料里读出来的，重新导入 Excel 也不会被覆盖' }, ui.glyph('robot', 11), 'AI 读出 ' + snapshot.readCount + ' 条')
             : null,
+          // Deadlines read off the network. Counted apart from both: "the site
+          // said so" is not "I typed it".
+          snapshot.webCount > 0
+            ? h('span', { className: 'ot-chip ot-chip-web', title: '这些是从网上（课程平台 / 网页）读到的截止时间' }, ui.glyph('orbit', 11), '网络 DDL ' + snapshot.webCount + ' 条')
+            : null,
           h('span', { className: 'ot-chip' }, ui.glyph('clock', 11), snapshot.serverTime.label),
           ui.button({
             small: true,
             iconOnly: true,
             icon: 'expand',
             title: '打开置顶悬浮小窗',
-            onClick: function () {
-              store.store.openFloatWindow()
-            },
+            onClick: openHud,
           }),
         ),
       ),
@@ -347,6 +402,7 @@ function Dashboard() {
     h(
       'div',
       { className: 'ot-body', ref: scroller },
+      h(ActionReport, { report: state.actionReport, onDismiss: store.store.dismissActionReport }),
       tab === 'timeline'
         ? h(timeline.TimelineView, {
             store: store.store,
@@ -357,7 +413,6 @@ function Dashboard() {
             undated: snapshot.day.undated,
             now: now,
             onFocus: focusOn,
-            onReimport: reimport,
           })
         : null,
       tab === 'pomodoro' && timer
@@ -378,6 +433,12 @@ function Dashboard() {
             snapshot: snapshot,
             settings: snapshot.settings,
             ownerNames: ownerNames,
+          })
+        : null,
+      tab === 'netddl'
+        ? h(netddl.NetDdlView, {
+            store: store.store,
+            netddl: state.netddl,
           })
         : null,
       tab === 'settings'
@@ -555,23 +616,20 @@ function FloatingWidget() {
     reportUi('expand-window')
     store.store
       .openFloatWindow()
+      .then(function (payload) {
+        if (!payload || payload.ok !== true) {
+          store.store.reportAction('error', '悬浮窗没能打开', (payload && payload.error) || '宿主没有回应。')
+        }
+      })
       .catch(function (error) {
-        store.store.pushNotice({
-          level: 'warn',
-          title: '悬浮窗启动失败',
-          body: String((error && error.message) || error),
-        })
+        store.store.reportAction('error', '悬浮窗没能打开', String((error && error.message) || error))
       })
   }
 
   function timerCommand(action, extra) {
     store.store.reportUiEvent('timer:' + action)
     return store.store.timerAction(action, extra).catch(function (error) {
-      store.store.pushNotice({
-        level: 'warn',
-        title: '计时器操作失败',
-        body: String((error && error.message) || error),
-      })
+      store.store.reportAction('error', '计时器操作失败', String((error && error.message) || error))
     })
   }
 
@@ -641,7 +699,7 @@ function FloatingWidget() {
       h(
         'div',
         { className: 'ot-float-mini-body' },
-        h('div', { className: 'ot-float-mini-time' }, next ? util.formatClock(remainingMs) : '--:--'),
+        h('div', { className: 'ot-float-mini-time' }, next ? util.formatCountdownShort(remainingMs) : '--:--'),
         h('div', { className: 'ot-float-mini-meta', title: next ? next.title : '今天没有日程' }, next ? next.title : '今天没有日程'),
       ),
       h(
@@ -767,5 +825,6 @@ function FloatingWidget() {
 
 exports.Dashboard = Dashboard
 exports.Notices = Notices
+exports.ActionReport = ActionReport
 exports.FloatingWidget = FloatingWidget
 exports.TABS = TABS
