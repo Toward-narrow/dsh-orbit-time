@@ -920,7 +920,7 @@ async function refreshNetDdl() {
      * imported at app start. If it predates the iframe/saved-account login, the
      * panel must say so: otherwise the fix looks like it did nothing.
      */
-    var hostStale = !(status && Number(status.api) >= 3)
+    var hostStale = !(status && Number(status.api) >= 4)
     netddlPatch({
       status: status,
       hostStale: hostStale,
@@ -1144,6 +1144,67 @@ async function netDdlReadPage(options) {
   }
 }
 
+/**
+ * Read an arbitrary site with the model as the interpreter.
+ *
+ * The host does the browsing; the model plans which real links to follow and
+ * decides which visible moments matter (deadlines, exams, registration windows,
+ * lectures — not only DDLs). The page remains the source of truth: every item
+ * carries an evidence line and a source URL.
+ */
+async function netDdlReadSite(options) {
+  requireCurrentNetHost()
+  var body = options || {}
+  netddlPatch({
+    busy: 'ai',
+    error: '',
+    message: 'AI 正在看这个网站：先判断页面结构，再决定跟进哪几个链接…',
+    items: [],
+    notes: [],
+    page: null,
+    courses: [],
+  })
+  try {
+    var payload = await request('/netddl/ai', {
+      method: 'POST',
+      body: JSON.stringify({
+        url: body.url,
+        username: body.username || '',
+        password: body.password || '',
+        remember: body.remember !== false,
+        label: body.label || '',
+        horizonDays: body.horizonDays || 180,
+      }),
+      timeoutMs: 300_000,
+    })
+    var nowMs = Date.now()
+    var items = util.safeArray(payload.items).map(function (item, index) {
+      var future = typeof item.dueMs === 'number' ? item.dueMs >= nowMs : true
+      return Object.assign({}, item, { key: item.key || 'w' + index, include: future })
+    })
+    var pages = util.safeArray(payload.pages)
+    var modelLabel = payload.model && payload.model.model ? payload.model.model : ''
+    var notes = util.safeArray(payload.notes)
+    if (payload.loginNote) notes = notes.concat([payload.loginNote])
+    netddlPatch({
+      busy: '',
+      items: items,
+      notes: notes,
+      page: payload.page || null,
+      level: items.length > 0 ? 'ok' : 'warn',
+      message:
+        payload.mode === 'ai'
+          ? 'AI 看了 ' + pages.length + ' 个页面（' + (modelLabel || '默认模型') + '），挑出 ' + items.length + ' 个时间节点。'
+          : 'AI 不可用，按本地规则读了 ' + pages.length + ' 个页面，找到 ' + items.length + ' 条。',
+      error: '',
+    })
+    return payload
+  } catch (error) {
+    netddlPatch({ busy: '', error: String((error && error.message) || error) })
+    throw error
+  }
+}
+
 function netDdlToggleItem(key) {
   var items = state.netddl.items.map(function (item) {
     return item.key === key ? Object.assign({}, item, { include: item.include === false }) : item
@@ -1169,7 +1230,7 @@ async function netDdlCommit() {
   var included = state.netddl.items.filter(function (item) {
     return item.include !== false
   })
-  if (included.length === 0) throw new Error('先勾选至少一个截止时间。')
+  if (included.length === 0) throw new Error('先勾选至少一个时间节点。')
   netddlPatch({ busy: 'commit', error: '', message: '正在写进时间轴…' })
   try {
     /**
@@ -1301,6 +1362,7 @@ exports.store = {
   netDdlCheckAll: netDdlCheckAll,
   netDdlPull: netDdlPull,
   netDdlReadPage: netDdlReadPage,
+  netDdlReadSite: netDdlReadSite,
   netDdlToggleItem: netDdlToggleItem,
   netDdlSelectAll: netDdlSelectAll,
   netDdlCommit: netDdlCommit,

@@ -134,6 +134,52 @@ const server = createServer(async (req, res) => {
     return
   }
 
+  // A tiny site for the generic AI reader: a hub, a course page, and the page
+  // that actually carries dates (including one non-DDL time node and two decoys).
+  if (url.pathname === '/ai-home') {
+    send(
+      200,
+      page(
+        'AI 测试站 · 学生中心',
+        `<h1>学生中心</h1><p class="muted">课程列表</p>
+         <ul><li><a href="/ai-course">电法勘探</a></li><li><a href="/ai-noise">校园新闻</a></li></ul>`,
+      ),
+    )
+    return
+  }
+
+  if (url.pathname === '/ai-course') {
+    send(
+      200,
+      page(
+        '电法勘探',
+        `<h1>电法勘探</h1><p class="muted">SPOC 课程</p>
+         <button class="tab" onclick="location.href='/ai-assignments'">测验与作业</button>`,
+      ),
+    )
+    return
+  }
+
+  if (url.pathname === '/ai-assignments') {
+    send(
+      200,
+      page(
+        '电法勘探 · 测验与作业',
+        `<h1>电法勘探 · 测验与作业</h1>
+         <div class="card"><div>第五节课后作业</div><div class="muted">截止时间：2026-11-17 13:00</div></div>
+         <div class="card"><div>实验报告</div><div class="muted">截止时间：2026-11-28 12:00</div></div>
+         <div class="card"><div>课程讲座</div><div class="muted">讲座时间：2026-12-01 19:00</div></div>
+         <div class="card"><div>成绩公布</div><div class="muted">公布时间：2026-11-20 13:30</div></div>`,
+      ),
+    )
+    return
+  }
+
+  if (url.pathname === '/ai-noise') {
+    send(200, page('校园新闻', '<h1>校园新闻</h1><p>今天天气不错。</p>'))
+    return
+  }
+
   if (!loggedIn(req) && url.pathname !== '/') {
     send(302, '', { location: '/' })
     return

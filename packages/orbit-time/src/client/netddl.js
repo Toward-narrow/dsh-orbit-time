@@ -25,6 +25,7 @@ var h = util.h
 var PLATFORM_LABELS = {
   icourse163: '中国大学MOOC',
   generic: '任意网页',
+  ai: 'AI 智能页',
 }
 
 function readNetddl(store) {
@@ -131,6 +132,11 @@ function DeadlineRow(props) {
       { className: 'ot-net-what' },
       h('span', { className: 'ot-net-title' }, (item.kind ? '[' + item.kind + '] ' : '') + item.title),
       item.course ? h('span', { className: 'ot-tag' }, item.course) : null,
+      item.importance === 'high'
+        ? h('span', { className: 'ot-tag ot-tag-web', title: 'AI 判断：错过会影响成绩或资格' }, '重要')
+        : item.importance === 'medium'
+          ? h('span', { className: 'ot-tag', title: 'AI 判断：需要安排时间' }, '关注')
+          : null,
       item.url ? h('a', { className: 'ot-net-link', href: item.url, target: '_blank', rel: 'noreferrer', onClick: function (event) { event.stopPropagation() } }, '原页面') : null,
     ),
     h('span', { className: 'ot-net-conf', title: item.evidence || '' }, Math.round((item.confidence || 0) * 100) + '%'),
@@ -367,6 +373,97 @@ function PageCard(props) {
   )
 }
 
+function AiCard(props) {
+  var net = props.net
+  var busy = net.busy !== ''
+  var urlPair = React.useState('')
+  var url = urlPair[0]
+  var setUrl = urlPair[1]
+  var labelPair = React.useState('')
+  var label = labelPair[0]
+  var setLabel = labelPair[1]
+  var userPair = React.useState('')
+  var username = userPair[0]
+  var setUsername = userPair[1]
+  var passPair = React.useState('')
+  var password = passPair[0]
+  var setPassword = passPair[1]
+
+  function submit(event) {
+    if (event && typeof event.preventDefault === 'function') event.preventDefault()
+    if (busy) return
+    var target = url.trim()
+    if (!/^https?:\/\//i.test(target)) {
+      props.onError('地址要以 http:// 或 https:// 开头。')
+      return
+    }
+    props.store
+      .netDdlReadSite({ url: target, label: label.trim(), username: username.trim(), password: password, remember: true })
+      .then(function (payload) {
+        if (payload && payload.ok && password !== '') setPassword('')
+      })
+      .catch(function () {
+        /* reported through the net slice */
+      })
+  }
+
+  return h(
+    'section',
+    { className: 'ot-card ot-card-pad' },
+    h('h3', { className: 'ot-card-title' }, h('i', { className: 'ot-dot' }), '让 AI 先看网站，再决定读哪里'),
+    h(
+      'p',
+      { className: 'ot-sub' },
+      '不用为每个站点写一套规则：浏览器负责打开、登录、翻页和取文字；AI 负责判断这是什么网站、该跟进哪些真实链接，以及哪些日期/时间节点值得进日程——不只有“截止时间”。',
+    ),
+    h(
+      'p',
+      { className: 'ot-sub' },
+      'AI 只能从页面实际存在的链接里选，不能编 URL；每一条日期也会由代码重新校验，模型编出来的条目不会直接进时间轴。',
+    ),
+    h(
+      'form',
+      { className: 'ot-net-page', onSubmit: submit },
+      h(
+        'div',
+        { className: 'ot-field ot-net-url' },
+        h('span', { className: 'ot-field-label' }, '从哪个页面开始'),
+        h('input', {
+          className: 'ot-input',
+          type: 'text',
+          value: url,
+          placeholder: 'https://… （课程中心 / 作业页 / 公告页都行）',
+          onChange: function (event) {
+            setUrl(event.target.value)
+          },
+        }),
+      ),
+      ui.textField({ label: '课程或站点名（可选）', value: label, placeholder: '例如：电法勘探 / 学校教务系统', onChange: setLabel }),
+      ui.textField({ label: '账号（可选）', value: username, placeholder: '页面需要登录才填', onChange: setUsername }),
+      h(
+        'div',
+        { className: 'ot-field' },
+        h('span', { className: 'ot-field-label' }, '密码（可选）'),
+        h('input', {
+          className: 'ot-input',
+          type: 'password',
+          value: password,
+          autoComplete: 'off',
+          placeholder: '只用于填表；勾了「记住」才加密存本机',
+          onChange: function (event) {
+            setPassword(event.target.value)
+          },
+        }),
+      ),
+      h(
+        'div',
+        { className: 'ot-net-actions' },
+        ui.button({ variant: 'primary', icon: 'spark', disabled: busy, onClick: submit }, busy && net.busy === 'ai' ? 'AI 正在读…' : '让 AI 读这个网站'),
+      ),
+    ),
+  )
+}
+
 function ResultCard(props) {
   var net = props.net
   var items = util.safeArray(net.items)
@@ -382,7 +479,7 @@ function ResultCard(props) {
       'h3',
       { className: 'ot-card-title' },
       h('i', { className: 'ot-dot' }),
-      '读到的截止时间（' + items.length + '）',
+      '读到的时间节点（' + items.length + '）',
       h(
         'span',
         { className: 'ot-net-actions' },
@@ -482,6 +579,15 @@ function NetDdlView(props) {
     net.platform === 'icourse163' ? h(CourseCard, { store: props.store, net: net }) : null,
     net.platform === 'generic'
       ? h(PageCard, {
+        store: props.store,
+        net: net,
+        onError: function (message) {
+          props.store.set({ netddl: Object.assign({}, props.store.get().netddl, { error: message }) })
+        },
+      })
+      : null,
+    net.platform === 'ai'
+      ? h(AiCard, {
         store: props.store,
         net: net,
         onError: function (message) {

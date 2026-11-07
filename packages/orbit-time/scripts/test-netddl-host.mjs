@@ -17,6 +17,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import { startMockSite } from './fixtures/mock-course-site.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const root = resolve(here, '..')
@@ -49,6 +50,45 @@ const handles = []
 const disposers = []
 
 const services = {
+  /**
+   * A fake model service, enough for `askModel`'s streaming seam. It answers the
+   * two generic-reader prompts from the page bundle itself; this proves the route
+   * is wired, not that a vendor model is good.
+   */
+  llm: {
+    stream(call) {
+      const prompt = (call.messages.at(-1)?.content ?? []).map((part) => part.text ?? '').join('\n')
+      const planning = /网页结构侦察员/.test(String(call.system ?? ''))
+      let text = ''
+      if (planning) {
+        const page = JSON.parse(prompt).页面
+        const link = (label) => page.links.find((entry) => entry.label.includes(label))?.href ?? ''
+        if (page.url.endsWith('/ai-home')) {
+          text = JSON.stringify({ site: 'AI 测试站', pageKind: 'course-list', action: 'follow', links: [{ href: link('电法勘探'), label: '电法勘探' }] })
+        } else if (page.url.endsWith('/ai-course')) {
+          text = JSON.stringify({ site: 'AI 测试站', pageKind: 'course-list', action: 'follow', steps: [{ kind: 'click', label: '测验与作业' }] })
+        } else {
+          text = JSON.stringify({ site: 'AI 测试站', pageKind: 'assignment-list', action: 'extract', links: [] })
+        }
+      } else {
+        const pages = JSON.parse(prompt).页面
+        const source = pages.find((entry) => entry.url.endsWith('/ai-assignments'))?.url ?? pages[0].url
+        text = JSON.stringify({
+          items: [
+            { title: '第五节课后作业', course: '电法勘探', kind: '作业', dueDate: '2026-11-17', dueTime: '13:00', importance: 'high', evidence: '截止时间：2026-11-17 13:00', sourceUrl: source, confidence: 0.9 },
+            { title: '课程讲座', course: '电法勘探', kind: '讲座', dueDate: '2026-12-01', dueTime: '19:00', importance: 'medium', evidence: '讲座时间：2026-12-01 19:00', sourceUrl: source, confidence: 0.8 },
+          ],
+        })
+      }
+      return (async function* () {
+        yield { type: 'text-delta', text }
+        yield { type: 'finish', reason: { kind: 'stop' } }
+      })()
+    },
+  },
+  agentDefaultModel: {
+    currentSelection: () => ({ provider: 'mock', model: 'mock' }),
+  },
   orbitTimeSpawn: () => ({
     pid: 424242,
     stdin: { end() {} },
@@ -120,6 +160,7 @@ const server = createServer((req, res) => {
 })
 await new Promise((done) => server.listen(0, '127.0.0.1', done))
 const base = `http://127.0.0.1:${server.address().port}/api/orbit-time`
+const site = await startMockSite()
 
 const host = await import(pathToFileURL(join(root, 'lib', 'index.js')).href)
 host.apply(ctx, {
@@ -159,7 +200,7 @@ await check('健康检查列出了这项能力', async () => {
 })
 
 await check('路由表里挂上了 /netddl/*', async () => {
-  const wanted = ['/netddl/status', '/netddl/login', '/netddl/check', '/netddl/courses', '/netddl/pull', '/netddl/page', '/netddl/commit', '/netddl/logout', '/netddl/close']
+  const wanted = ['/netddl/status', '/netddl/login', '/netddl/check', '/netddl/courses', '/netddl/pull', '/netddl/page', '/netddl/ai', '/netddl/commit', '/netddl/logout', '/netddl/close']
   for (const path of wanted) {
     if (!routes.has('/api/orbit-time' + path)) throw new Error(`缺少路由 ${path}`)
   }
@@ -170,11 +211,32 @@ await check('状态接口报出浏览器、档案目录和已入库条数', asyn
   const { payload } = await call('/netddl/status')
   // The page uses this to tell a host that predates the iframe login apart from
   // one that can actually drive it; dropping it turns the fix into a silent no-op.
-  assert(payload.api === 3, `api=${payload.api}`)
+  assert(payload.api === 4, `api=${payload.api}`)
   assert(typeof payload.profileDir === 'string' && payload.profileDir.includes('webddl'), 'profileDir 不对')
   assert(payload.browser !== undefined && payload.browser.found === true, '没找到浏览器')
   assert(payload.count === 0, `初始条数 ${payload.count}`)
   return `api ${payload.api} · ${payload.browser.label} · ${payload.count} 条`
+})
+
+await check('AI 路由：模型回调接进通用网页读取', async () => {
+  try {
+    const { payload } = await post('/netddl/ai', {
+      url: `${site.base}/ai-home`,
+      label: 'AI 测试站',
+      horizonDays: 365,
+    })
+    assert(payload.ok === true, payload.error || 'ok 不是 true')
+    assert(payload.mode === 'ai', `mode=${payload.mode}`)
+    assert(payload.items.length === 2, `items=${payload.items.length}`)
+    assert(payload.pages.length === 3, `pages=${payload.pages.length}`)
+    assert(payload.model && payload.model.provider === 'mock', JSON.stringify(payload.model))
+    assert(payload.items.some((item) => item.kind === '讲座'), '非 DDL 的讲座没保留')
+    return `${payload.pages.length} 页 → ${payload.items.length} 条（${payload.model.provider}）`
+  } finally {
+    // The AI test is the only one that needs a browser; leave the host in the
+    // "not running" state the later login tests assert on.
+    await post('/netddl/close', {})
+  }
 })
 
 await check('确认入库：两条都上了时间轴', async () => {
@@ -209,6 +271,25 @@ await check('同一批再点一次：不重复，全部报「已经在日程里�
   assert(payload.skipped.length === 2, `skipped=${payload.skipped.length}`)
   assert(payload.skipped[0].reason.includes('已经在日程里'), payload.skipped[0].reason)
   return '0 新增 / 2 跳过'
+})
+
+await check('不同读取器给同一个截止时间算出不同 key：按人看的行去重', async () => {
+  // The old adapter and the AI reader hash their platform into the key; the
+  // timeline must still not show the same assignment twice.
+  const { payload } = await post('/netddl/commit', {
+    items: [{
+      key: 'wd_ccc',
+      course: '数据结构',
+      title: '第一章  单元测验',
+      dueDate: '2026-11-20',
+      dueTime: '23:30',
+      url: 'https://mooc.example/learn/a#/learn/testlist',
+      evidence: 'AI 读到的同一行',
+    }],
+  })
+  assert(payload.added === 0, `added=${payload.added}`)
+  assert(payload.skipped.length === 1 && payload.skipped[0].reason.includes('已经在日程里'), JSON.stringify(payload.skipped))
+  return '换个 key 也认得出是同一条'
 })
 
 await check('行进了「自己加的」那一桶，导入冲不掉', async () => {
@@ -274,6 +355,11 @@ await check('入库时可以指定看哪一天：快照落在最早的截止日'
 })
 
 server.close()
+try {
+  await site.close()
+} catch {
+  /* the mock site's server may already be gone */
+}
 for (const dispose of disposers) {
   try {
     dispose()

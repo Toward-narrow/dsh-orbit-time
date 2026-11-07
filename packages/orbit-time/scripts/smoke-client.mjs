@@ -584,7 +584,7 @@ realStore.set({
     ],
     busy: false,
   },
-  assistant: { mode: 'model', reason: 'ready', detail: 'deepseek-account · deepseek-flash' },
+  assistant: { mode: 'model', reason: 'ready', detail: 'demo-provider · demo-model' },
 })
 
 render('Dashboard', h(app.Dashboard))
@@ -662,7 +662,7 @@ check('a reading shows its proposed events, editable, before anything is written
       source: { kind: 'docx', type: 'Word 文档', file: '示例值班通知.docx', path: 'C:\\Users\\x\\Desktop\\示例值班通知.docx', chars: 120, pages: 0, imageCount: 0, notes: ['文档里有 1 张表格'] },
       analysis: {
         mode: 'model',
-        model: { provider: 'deepseek-account', model: 'deepseek-flash' },
+        model: { provider: 'demo-provider', model: 'demo-model' },
         events: [
           { date: '2026-11-04', start: '07:00', end: '07:30', title: '早打卡值班', location: '东区门口', notes: '带上签到表', confidence: 0.86 },
           { date: '2026-11-04', start: '19:30', end: '20:50', title: '晚自习考勤点名', location: '', notes: '', confidence: 0.6 },
@@ -984,7 +984,7 @@ check('the companion shows which brain answered each reply', () => {
       ownerNames: snapshot.ownerNames,
     }),
   )
-  for (const needle of ['模型在线', 'deepseek-account · deepseek-flash', '内置规则回答', '模型返回错误']) {
+  for (const needle of ['模型在线', 'demo-provider · demo-model', '内置规则回答', '模型返回错误']) {
     if (!html.includes(needle)) throw new Error(`companion markup is missing ${needle}`)
   }
   return 'mode chip + per-reply trace'

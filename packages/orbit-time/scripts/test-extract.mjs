@@ -73,7 +73,7 @@ const model = {
     yield { type: 'finish', reason: { kind: 'stop' } }
   },
   async resolveModelInfo() {
-    return { provider: 'deepseek-account', id: 'deepseek-flash', name: 'flash', inputModalities: model.modalities }
+    return { provider: 'demo-provider', id: 'demo-model', name: 'flash', inputModalities: model.modalities }
   },
 }
 
@@ -98,7 +98,7 @@ const services = {
   llm: model,
   attachments,
   agentDefaultModel: {
-    currentSelection: () => ({ provider: 'deepseek-account', model: 'deepseek-flash' }),
+    currentSelection: () => ({ provider: 'demo-provider', model: 'demo-model' }),
   },
   orbitTimeSpawn: (command, args, options) => {
     // Only the PowerShell helpers are faked. The document reader is a real

@@ -23,7 +23,17 @@
   /* The real main panel is roughly this wide next to the sidebar. */
   .preview-frame { position: relative; width: 940px; height: 940px; margin: 0 auto; }
   .preview-frame > .ot-root { position: relative; height: 940px; }
-  /* Orbit Time — dashboard styles.
+  /* A screenshot is a still of the settled page. Headless Chrome writes the
+     frame while the entrance animations are still running, which is why a
+     capture used to come out washed out: the whole panel was caught at
+     partial opacity. Collapsing the durations lands on the final state. */
+  .ot-root *, .ot-root *::before, .ot-root *::after {
+    animation-duration: 0.001ms !important;
+    animation-delay: 0s !important;
+    transition-duration: 0.001ms !important;
+  }
+
+  /** Orbit Time â€” dashboard styles.
    Every colour resolves through a --dsw-alias-* theme token when the harness
    provides one, and falls back to a self-contained palette otherwise, so the
    panel reads correctly in both light and dark themes. */
@@ -186,7 +196,7 @@
 
 /* --------------------------------------------------------- segmented control */
 
-/* Three mutually exclusive choices (完整胶囊 / 最小圆点 / 关闭) read better as one
+/* Three mutually exclusive choices (å®Œæ•´èƒ¶å›Š / æœ€å°åœ†ç‚¹ / å…³é—­) read better as one
    control than as three unrelated buttons, and the sliding highlight makes the
    current state obvious at a glance. */
 .ot-seg {
@@ -567,6 +577,8 @@
   font-size: 26px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+  /* "5 天 3 小时" is one statement; wrapped between 天 and 小时 it reads as two. */
+  white-space: nowrap;
   letter-spacing: -0.02em;
   background: linear-gradient(120deg, var(--ot-accent), var(--ot-accent-3));
   -webkit-background-clip: text;
@@ -1182,8 +1194,8 @@
   color: var(--ot-text);
 }
 
-/* Days outside the month stay clickable — they are real days with real
-   schedules — but recede so the month itself reads as the subject. */
+/* Days outside the month stay clickable â€” they are real days with real
+   schedules â€” but recede so the month itself reads as the subject. */
 .ot-cal-cell[data-outside="true"] {
   opacity: 0.42;
 }
@@ -1229,7 +1241,7 @@
 }
 
 /* Every schedule on the day is ticked off: the day still counts, it is just
-   done — a hollow dot says that without pretending the day is empty. */
+   done â€” a hollow dot says that without pretending the day is empty. */
 .ot-cal-mark-done {
   background: transparent;
   box-shadow: inset 0 0 0 1px var(--ot-success);
@@ -1648,7 +1660,7 @@
   font-size: 13.5px;
   font-weight: 650;
   /* A long file name must wrap instead of pushing the confidence pill off the
-     card — the toast this replaced did exactly that, and then got clipped by the
+     card â€” the toast this replaced did exactly that, and then got clipped by the
      window edge on top of it. */
   min-width: 0;
   overflow-wrap: anywhere;
@@ -1771,7 +1783,7 @@
 }
 
 .ot-details > summary::before {
-  content: "▸";
+  content: "â–¸";
   font-size: 10px;
   transition: transform 0.18s ease;
 }
@@ -2026,6 +2038,52 @@
   color: color-mix(in srgb, var(--ot-success) 82%, var(--ot-text));
 }
 
+/* The in-page result line — what replaced the corner toast for click results.
+   It is a normal block in the panel body: it takes its place in the layout,
+   scrolls with the page, and never fades on a timer. Only a click that could
+   not do what it promised uses it; a success is visible as the changed page. */
+.ot-inline-report {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin-bottom: 10px;
+  padding: 9px 11px;
+  border: 1px solid color-mix(in srgb, var(--ot-danger) 42%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--ot-danger) 10%, transparent);
+  color: color-mix(in srgb, var(--ot-danger) 80%, var(--ot-text));
+  font-size: 11.5px;
+}
+
+.ot-inline-report[data-level="info"] {
+  border-color: color-mix(in srgb, var(--ot-accent) 38%, transparent);
+  background: color-mix(in srgb, var(--ot-accent) 10%, transparent);
+  color: color-mix(in srgb, var(--ot-accent) 78%, var(--ot-text));
+}
+
+.ot-inline-report > svg {
+  margin-top: 1px;
+  flex: none;
+}
+
+.ot-inline-report-text {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ot-inline-report-text strong {
+  color: var(--ot-text);
+  font-size: 12px;
+  font-weight: 640;
+}
+
+.ot-inline-report-text span {
+  color: var(--ot-text-dim);
+}
+
 .ot-switch {
   display: inline-flex;
   align-items: center;
@@ -2125,8 +2183,8 @@
 
 /* `shell.overlay` entries are click-through until they opt back in, so every
    interactive surface in this layer declares `pointer-events: auto` explicitly.
-   The notice STACK stays inert — a full-width transparent box that swallowed
-   clicks would break the app underneath — and each notice re-enables itself. */
+   The notice STACK stays inert â€” a full-width transparent box that swallowed
+   clicks would break the app underneath â€” and each notice re-enables itself. */
 
 /* The stack fills its containing block and aligns its cards to the bottom-right
    corner instead of positioning itself with `bottom: 18px`.
@@ -2134,7 +2192,7 @@
    `bottom` looked equivalent and is not: if anything between the overlay layer
    and the document establishes a containing block for `position: fixed` (a
    transform, a filter, `contain`, a zoomed ancestor), `bottom` is measured
-   against *that* box. The cards then land wherever that box ends — in the app
+   against *that* box. The cards then land wherever that box ends â€” in the app
    this put an import confirmation under the window's caption buttons, clipped by
    the title bar. With `inset: 0` the stack can only ever be as large as that
    containing block, so its cards stay inside it whatever it turns out to be, and
@@ -2192,7 +2250,7 @@
   cursor: pointer;
 }
 
-/* The grip is the *only* place a drag starts — see the drag behaviour notes in
+/* The grip is the *only* place a drag starts â€” see the drag behaviour notes in
    `drag.js`. Everything else on the card keeps its own click, which is what
    "clicking a button sometimes starts a drag instead" needed. */
 .ot-grip {
@@ -2427,8 +2485,8 @@
    
    Flex used to distribute this: the grip, the ring, the text and the two buttons
    all competed for 248 px, and with the text able to shrink to nothing the two
-   buttons ended up *left of the grip* with the clock running under them — which
-   is exactly what "按钮和数字有重叠" looks like on screen. Declaring the columns
+   buttons ended up *left of the grip* with the clock running under them â€” which
+   is exactly what "æŒ‰é’®å’Œæ•°å­—æœ‰é‡å " looks like on screen. Declaring the columns
    makes the geometry a fact instead of an outcome: 30 px of grip, 34 px of ring,
    the buttons at their natural width, and the text taking whatever is left.
    `scripts/../.tools/browser-click.mjs` measures every lane and fails if two of
@@ -2486,8 +2544,8 @@
   background: color-mix(in srgb, var(--ot-text) 8%, transparent);
 }
 
-/* Grow and close, side by side at the right edge — the same pair the expanded
-   card carries, so "收起" is one click from either state. */
+/* Grow and close, side by side at the right edge â€” the same pair the expanded
+   card carries, so "æ”¶èµ·" is one click from either state. */
 .ot-float-mini-actions {
   display: flex;
   align-items: center;
@@ -2511,6 +2569,7 @@
   font-size: 18px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .ot-float-mini-meta {
@@ -2584,6 +2643,395 @@
   overflow-x: hidden;
 }
 
+/* ------------------------------------------------- reading documents â†’ events */
+
+/* A row read out of a document: same timeline as any other row, different origin. */
+.ot-tag-ai {
+  background: color-mix(in srgb, var(--ot-accent-2) 18%, transparent);
+  color: color-mix(in srgb, var(--ot-accent-2) 84%, var(--ot-text));
+}
+
+.ot-chip-ai {
+  background: color-mix(in srgb, var(--ot-accent-2) 18%, transparent);
+  color: color-mix(in srgb, var(--ot-accent-2) 84%, var(--ot-text));
+}
+
+.ot-textarea {
+  margin-top: 8px;
+  width: 100%;
+  min-height: 84px;
+  resize: vertical;
+  line-height: 1.55;
+  font: inherit;
+}
+
+.ot-extract-source {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--ot-layer-2) 72%, transparent);
+  border: 1px solid var(--ot-border);
+  color: var(--ot-text-dim);
+}
+
+.ot-extract-source strong {
+  color: var(--ot-text);
+  font-size: 12.5px;
+  font-weight: 620;
+  overflow-wrap: anywhere;
+}
+
+.ot-extract {
+  margin-top: 12px;
+}
+
+.ot-extract-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: var(--ot-text-dim);
+}
+
+.ot-extract-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  /* A reading can be twenty rows; the page keeps its scroll position and the
+     list scrolls inside its own box instead of pushing the reminders card away. */
+  max-height: 420px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.ot-extract-row {
+  display: flex;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid var(--ot-border);
+  background: color-mix(in srgb, var(--ot-layer-2) 62%, transparent);
+  transition: opacity 0.2s ease, border-color 0.2s ease;
+}
+
+.ot-extract-row[data-included="false"] {
+  opacity: 0.5;
+  border-style: dashed;
+}
+
+.ot-extract-check {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  padding-top: 3px;
+  cursor: pointer;
+}
+
+.ot-extract-check input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--ot-accent);
+  cursor: pointer;
+}
+
+.ot-extract-check .ot-pill {
+  font-size: 9.5px;
+  padding: 1px 5px;
+  white-space: nowrap;
+}
+
+.ot-extract-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ot-extract-title {
+  font-weight: 580;
+}
+
+.ot-extract-when {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ot-extract-when .ot-input {
+  min-width: 0;
+}
+
+.ot-extract-date {
+  flex: 1 1 46%;
+}
+
+.ot-extract-time {
+  flex: 1 1 22%;
+  padding-left: 6px;
+  padding-right: 4px;
+}
+
+.ot-extract-place {
+  font-size: 12px;
+}
+
+.ot-extract-note {
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--ot-text-dim);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.ot-extract-foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+/* --------------------------------------------------------- network deadlines */
+
+/* The tab is a page of forms, so it stacks cards with the same rhythm as the
+   settings tab rather than inventing a new layout. */
+.ot-netddl {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px 2px 18px;
+}
+
+/* A row the site said was due, not one a roster produced. Same shape as the
+   other origin tags so a scan down the timeline reads consistently. */
+.ot-tag-web {
+  background: color-mix(in srgb, var(--ot-accent-2) 18%, transparent);
+  color: color-mix(in srgb, var(--ot-accent-2) 84%, var(--ot-text));
+}
+
+.ot-chip-web {
+  background: color-mix(in srgb, var(--ot-accent-2) 18%, transparent);
+  color: color-mix(in srgb, var(--ot-accent-2) 84%, var(--ot-text));
+}
+
+.ot-net-tabs {
+  display: inline-flex;
+  gap: 4px;
+  padding: 3px;
+  margin: 8px 0 10px;
+  border: 1px solid var(--ot-border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--ot-layer-2) 55%, transparent);
+  align-self: flex-start;
+}
+
+.ot-net-tab {
+  padding: 5px 14px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--ot-text-dim);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.ot-net-tab:hover {
+  color: var(--ot-text);
+}
+
+.ot-net-tab-on {
+  background: color-mix(in srgb, var(--ot-accent) 20%, transparent);
+  color: color-mix(in srgb, var(--ot-accent) 88%, var(--ot-text));
+  font-weight: 600;
+}
+
+.ot-net-status {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 8px;
+}
+
+.ot-net-path {
+  font-size: 11px;
+  opacity: 0.75;
+  word-break: break-all;
+}
+
+.ot-net-login,
+.ot-net-page {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr);
+  gap: 10px 14px;
+  margin-top: 8px;
+}
+
+.ot-net-page .ot-net-url {
+  grid-column: 1 / -1;
+}
+
+.ot-net-login-foot,
+.ot-net-actions,
+.ot-net-commit {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ot-net-commit {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--ot-border);
+}
+
+.ot-net-notes {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  opacity: 0.85;
+}
+
+.ot-net-pageinfo {
+  margin-top: 6px;
+  font-size: 11px;
+}
+
+.ot-net-courses {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 6px 12px;
+  margin-top: 10px;
+}
+
+.ot-net-course {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border: 1px solid var(--ot-border);
+  border-radius: 9px;
+  cursor: pointer;
+}
+
+.ot-net-course:hover {
+  border-color: var(--ot-border-strong);
+}
+
+.ot-net-course-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The review list: one deadline per row, ticked by default. */
+.ot-net-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+  max-height: 420px;
+  overflow: auto;
+}
+
+.ot-net-row {
+  display: grid;
+  grid-template-columns: auto 132px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--ot-border);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--ot-layer-2) 40%, transparent);
+  cursor: pointer;
+}
+
+.ot-net-row:hover {
+  border-color: var(--ot-border-strong);
+}
+
+.ot-net-row-off {
+  opacity: 0.45;
+}
+
+.ot-net-when {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.ot-net-when b {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ot-net-clock {
+  color: var(--ot-text-dim);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ot-net-count {
+  font-size: 10.5px;
+  font-style: normal;
+  color: var(--ot-warn);
+}
+
+.ot-net-what {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.ot-net-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.ot-net-link {
+  color: var(--ot-accent);
+  font-size: 11px;
+  text-decoration: none;
+  border-bottom: 1px dotted currentColor;
+}
+
+.ot-net-conf {
+  color: var(--ot-text-dim);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 720px) {
+  .ot-net-login,
+  .ot-net-page {
+    grid-template-columns: 1fr;
+  }
+
+  .ot-net-row {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .ot-net-when {
+    grid-column: 2 / 3;
+  }
+}
+
 /* -------------------------------------------------------- reduced motion */
 
 @media (prefers-reduced-motion: reduce) {
@@ -2599,4 +3047,4 @@
 }
 
 </style></head>
-<body><div class="preview-frame"><div class="ot-root"><div class="ot-root"><div class="ot-aurora"></div><header class="ot-header"><div class="ot-headrow"><h1 class="ot-title">Orbit Time</h1><span class="ot-subtitle">今天 · 6 条日程</span><div class="ot-headspace"></div><div class="ot-headmeta"><span class="ot-chip ot-chip-owner" title="Excel 里只抓取这些名字的行"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M12 3.5 13.9 9.6 20 11.5l-6.1 1.9L12 19.5l-1.9-6.1L4 11.5l6.1-1.9z"></path></svg>张三 / 张老师</span><span class="ot-chip ot-chip-live" title="C:\Users\User\Desktop\2026春季学期值班与课程安排表.xlsx">已同步 12 条</span><span class="ot-chip ot-chip-manual" title="这些是你自己加的，重新导入 Excel 也不会被覆盖"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M12 6v12M6 12h12"></path></svg>自己加的 1 条</span><span class="ot-chip"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3.2 2"></path></svg>22:08</span><button type="button" class="ot-btn ot-btn-sm ot-btn-icon" title="打开置顶悬浮小窗" aria-label="打开置顶悬浮小窗"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M14 4.5h5.5V10M10 19.5H4.5V14M19.5 4.5 13 11M4.5 19.5 11 13"></path></svg></button></div></div></header><nav class="ot-tabs" role="tablist"><button type="button" class="ot-tab" data-active="false">日程时间轴<span class="ot-badge">12</span></button><button type="button" class="ot-tab" data-active="false">日程时间轴 · 日历</button><button type="button" class="ot-tab" data-active="false">日程时间轴 · 加一条</button><button type="button" class="ot-tab" data-active="false">番茄专注<span class="ot-badge">18:00</span></button><button type="button" class="ot-tab" data-active="false">AI 助手</button><button type="button" class="ot-tab" data-active="true">设置 / 导入</button></nav><div class="ot-body"><div class="ot-view"><div class="ot-view ot-import"><div class="ot-confirm" data-tone="ready" role="status" aria-live="polite"><div class="ot-confirm-head"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M12 3.5 13.9 9.6 20 11.5l-6.1 1.9L12 19.5l-1.9-6.1L4 11.5l6.1-1.9z"></path></svg><strong class="ot-confirm-title">读完了「2026春季学期值班与课程安排表.xlsx」</strong><span class="ot-pill" data-tone="high">很有把握 86%</span><div class="ot-headspace"></div><span class="ot-confirm-hint">这一步只在你点确认后才会写进日程</span></div><div class="ot-confirm-lines"><div class="ot-confirm-line"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"></rect><path d="M3.5 10h17M8 3.5v3.5M16 3.5v3.5"></path></svg><span>将导入 6 条 · 2026-10-25 → 2026-11-02</span></div><div class="ot-confirm-line ot-warn-text"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3.2 2"></path></svg><span>不导入：1 条在今天之前</span></div></div><div class="ot-confirm-actions"><button type="button" class="ot-btn ot-btn-primary"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"></path></svg>确认并导入</button><button type="button" class="ot-btn ot-btn-sm"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M20 11a8 8 0 1 0-2.4 5.7M20 5.5V11h-5.5"></path></svg>换一个文件</button><button type="button" class="ot-btn ot-btn-ghost ot-btn-sm">看看读表细节</button></div></div><section class="ot-card ot-card-pad"><h3 class="ot-card-title"><i class="ot-dot"></i>1 · 关注的人</h3><div><div class="ot-inline-form"><input class="ot-input" type="text" placeholder="你的名字，多个用 / 分隔，例如：张三 / 张老师" value="张三 / 张老师"/><button type="button" class="ot-btn ot-btn-primary"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"></path></svg>保存</button></div><div class="ot-sub" style="margin-top:6px">只有「姓名 / 参会人」列里包含这些名字的行才会进入日程表。当前生效：<strong>张三 / 张老师</strong></div></div></section><div class="ot-gap"></div><section class="ot-card ot-card-pad"><h3 class="ot-card-title"><i class="ot-dot"></i>2 · Excel 文件</h3><div><div class="ot-drop"><div class="ot-drop-title">选一个 Excel，AI 直接帮你读</div><div class="ot-drop-sub">点这里选文件，也可以直接把 .xlsx / .xlsm 拖进来。读完会告诉你这是什么表、认出哪些字段，再让你确认导入。</div><div class="ot-drop-actions"><button type="button" class="ot-btn ot-btn-primary"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M12 3.5 13.9 9.6 20 11.5l-6.1 1.9L12 19.5l-1.9-6.1L4 11.5l6.1-1.9z"></path></svg>选择 Excel</button><button type="button" class="ot-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"></rect><path d="M3.5 9.5h17M9.5 9.5v10M15 9.5v10"></path></svg>按已填的路径读表</button></div><input type="file" accept=".xlsx,.xlsm,.xls" class="ot-file-hidden"/></div><details class="ot-details"><summary>或者直接粘贴文件路径<code>2026春季学期值班与课程安排表.xlsx</code></summary><div class="ot-inline-form" style="margin-top:8px"><input class="ot-input" type="text" placeholder="C:\Users\你的账号\Desktop\排班表.xlsx（填文件夹也行，会选最新的那个）" value="C:\Users\User\Desktop\2026春季学期值班与课程安排表.xlsx"/><button type="button" class="ot-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M12 3.5 13.9 9.6 20 11.5l-6.1 1.9L12 19.5l-1.9-6.1L4 11.5l6.1-1.9z"></path></svg>读这份表</button></div><div class="ot-sub" style="margin-top:6px">填文件夹时会选其中「最近修改」的那个 Excel；资源管理器里 Shift + 右键文件 →「复制文件地址」可拿到完整路径。</div></details><div class="ot-note" style="margin-top:10px">当前文件：<strong>C:\Users\User\Desktop\2026春季学期值班与课程安排表.xlsx</strong><br/>工作表「总课表」· 表头第 3 行 · 11 行数据 · 已抓取 12 条 · 2 分钟前<span> · 命中 8 行，过滤 3 行</span></div><div class="ot-row ot-inline-form" style="margin-top:10px"><label class="ot-switch"><input type="checkbox" checked=""/><span class="ot-sub">文件变化时自动重新抓取</span></label><span class="ot-headspace"></span><div class="ot-field"><span class="ot-field-label">只看未来</span><input class="ot-input ot-input-num" type="number" min="1" max="365" value="30"/><span class="ot-sub">天</span></div></div></div></section><div class="ot-gap"></div><div><section class="ot-card ot-card-pad"><h3 class="ot-card-title"><i class="ot-dot"></i>3 · 读表细节</h3><div><div class="ot-verdict" data-tone="high"><div class="ot-verdict-head"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><rect x="4.5" y="7.5" width="15" height="11" rx="3"></rect><path d="M12 3.5v4M8.5 12.5v1.5M15.5 12.5v1.5"></path></svg><strong>AI 读完了这份表</strong><span class="ot-pill" data-tone="high">很有把握 86%</span><span class="ot-verdict-model">deepseek-account · deepseek-flash</span></div><div class="ot-verdict-body">把「2026 春季课表.xlsx」看成了记录表：识别出 6 个字段，姓名列是「姓名」，可以直接导入。</div><ul class="ot-verdict-hints"><li>列映射按表头文字匹配，可在下面手动改。</li><li>必填字段已配齐，可以直接导入。</li></ul><div class="ot-verdict-tags"><span class="ot-tag">版式：记录表</span><span class="ot-tag">工作表：总课表</span><span class="ot-tag">表头第 3 行</span><span class="ot-tag">11 行数据</span><span class="ot-tag">属于你的 7 行</span></div><div class="ot-verdict-actions"><button type="button" class="ot-btn ot-btn-primary"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"></path></svg>确认并导入</button><button type="button" class="ot-btn ot-btn-sm"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M20 11a8 8 0 1 0-2.4 5.7M20 5.5V11h-5.5"></path></svg>重新预览</button><button type="button" class="ot-linkbtn">手动调整列映射</button><span class="ot-headspace"></span></div></div><div class="ot-table-wrap" style="margin-top:10px"><table class="ot-table"><thead><tr><th>行</th><th>日期</th><th>开始</th><th>结束</th><th>事项</th><th>姓名</th><th>地点</th><th>是否属于你</th></tr></thead><tbody><tr data-match="true"><td>4</td><td>2026-10-24</td><td>17:48</td><td>18:48</td><td>英语听力</td><td>张三、李四</td><td>语音室 2</td><td>✓ 你的</td></tr><tr data-match="true"><td>5</td><td>2026-10-24</td><td>20:48</td><td>22:18</td><td>高等数学 A</td><td>张三</td><td>三教 305</td><td>✓ 你的</td></tr><tr data-match="true"><td>6</td><td>2026-10-24</td><td>21:46</td><td>22:46</td><td>项目周会</td><td>王五, 张三</td><td>线上腾讯会议</td><td>✓ 你的</td></tr><tr data-match="true"><td>7</td><td>2026-10-24</td><td>22:36</td><td>00:26</td><td>数据结构实验</td><td>张三</td><td>实验楼 B210</td><td>✓ 你的</td></tr><tr data-match="true"><td>8</td><td>2026-10-24</td><td>03:28</td><td>04:58</td><td>教研活动</td><td>全体教师</td><td>阶梯教室</td><td>✓ 你的</td></tr><tr data-match="false"><td>9</td><td>2026-10-24</td><td>04:48</td><td>05:48</td><td>晚自习辅导</td><td>赵六</td><td>图书馆 2F</td><td>✗ 跳过</td></tr></tbody></table></div><div class="ot-sub" style="margin-top:10px">读表提示：姓名来源列：姓名</div></div></section></div><div class="ot-gap"></div><section class="ot-card ot-card-pad"><h3 class="ot-card-title"><i class="ot-dot"></i>提醒设置</h3><div class="ot-grid ot-grid-2"><div style="display:flex;flex-direction:column;gap:10px"><label class="ot-switch"><input type="checkbox" checked=""/><span class="ot-sub">开启提醒</span></label><div class="ot-field"><span class="ot-field-label">提前提醒</span><input class="ot-input" type="text" placeholder="30,10,5,0" value="30,10,5,0"/></div><div class="ot-sub">0 表示「正好开始时」再提醒一次。默认 30 / 10 / 5 / 0，共四次。</div></div><div style="display:flex;flex-direction:column;gap:10px"><label class="ot-switch"><input type="checkbox" checked=""/><span class="ot-sub">同时弹出 Windows 系统通知</span></label><label class="ot-switch"><input type="checkbox" checked=""/><span class="ot-sub">夜间静音</span></label><div class="ot-row"><div class="ot-field"><span class="ot-field-label">静音时段</span><input class="ot-input" type="text" placeholder="" value="22:30"/></div><span class="ot-sub">→</span><div class="ot-field"><span class="ot-field-label"></span><input class="ot-input" type="text" placeholder="" value="07:00"/></div></div></div></div></section></div><div style="height:12px"></div><section class="ot-card ot-card-pad"><h3 class="ot-card-title"><i class="ot-dot"></i>AI 助手 Orbyt</h3><div style="display:flex;flex-direction:column;gap:10px"><div class="ot-row"><span class="ot-chip ot-chip-warn">内置规则</span></div><label class="ot-switch"><input type="checkbox" checked=""/><span class="ot-sub">用当前默认模型回答（关掉则纯本地规则，不消耗额度）</span></label><div class="ot-sub">开启后，自由提问和动作按钮由模型回答：只把上面那份日程 JSON 交给它，它看不到别的东西；每次提问会消耗少量额度。模型不可用时自动回落到内置规则，并在气泡下方标注原因。</div><div class="ot-row"><div class="ot-field"><span class="ot-field-label">单次回答上限</span><input class="ot-input ot-input-num" type="number" min="100" max="4000" value="700"/><span class="ot-sub">tokens</span></div><div class="ot-field"><span class="ot-field-label">携带历史</span><input class="ot-input ot-input-num" type="number" min="0" max="20" value="6"/><span class="ot-sub">轮</span></div></div></div></section><div style="height:12px"></div><section class="ot-card ot-card-pad"><h3 class="ot-card-title"><i class="ot-dot"></i>悬浮窗与界面</h3><div style="display:flex;flex-direction:column;gap:10px"><div class="ot-row"><span class="ot-chip ot-chip-warn">悬浮窗未启动</span><button type="button" class="ot-btn ot-btn-primary"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M14 4.5h5.5V10M10 19.5H4.5V14M19.5 4.5 13 11M4.5 19.5 11 13"></path></svg>重新显示</button></div><div class="ot-seg"><button type="button" class="ot-seg-item" title="232 × 64，圆环 + 倒计时 + 当前日程">完整胶囊</button><button type="button" class="ot-seg-item" title="56 × 56，只留一圈进度和剩余分钟">最小圆点</button><button type="button" class="ot-seg-item is-active" title="不显示，下次启动也不会自己冒出来">关闭</button></div><div class="ot-sub">桌面悬浮窗：圆环 = 开始/暂停，— = 最小化成小圆点，» = 打开面板，× = 关闭（关闭后不会自己回来，除非你在这里点「重新显示」）。最小态下 + 展开、× 关闭，底部那条三点拖动条是唯一能拖动窗口的地方；位置会被记住，拖到屏幕外会被自动拉回来。右键出菜单，双击打开主面板。</div><div class="ot-sub">页面里的小卡片（下面这个开关控制的）：按住左侧的 ⠿ 才能拖动（只有它是拖动区，按钮和数字不会再被误拖走），位置记在浏览器里；— 收起成小圆点，⤢ 展开，× 把它从面板上拿掉 —— 关掉就是关掉，不留任何东西；想再看到它，把这个开关关掉再打开即可。</div><div style="height:2px"></div><label class="ot-switch"><input type="checkbox" checked=""/><span class="ot-sub">DSH 主窗口内也显示迷你悬浮卡片</span></label><label class="ot-switch"><input type="checkbox" checked=""/><span class="ot-sub">番茄完成时播放提示音</span></label></div></section><div style="height:12px"></div><section class="ot-card ot-card-pad"><h3 class="ot-card-title"><i class="ot-dot"></i>提醒与动态<div class="ot-headspace"></div></h3><div><div class="ot-row" style="margin-bottom:9px"><span class="ot-sub">4 条记录（宿主进程产生，浏览器关掉也会继续记）</span><div class="ot-headspace"></div><button type="button" class="ot-btn ot-btn-ghost ot-btn-sm"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M6.5 6.5 17.5 17.5M17.5 6.5 6.5 17.5"></path></svg>清空</button></div><div class="ot-feed"><div class="ot-feed-item" data-level="urgent"><span class="ot-feed-time">1 分钟前</span><div style="min-width:0"><div class="ot-feed-title">⏰ 5 分钟后开始 · 数据结构实验</div><div class="ot-feed-body">21:00 · 实验楼 B210 · 计算机</div></div></div><div class="ot-feed-item" data-level="info"><span class="ot-feed-time">12 分钟前</span><div style="min-width:0"><div class="ot-feed-title">🔔 30 分钟后开始 · 数据结构实验</div><div class="ot-feed-body">21:00 · 实验楼 B210</div></div></div><div class="ot-feed-item" data-level="success"><span class="ot-feed-time">30 分钟前</span><div style="min-width:0"><div class="ot-feed-title">🍅 一个番茄完成</div><div class="ot-feed-body">今天第 3 个专注完成（复习傅里叶级数）。休息一下。</div></div></div><div class="ot-feed-item" data-level="info"><span class="ot-feed-time">52 分钟前</span><div style="min-width:0"><div class="ot-feed-title">日程已更新</div><div class="ot-feed-body">从「总课表」抓取 12 条与你相关的日程（共 11 行，过滤掉 3 行）。</div></div></div></div></div></section><div style="height:12px"></div><section class="ot-card ot-card-pad"><h3 class="ot-card-title"><i class="ot-dot"></i>提醒话术（可留空用默认）</h3><div style="display:flex;flex-direction:column;gap:10px"><div class="ot-sub">已触发 2 次日程提醒。提醒文案由宿主生成，按「还有多久开始」自动措辞。</div><div class="ot-row"><button type="button" class="ot-btn ot-btn-sm"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M6 9.5a6 6 0 0 1 12 0c0 4 1.5 5.5 1.5 5.5h-15S6 13.5 6 9.5z"></path><path d="M10 18.5a2 2 0 0 0 4 0"></path></svg>生成一条测试动态</button><button type="button" class="ot-btn ot-btn-ghost ot-btn-sm"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1M3.5 5v5h5"></path></svg>重置提醒状态</button></div><input class="ot-input" type="text" placeholder="自定义签名（仅本地显示）" value=""/></div></section></div></div><div class="ot-notices"><div class="ot-notice-stack"><div class="ot-notice-stack"><div class="ot-notice" data-level="urgent"><div class="ot-notice-title">⏰ 5 分钟后开始 · 数据结构实验</div><div class="ot-notice-body">21:00 · 实验楼 B210 · 计算机</div><div class="ot-notice-actions"><button type="button" class="ot-btn ot-btn-sm"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"></path></svg>已完成</button><button type="button" class="ot-btn ot-btn-sm"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3.2 2"></path></svg>5 分钟后再提醒</button><button type="button" class="ot-btn ot-btn-ghost ot-btn-sm"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M6.5 6.5 17.5 17.5M17.5 6.5 6.5 17.5"></path></svg>关闭</button></div></div></div></div></div></div></div></body></html>
+<body><div class="preview-frame"><div class="ot-root"><div class="ot-root"><div class="ot-aurora"></div><header class="ot-header"><div class="ot-headrow"><h1 class="ot-title">Orbit Time</h1><span class="ot-subtitle">今天 · 6 条日程</span><div class="ot-headspace"></div><div class="ot-headmeta"><span class="ot-chip ot-chip-owner" title="Excel 里只抓取这些名字的行"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M12 3.5 13.9 9.6 20 11.5l-6.1 1.9L12 19.5l-1.9-6.1L4 11.5l6.1-1.9z"></path></svg>张三 / 张老师</span><span class="ot-chip ot-chip-live" title="C:\Users\User\Desktop\2026春季学期值班与课程安排表.xlsx">已同步 12 条</span><span class="ot-chip ot-chip-manual" title="这些是你自己加的，重新导入 Excel 也不会被覆盖"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M12 6v12M6 12h12"></path></svg>自己加的 1 条</span><span class="ot-chip"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3.2 2"></path></svg>22:30</span><button type="button" class="ot-btn ot-btn-sm ot-btn-icon" title="打开置顶悬浮小窗" aria-label="打开置顶悬浮小窗"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M14 4.5h5.5V10M10 19.5H4.5V14M19.5 4.5 13 11M4.5 19.5 11 13"></path></svg></button></div></div></header><nav class="ot-tabs" role="tablist"><button type="button" class="ot-tab" data-active="false">日程时间轴<span class="ot-badge">12</span></button><button type="button" class="ot-tab" data-active="false">日程时间轴 · 日历</button><button type="button" class="ot-tab" data-active="false">日程时间轴 · 加一条</button><button type="button" class="ot-tab" data-active="false">番茄专注<span class="ot-badge">18:00</span></button><button type="button" class="ot-tab" data-active="false">AI 助手</button><button type="button" class="ot-tab" data-active="false">网络 DDL</button><button type="button" class="ot-tab" data-active="true">设置 / 导入</button></nav><div class="ot-body"><div class="ot-view"><div class="ot-view ot-import"><div class="ot-confirm" data-tone="ready" role="status" aria-live="polite"><div class="ot-confirm-head"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M12 3.5 13.9 9.6 20 11.5l-6.1 1.9L12 19.5l-1.9-6.1L4 11.5l6.1-1.9z"></path></svg><strong class="ot-confirm-title">读完了「2026春季学期值班与课程安排表.xlsx」</strong><span class="ot-pill" data-tone="high">很有把握 86%</span><div class="ot-headspace"></div><span class="ot-confirm-hint">这一步只在你点确认后才会写进日程</span></div><div class="ot-confirm-lines"><div class="ot-confirm-line"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"></rect><path d="M3.5 10h17M8 3.5v3.5M16 3.5v3.5"></path></svg><span>将导入 6 条 · 2026-11-08 → 2026-11-16</span></div><div class="ot-confirm-line ot-warn-text"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3.2 2"></path></svg><span>不导入：1 条在今天之前</span></div></div><div class="ot-confirm-actions"><button type="button" class="ot-btn ot-btn-primary"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"></path></svg>确认并导入</button><button type="button" class="ot-btn ot-btn-sm"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M20 11a8 8 0 1 0-2.4 5.7M20 5.5V11h-5.5"></path></svg>换一个文件</button><button type="button" class="ot-btn ot-btn-ghost ot-btn-sm">看看读表细节</button></div></div><section class="ot-card ot-card-pad"><h3 class="ot-card-title"><i class="ot-dot"></i>1 · 关注的人</h3><div><div class="ot-inline-form"><input class="ot-input" type="text" placeholder="你的名字，多个用 / 分隔，例如：张三 / 张老师" value="张三 / 张老师"/><button type="button" class="ot-btn ot-btn-primary"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"></path></svg>保存</button></div><div class="ot-sub" style="margin-top:6px">只有「姓名 / 参会人」列里包含这些名字的行才会进入日程表。当前生效：<strong>张三 / 张老师</strong></div></div></section><div class="ot-gap"></div><section class="ot-card ot-card-pad"><h3 class="ot-card-title"><i class="ot-dot"></i>2 · 日程资料</h3><div><div class="ot-drop"><div class="ot-drop-title">拖一份日程资料进来，AI 读成日程</div><div class="ot-drop-sub">Excel 排班表按列解析；PDF、Word、PPT、图片和一段文字交给 AI 读懂。读完全部先摊开给你看，确认之后才写进时间轴。</div><div class="ot-drop-actions"><button type="button" class="ot-btn ot-btn-primary"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M12 3.5 13.9 9.6 20 11.5l-6.1 1.9L12 19.5l-1.9-6.1L4 11.5l6.1-1.9z"></path></svg>选择文件</button><button type="button" class="ot-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"></rect><path d="M3.5 9.5h17M9.5 9.5v10M15 9.5v10"></path></svg>按已填的路径读</button></div><input type="file" accept=".xlsx,.xlsm,.xls,.pdf,.docx,.pptx,.txt,.md,.markdown,.csv,.tsv,.json,.ics,.log,.png,.jpg,.jpeg,.webp,.gif,.bmp,.tif,.tiff" class="ot-file-hidden"/></div><details class="ot-details"><summary>或者直接粘贴文件路径<code>2026春季学期值班与课程安排表.xlsx</code></summary><div class="ot-inline-form" style="margin-top:8px"><input class="ot-input" type="text" placeholder="C:\Users\你的账号\Desktop\排班表.xlsx，或一份 PDF / Word / 图片" value="C:\Users\User\Desktop\2026春季学期值班与课程安排表.xlsx"/><button type="button" class="ot-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M12 3.5 13.9 9.6 20 11.5l-6.1 1.9L12 19.5l-1.9-6.1L4 11.5l6.1-1.9z"></path></svg>读这份</button></div><div class="ot-sub" style="margin-top:6px">填文件夹时会选其中「最近修改」的那个 Excel；资源管理器里 Shift + 右键文件 →「复制文件地址」可拿到完整路径。</div></details><details class="ot-details"><summary>或者粘贴一段文字（通知、群消息、会议纪要）</summary><textarea class="ot-input ot-textarea" rows="4" placeholder="例如：11月4日（周三）07:00-07:30 早打卡值班，张三到岗，东区门口查验。"></textarea><div class="ot-row" style="margin-top:8px"><button type="button" class="ot-btn ot-btn-primary" disabled=""><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><rect x="4.5" y="7.5" width="15" height="11" rx="3"></rect><path d="M12 3.5v4M8.5 12.5v1.5M15.5 12.5v1.5"></path></svg>读这段文字</button><span class="ot-sub">粘贴的文字不会存盘，只用于这一次读取。</span></div></details><div class="ot-note" style="margin-top:10px">当前文件：<strong>C:\Users\User\Desktop\2026春季学期值班与课程安排表.xlsx</strong><br/>工作表「总课表」· 表头第 3 行 · 11 行数据 · 已抓取 12 条 · 2 分钟前<span> · 命中 8 行，过滤 3 行</span></div><div class="ot-row ot-inline-form" style="margin-top:10px"><label class="ot-switch"><input type="checkbox" checked=""/><span class="ot-sub">文件变化时自动重新抓取</span></label><span class="ot-headspace"></span><div class="ot-field"><span class="ot-field-label">只看未来</span><input class="ot-input ot-input-num" type="number" min="1" max="365" value="30"/><span class="ot-sub">天</span></div></div></div></section><div class="ot-gap"></div><div><section class="ot-card ot-card-pad"><h3 class="ot-card-title"><i class="ot-dot"></i>3 · 读表细节</h3><div><div class="ot-verdict" data-tone="high"><div class="ot-verdict-head"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><rect x="4.5" y="7.5" width="15" height="11" rx="3"></rect><path d="M12 3.5v4M8.5 12.5v1.5M15.5 12.5v1.5"></path></svg><strong>AI 读完了这份表</strong><span class="ot-pill" data-tone="high">很有把握 86%</span><span class="ot-verdict-model">demo-provider · demo-model</span></div><div class="ot-verdict-body">把「2026 春季课表.xlsx」看成了记录表：识别出 6 个字段，姓名列是「姓名」，可以直接导入。</div><ul class="ot-verdict-hints"><li>列映射按表头文字匹配，可在下面手动改。</li><li>必填字段已配齐，可以直接导入。</li></ul><div class="ot-verdict-tags"><span class="ot-tag">版式：记录表</span><span class="ot-tag">工作表：总课表</span><span class="ot-tag">表头第 3 行</span><span class="ot-tag">11 行数据</span><span class="ot-tag">属于你的 7 行</span></div><div class="ot-verdict-actions"><button type="button" class="ot-btn ot-btn-primary"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"></path></svg>确认并导入</button><button type="button" class="ot-btn ot-btn-sm"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M20 11a8 8 0 1 0-2.4 5.7M20 5.5V11h-5.5"></path></svg>重新预览</button><button type="button" class="ot-linkbtn">手动调整列映射</button><span class="ot-headspace"></span></div></div><div class="ot-table-wrap" style="margin-top:10px"><table class="ot-table"><thead><tr><th>行</th><th>日期</th><th>开始</th><th>结束</th><th>事项</th><th>姓名</th><th>地点</th><th>是否属于你</th></tr></thead><tbody><tr data-match="true"><td>4</td><td>2026-11-07</td><td>18:10</td><td>19:10</td><td>英语听力</td><td>张三、李四</td><td>语音室 2</td><td>✓ 你的</td></tr><tr data-match="true"><td>5</td><td>2026-11-07</td><td>21:10</td><td>22:40</td><td>高等数学 A</td><td>张三</td><td>三教 305</td><td>✓ 你的</td></tr><tr data-match="true"><td>6</td><td>2026-11-07</td><td>22:08</td><td>23:08</td><td>项目周会</td><td>王五, 张三</td><td>线上腾讯会议</td><td>✓ 你的</td></tr><tr data-match="true"><td>7</td><td>2026-11-07</td><td>22:58</td><td>00:48</td><td>数据结构实验</td><td>张三</td><td>实验楼 B210</td><td>✓ 你的</td></tr><tr data-match="true"><td>8</td><td>2026-11-07</td><td>03:50</td><td>05:20</td><td>教研活动</td><td>全体教师</td><td>阶梯教室</td><td>✓ 你的</td></tr><tr data-match="false"><td>9</td><td>2026-11-07</td><td>05:10</td><td>06:10</td><td>晚自习辅导</td><td>赵六</td><td>图书馆 2F</td><td>✗ 跳过</td></tr></tbody></table></div><div class="ot-sub" style="margin-top:10px">读表提示：姓名来源列：姓名</div></div></section></div><div class="ot-gap"></div><section class="ot-card ot-card-pad"><h3 class="ot-card-title"><i class="ot-dot"></i>提醒设置</h3><div class="ot-grid ot-grid-2"><div style="display:flex;flex-direction:column;gap:10px"><label class="ot-switch"><input type="checkbox" checked=""/><span class="ot-sub">开启提醒</span></label><div class="ot-field"><span class="ot-field-label">提前提醒</span><input class="ot-input" type="text" placeholder="30,10,5,0" value="30,10,5,0"/></div><div class="ot-sub">0 表示「正好开始时」再提醒一次。默认 30 / 10 / 5 / 0，共四次。</div></div><div style="display:flex;flex-direction:column;gap:10px"><label class="ot-switch"><input type="checkbox" checked=""/><span class="ot-sub">同时弹出 Windows 系统通知</span></label><label class="ot-switch"><input type="checkbox" checked=""/><span class="ot-sub">夜间静音</span></label><div class="ot-row"><div class="ot-field"><span class="ot-field-label">静音时段</span><input class="ot-input" type="text" placeholder="" value="22:30"/></div><span class="ot-sub">→</span><div class="ot-field"><span class="ot-field-label"></span><input class="ot-input" type="text" placeholder="" value="07:00"/></div></div></div></div></section></div><div style="height:12px"></div><section class="ot-card ot-card-pad"><h3 class="ot-card-title"><i class="ot-dot"></i>AI 助手 Orbyt</h3><div style="display:flex;flex-direction:column;gap:10px"><div class="ot-row"><span class="ot-chip ot-chip-warn">内置规则</span></div><label class="ot-switch"><input type="checkbox" checked=""/><span class="ot-sub">用当前默认模型回答（关掉则纯本地规则，不消耗额度）</span></label><div class="ot-sub">开启后，自由提问和动作按钮由模型回答：只把上面那份日程 JSON 交给它，它看不到别的东西；每次提问会消耗少量额度。模型不可用时自动回落到内置规则，并在气泡下方标注原因。</div><div class="ot-row"><div class="ot-field"><span class="ot-field-label">单次回答上限</span><input class="ot-input ot-input-num" type="number" min="100" max="4000" value="700"/><span class="ot-sub">tokens</span></div><div class="ot-field"><span class="ot-field-label">携带历史</span><input class="ot-input ot-input-num" type="number" min="0" max="20" value="6"/><span class="ot-sub">轮</span></div></div></div></section><div style="height:12px"></div><section class="ot-card ot-card-pad"><h3 class="ot-card-title"><i class="ot-dot"></i>悬浮窗与界面</h3><div style="display:flex;flex-direction:column;gap:10px"><div class="ot-row"><span class="ot-chip ot-chip-warn">悬浮窗未启动</span><button type="button" class="ot-btn ot-btn-primary"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M14 4.5h5.5V10M10 19.5H4.5V14M19.5 4.5 13 11M4.5 19.5 11 13"></path></svg>重新显示</button></div><div class="ot-seg"><button type="button" class="ot-seg-item" title="232 × 64，圆环 + 倒计时 + 当前日程">完整胶囊</button><button type="button" class="ot-seg-item" title="56 × 56，只留一圈进度和剩余分钟">最小圆点</button><button type="button" class="ot-seg-item is-active" title="不显示，下次启动也不会自己冒出来">关闭</button></div><div class="ot-sub">桌面悬浮窗：圆环 = 开始/暂停，— = 最小化成小圆点，» = 打开面板，× = 关闭（关闭后不会自己回来，除非你在这里点「重新显示」）。最小态下 + 展开、× 关闭，底部那条三点拖动条是唯一能拖动窗口的地方；位置会被记住，拖到屏幕外会被自动拉回来。右键出菜单，双击打开主面板。</div><div class="ot-sub">页面里的小卡片（下面这个开关控制的）：按住左侧的 ⠿ 才能拖动（只有它是拖动区，按钮和数字不会再被误拖走），位置记在浏览器里；— 收起成小圆点，⤢ 展开，× 把它从面板上拿掉 —— 关掉就是关掉，不留任何东西；想再看到它，把这个开关关掉再打开即可。</div><div style="height:2px"></div><label class="ot-switch"><input type="checkbox" checked=""/><span class="ot-sub">DSH 主窗口内也显示迷你悬浮卡片</span></label><label class="ot-switch"><input type="checkbox" checked=""/><span class="ot-sub">番茄完成时播放提示音</span></label></div></section><div style="height:12px"></div><section class="ot-card ot-card-pad"><h3 class="ot-card-title"><i class="ot-dot"></i>提醒与动态<div class="ot-headspace"></div></h3><div><div class="ot-row" style="margin-bottom:9px"><span class="ot-sub">4 条记录（宿主进程产生，浏览器关掉也会继续记）</span><div class="ot-headspace"></div><button type="button" class="ot-btn ot-btn-ghost ot-btn-sm"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M6.5 6.5 17.5 17.5M17.5 6.5 6.5 17.5"></path></svg>清空</button></div><div class="ot-feed"><div class="ot-feed-item" data-level="urgent"><span class="ot-feed-time">1 分钟前</span><div style="min-width:0"><div class="ot-feed-title">⏰ 5 分钟后开始 · 数据结构实验</div><div class="ot-feed-body">21:00 · 实验楼 B210 · 计算机</div></div></div><div class="ot-feed-item" data-level="info"><span class="ot-feed-time">12 分钟前</span><div style="min-width:0"><div class="ot-feed-title">🔔 30 分钟后开始 · 数据结构实验</div><div class="ot-feed-body">21:00 · 实验楼 B210</div></div></div><div class="ot-feed-item" data-level="success"><span class="ot-feed-time">30 分钟前</span><div style="min-width:0"><div class="ot-feed-title">🍅 一个番茄完成</div><div class="ot-feed-body">今天第 3 个专注完成（复习傅里叶级数）。休息一下。</div></div></div><div class="ot-feed-item" data-level="info"><span class="ot-feed-time">52 分钟前</span><div style="min-width:0"><div class="ot-feed-title">日程已更新</div><div class="ot-feed-body">从「总课表」抓取 12 条与你相关的日程（共 11 行，过滤掉 3 行）。</div></div></div></div></div></section><div style="height:12px"></div><section class="ot-card ot-card-pad"><h3 class="ot-card-title"><i class="ot-dot"></i>提醒话术（可留空用默认）</h3><div style="display:flex;flex-direction:column;gap:10px"><div class="ot-sub">已触发 2 次日程提醒。提醒文案由宿主生成，按「还有多久开始」自动措辞。</div><div class="ot-row"><button type="button" class="ot-btn ot-btn-sm"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M6 9.5a6 6 0 0 1 12 0c0 4 1.5 5.5 1.5 5.5h-15S6 13.5 6 9.5z"></path><path d="M10 18.5a2 2 0 0 0 4 0"></path></svg>生成一条测试动态</button><button type="button" class="ot-btn ot-btn-ghost ot-btn-sm"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1M3.5 5v5h5"></path></svg>重置提醒状态</button></div><input class="ot-input" type="text" placeholder="自定义签名（仅本地显示）" value=""/></div></section></div></div><div class="ot-notices"><div class="ot-notice-stack"><div class="ot-notice-stack"><div class="ot-notice" data-level="urgent"><div class="ot-notice-title">⏰ 5 分钟后开始 · 数据结构实验</div><div class="ot-notice-body">21:00 · 实验楼 B210 · 计算机</div><div class="ot-notice-actions"><button type="button" class="ot-btn ot-btn-sm"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"></path></svg>已完成</button><button type="button" class="ot-btn ot-btn-sm"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3.2 2"></path></svg>5 分钟后再提醒</button><button type="button" class="ot-btn ot-btn-ghost ot-btn-sm"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M6.5 6.5 17.5 17.5M17.5 6.5 6.5 17.5"></path></svg>关闭</button></div></div></div></div></div></div></div></body></html>

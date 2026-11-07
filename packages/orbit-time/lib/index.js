@@ -413,6 +413,15 @@ function defaultConfig() {
      */
     netddl: {
       headless: false,
+      /**
+       * The generic AI reader. The browser mechanics are code; the model only
+       * chooses which real links to follow and which visible moments matter.
+       * Turning this off leaves the deterministic adapters + local rules intact.
+       */
+      ai: true,
+      aiMaxPages: 6,
+      aiMaxTokens: 4096,
+      aiTimeoutMs: 120_000,
     },
     seedDemoData: false,
   }
@@ -4104,7 +4113,27 @@ export function apply(ctx, rawConfig = {}) {
   let webReader = null
   function netReader() {
     if (webReader === null) {
-      webReader = createWebDdl({ stateDir, logger: ctx.logger, headless: settings.netddl?.headless === true })
+      webReader = createWebDdl({
+        stateDir,
+        logger: ctx.logger,
+        headless: settings.netddl?.headless === true,
+        ai: settings.netddl?.ai !== false,
+        aiMaxPages: settings.netddl?.aiMaxPages,
+        aiMaxTokens: settings.netddl?.aiMaxTokens,
+        aiTimeoutMs: settings.netddl?.aiTimeoutMs,
+        /**
+         * The generic reader asks the same model route the companion uses. The
+         * profile already points that route at the user's provider; no second
+         * key, no separate base URL, and the model can be switched off in one
+         * place (`assistant.useModel`).
+         */
+        ask: (request) =>
+          askModel(request.prompt, null, [], {
+            system: request.system,
+            maxTokens: request.maxTokens,
+            timeoutMs: request.timeoutMs,
+          }),
+      })
     }
     return webReader
   }
@@ -4126,6 +4155,9 @@ export function apply(ctx, rawConfig = {}) {
     const key = typeof raw?.key === 'string' && /^wd_[0-9a-z]+$/.test(raw.key) ? raw.key : shortId('wd', `${course}|${date}|${start}|${title}`)
     const url = typeof raw?.url === 'string' ? raw.url.slice(0, 400) : ''
     const evidence = typeof raw?.evidence === 'string' ? repairText(raw.evidence.trim()).slice(0, 160) : ''
+    const importance = ['high', 'medium', 'low'].includes(raw?.importance) ? raw.importance : ''
+    const category = repairText(String(raw?.category ?? raw?.kind ?? '').trim()).slice(0, 20)
+    const importanceLabel = importance === 'high' ? '高' : importance === 'medium' ? '中' : importance === 'low' ? '低' : ''
     return {
       id: key,
       date,
@@ -4138,10 +4170,10 @@ export function apply(ctx, rawConfig = {}) {
       classroom: '',
       teacher: '',
       location: '',
-      category: '',
+      category,
       status: '',
-      priority: '',
-      notes: [`截止 ${date} ${start}`, url, evidence].filter((part) => part !== '').join(' · ').slice(0, 400),
+      priority: importanceLabel,
+      notes: [`截止 ${date} ${start}`, importanceLabel !== '' ? `重要度：${importanceLabel}` : '', url, evidence].filter((part) => part !== '').join(' · ').slice(0, 400),
       link: url,
       contact: '',
       owner: '',
@@ -4151,16 +4183,33 @@ export function apply(ctx, rawConfig = {}) {
         readFrom: course !== '' ? course : '网页',
         readFromPath: url,
         confidence: Number.isFinite(Number(raw?.confidence)) ? clamp(Number(raw.confidence), 0, 1) : null,
+        importance,
+        category,
       },
       source: { sheet: WEB_SHEET, path: url, row: null },
       warnings: [],
     }
   }
 
+  /**
+   * Two readers produce different keys on purpose (the platform is part of the
+   * hash), so the same deadline read by the old adapter and the new AI reader
+   * would otherwise be added twice. Compare the human row as well.
+   */
+  function sameWebRow(left, right) {
+    const clean = (value) => repairText(String(value ?? '')).replace(/[\s（）()【】\[\]·:：,，.。!?！？/\\_-]/g, '').toLowerCase()
+    if (left.date !== right.date || left.start !== right.start) return false
+    if (clean(left.title) !== clean(right.title)) return false
+    const leftCourse = clean(left.course)
+    const rightCourse = clean(right.course)
+    return leftCourse === '' || rightCourse === '' || leftCourse === rightCourse
+  }
+
   /** Put the ticked deadlines on the timeline, once each. */
   function commitWebItems(body) {
     const incoming = Array.isArray(body.items) ? body.items : []
     const known = new Set(runtime.events.map((event) => event.id))
+    const existingRows = runtime.events.slice()
     const committed = []
     const skipped = []
     for (const raw of incoming.slice(0, 300)) {
@@ -4170,11 +4219,12 @@ export function apply(ctx, rawConfig = {}) {
         skipped.push({ title: String(raw.title ?? ''), reason: '缺日期或标题' })
         continue
       }
-      if (known.has(event.id)) {
+      if (known.has(event.id) || existingRows.some((row) => sameWebRow(row, event))) {
         skipped.push({ title: event.title, reason: '已经在日程里了' })
         continue
       }
       known.add(event.id)
+      existingRows.push(event)
       committed.push(event)
     }
     if (committed.length > 0) {
@@ -4259,6 +4309,36 @@ export function apply(ctx, rawConfig = {}) {
       horizonDays: Number(body.horizonDays) > 0 ? Number(body.horizonDays) : 180,
     })
     sendJson(res, 200, { ...result, count: selfMadeCounts().web })
+  })
+
+  /**
+   * The generic AI website reader.
+   *
+   * The browser half is deterministic; the model is only a planner/extractor.
+   * A failure is returned as JSON so the panel can fall back to the local rules
+   * and say why, rather than showing an empty result.
+   */
+  route('/netddl/ai', async (req, res) => {
+    try {
+      const body = req.method === 'POST' ? await readBody(req) : {}
+      const result = await netReader().readSite({
+        url: typeof body.url === 'string' ? body.url : '',
+        username: typeof body.username === 'string' ? body.username : '',
+        password: typeof body.password === 'string' ? body.password : '',
+        remember: body.remember !== false,
+        label: typeof body.label === 'string' ? body.label : '',
+        horizonDays: Number(body.horizonDays) > 0 ? Number(body.horizonDays) : 180,
+      })
+      sendJson(res, 200, { ...result, count: selfMadeCounts().web })
+    } catch (error) {
+      sendJson(res, 422, {
+        ok: false,
+        mode: 'local',
+        items: [],
+        notes: [],
+        error: error?.message ?? String(error),
+      })
+    }
   })
 
   route('/netddl/commit', async (req, res) => {
@@ -4660,7 +4740,7 @@ export function apply(ctx, rawConfig = {}) {
     if (status.mode !== 'model') return { ok: false, reason: status.reason, detail: status.detail }
 
     const controller = new AbortController()
-    const budget = Number(settings.assistant?.timeoutMs) || 45_000
+    const budget = Number(options.timeoutMs ?? settings.assistant?.timeoutMs) || 45_000
     const timerHandle = setTimeout(() => controller.abort(), budget)
     if (typeof timerHandle.unref === 'function') timerHandle.unref()
 

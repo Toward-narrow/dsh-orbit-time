@@ -89,7 +89,7 @@ const modelStub = {
 const services = {
   llm: modelStub,
   agentDefaultModel: {
-    currentSelection: () => ({ provider: 'deepseek-account', model: 'deepseek-flash', reasoningEffort: 'max' }),
+    currentSelection: () => ({ provider: 'demo-provider', model: 'demo-model', reasoningEffort: 'max' }),
   },
   /** Spawn seam: records the argument list instead of opening real windows. */
   orbitTimeSpawn: (command, args, options) => {
@@ -760,7 +760,7 @@ await post('/settings', { settings: { assistant: { useModel: true } } })
 await check('the assistant reports its mode before being asked anything', async () => {
   const status = await post('/assistant', { action: 'status' })
   if (status.status?.mode !== 'model') throw new Error(`mode=${status.status?.mode} (${status.status?.detail})`)
-  if (!String(status.status.detail).includes('deepseek-account')) throw new Error(`detail=${status.status.detail}`)
+  if (!String(status.status.detail).includes('demo-provider')) throw new Error(`detail=${status.status.detail}`)
   return status.status.detail
 })
 
@@ -777,7 +777,7 @@ await check('a question is answered by the model when one is available', async (
 await check('the model receives the schedule as grounding context', async () => {
   const call = modelStub.calls[0]
   if (call === undefined) throw new Error('no recorded call')
-  if (call.provider !== 'deepseek-account' || call.model !== 'deepseek-flash') {
+  if (call.provider !== 'demo-provider' || call.model !== 'demo-model') {
     throw new Error(`route=${call.provider}/${call.model}`)
   }
   if (typeof call.system !== 'string' || !call.system.includes('Orbyt')) throw new Error('system prompt missing')

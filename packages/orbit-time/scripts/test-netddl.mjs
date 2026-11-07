@@ -360,6 +360,86 @@ if (browserFound === null) {
       }
     })
 
+    await check('AI 智能页：只跟进真实链接，DDL 和非 DDL 时间节点都能提取', async () => {
+      // The stub plays the model. It gets the same prompts the real route gets;
+      // the assertion is that the *code* rejects invented URLs/dates and keeps the
+      // lecture that is not a DDL.
+      const aiDir = mkdtempSync(join(tmpdir(), 'orbit-netddl-ai-'))
+      const calls = []
+      const ai = createWebDdl({
+        stateDir: aiDir,
+        headless: true,
+        ai: true,
+        ask: async ({ system, prompt }) => {
+          const planning = String(system).includes('网页结构侦察员')
+          calls.push(planning ? 'plan' : 'extract')
+          if (planning) {
+            const page = JSON.parse(prompt).页面
+            const link = (label) => page.links.find((entry) => entry.label.includes(label))?.href ?? ''
+            if (page.url.endsWith('/ai-home')) {
+              return { ok: true, text: JSON.stringify({ site: 'AI 测试站', pageKind: 'course-list', action: 'follow', links: [{ href: link('电法勘探'), label: '电法勘探', reason: '课程列表' }], confidence: 0.9 }), provider: 'stub', model: 'stub' }
+            }
+            if (page.url.endsWith('/ai-course')) {
+              return { ok: true, text: JSON.stringify({ site: 'AI 测试站', pageKind: 'course-list', action: 'follow', steps: [{ kind: 'click', label: '测验与作业', reason: '这是页签，不是链接' }], confidence: 0.9 }), provider: 'stub', model: 'stub' }
+            }
+            return { ok: true, text: JSON.stringify({ site: 'AI 测试站', pageKind: 'assignment-list', action: 'extract', links: [], confidence: 0.95 }), provider: 'stub', model: 'stub' }
+          }
+          const pages = JSON.parse(prompt).页面
+          const sourceUrl = pages.find((page) => page.url.endsWith('/ai-assignments'))?.url ?? ''
+          return {
+            ok: true,
+            text: JSON.stringify({
+              items: [
+                { title: '第五节课后作业', course: '电法勘探', kind: '作业', dueDate: '2026-11-17', dueTime: '13:00', importance: 'high', evidence: '截止时间：2026-11-17 13:00', sourceUrl, confidence: 0.95 },
+                { title: '课程讲座', course: '电法勘探', kind: '讲座', dueDate: '2026-12-01', dueTime: '19:00', importance: 'medium', evidence: '讲座时间：2026-12-01 19:00', sourceUrl, confidence: 0.8 },
+                { title: '坏日期', course: '电法勘探', kind: '作业', dueDate: '2026-02-30', dueTime: '10:00', sourceUrl },
+                { title: '编造来源', course: '电法勘探', kind: '作业', dueDate: '2026-11-20', dueTime: '10:00', sourceUrl: 'https://evil.example/fake' },
+                { title: '开始时间', course: '电法勘探', kind: '作业', dueDate: '2026-11-21', dueTime: '10:00', sourceUrl },
+              ],
+              notes: ['stub extraction'],
+            }),
+            provider: 'stub',
+            model: 'stub',
+          }
+        },
+      })
+      try {
+        const result = await ai.readSite({ url: `${site.base}/ai-home`, label: '电法勘探', horizonDays: 365 })
+        assert(result.mode === 'ai', `mode=${result.mode}`)
+        assertEqual(result.pages.length, 3, 'AI 看了几页')
+        assertEqual(result.plans.length, 3, '规划了几页')
+        assertEqual(result.items.length, 2, '有效条目数')
+        assert(result.items.some((item) => item.title === '第五节课后作业' && item.kind === '作业'), '作业没读到')
+        const lecture = result.items.find((item) => item.title === '课程讲座')
+        assert(lecture && lecture.kind === '讲座' && lecture.importance === 'medium', '非 DDL 的讲座没保留')
+        assert(result.items.every((item) => item.url.endsWith('/ai-assignments')), '来源 URL 不是实际打开的页面')
+        assert(!result.items.some((item) => /坏日期|编造来源|开始时间/.test(item.title)), '模型编造/噪声条目没有被过滤')
+        assert(result.model && result.model.provider === 'stub', '没有报告模型来源')
+        assert(calls.filter((call) => call === 'plan').length >= 3, `规划调用 ${calls.join(',')}`)
+        return `${result.pages.length} 页 → ${result.items.map((item) => `${item.kind}:${item.title}`).join(' / ')}`
+      } finally {
+        await ai.close().catch(() => {})
+        removeDir(aiDir)
+      }
+    })
+
+    await check('AI 不可用：自动退回本地规则，而不是报错空结果', async () => {
+      const localDir = mkdtempSync(join(tmpdir(), 'orbit-netddl-ai-local-'))
+      const local = createWebDdl({ stateDir: localDir, headless: true })
+      try {
+        const result = await local.readSite({ url: `${site.base}/ai-assignments`, label: '电法勘探', horizonDays: 365 })
+        assert(result.mode === 'local', `mode=${result.mode}`)
+        assert(result.reason === 'no-model', `reason=${result.reason}`)
+        assert(result.items.length >= 2, `本地只读到 ${result.items.length} 条`)
+        assert(result.items.some((item) => item.title === '第五节课后作业'), '没读到作业')
+        assert(!result.items.some((item) => /成绩公布|开始时间/.test(item.title)), `本地读出了噪声：${result.items.map((item) => item.title).join(' / ')}`)
+        return `${result.items.length} 条（本地）`
+      } finally {
+        await local.close().catch(() => {})
+        removeDir(localDir)
+      }
+    })
+
     await check('没登录过的档案：需要登录的页面读不到日期，也不假装成功', async () => {
       // A second install in its own state directory: nothing here has ever logged
       // in, so this is the "I pasted a URL and forgot to log in" case.

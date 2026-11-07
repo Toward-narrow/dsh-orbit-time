@@ -137,29 +137,43 @@ check('both halves carry the "read anything" path', () => {
 check('the network reader landed whole', () => {
   const host = read('lib/index.js')
   const client = read('lib/client.js')
+  const netddl = read('lib/netddl/index.js')
   const hostNeeded = [
     ["route('/netddl/login'", 'the login route exists'],
     ["route('/netddl/pull'", 'the pull route exists'],
     ["route('/netddl/commit'", 'the commit route exists'],
+    ["route('/netddl/ai'", 'the generic AI route exists'],
     ['createWebDdl', 'the host imports the reader'],
+    ['aiMaxPages', 'the AI page budget is wired'],
     ['网络 DDL', 'scraped rows carry their own origin'],
     ['buildWebEvent', 'a scraped deadline becomes a schedule row'],
+    ['sameWebRow', 'cross-reader duplicates are compared by the human row'],
   ]
   const clientNeeded = [
     ['NetDdlView', 'the tab exists'],
+    ['AI 智能页', 'the generic AI tab exists'],
     ['netDdlLogin', 'the store can open a login window'],
     ['netDdlPull', 'the store can pull deadlines'],
+    ['netDdlReadSite', 'the store can ask the AI reader'],
     ['网络 DDL', 'the timeline labels scraped rows'],
+  ]
+  const netNeeded = [
+    ['readSite', 'the AI reader exists'],
+    ['网页结构侦察员', 'the planning prompt exists'],
+    ['时间节点提取器', 'the extraction prompt exists'],
+    ['点页签/按钮', 'the planner can choose a real click target'],
+    ['api: 4', 'the host advertises the AI contract'],
   ]
   const missing = hostNeeded
     .filter(([needle]) => !host.includes(needle))
     .map(([, label]) => `host: ${label}`)
     .concat(clientNeeded.filter(([needle]) => !client.includes(needle)).map(([, label]) => `client: ${label}`))
+    .concat(netNeeded.filter(([needle]) => !netddl.includes(needle)).map(([, label]) => `netddl: ${label}`))
   for (const file of ['index.js', 'cdp.js', 'parse.js']) {
     if (!existsSync(join(installed, 'lib', 'netddl', file))) missing.push(`lib/netddl/${file} was not installed`)
   }
   if (missing.length > 0) throw new Error(`missing: ${missing.join('; ')}`)
-  return `${hostNeeded.length + clientNeeded.length} markers + 3 reader modules`
+  return `${hostNeeded.length + clientNeeded.length + netNeeded.length} markers + 3 reader modules`
 })
 
 check('both halves are newer than the last build', () => {

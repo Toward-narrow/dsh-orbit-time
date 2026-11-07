@@ -405,7 +405,37 @@ function summariseDocument() {
     const label = clean(anchor.innerText).slice(0, 120)
     const href = anchor.getAttribute('href') || ''
     if (href === '' || href.startsWith('javascript:')) continue
-    links.push({ href, label })
+    /**
+     * The surrounding card is often the only place the course name lives: a
+     * deadline page links a score badge whose text is "0 .00分", and the model
+     * cannot tell which course that is without the card's text.
+     */
+    let context = ''
+    const card = anchor.closest('li, article, tr, section, .card, .item, .course, .m-course, .u-course, [class*="course"]')
+    if (card !== null) {
+      context = clean(card.innerText).slice(0, 180)
+      // The score badge often sits in a small card that omits the course title;
+      // one or two parents up is where the title lives.
+      let parent = card.parentElement
+      for (let depth = 0; parent !== null && depth < 2; depth += 1, parent = parent.parentElement) {
+        const parentText = clean(parent.innerText)
+        if (parentText.length > context.length && parentText.length <= 400 && parentText.includes(label)) {
+          context = parentText.slice(0, 180)
+          break
+        }
+      }
+    }
+    if (context === '') {
+      let parent = anchor.parentElement
+      for (let depth = 0; parent !== null && depth < 3; depth += 1, parent = parent.parentElement) {
+        const parentText = clean(parent.innerText)
+        if (parentText.length > label.length && parentText.length <= 300) {
+          context = parentText.slice(0, 180)
+          break
+        }
+      }
+    }
+    links.push({ href, label, context })
   }
   const inputs = []
   for (const input of document.querySelectorAll('input, textarea')) {
@@ -426,6 +456,18 @@ function summariseDocument() {
     if (!visible(button)) continue
     buttons.push(label)
   }
+  const clickables = []
+  for (const node of document.querySelectorAll('button, [role=button], a, [class*="tab"], [class*="nav"], [class*="course"], [class*="item"], span, div')) {
+    if (clickables.length >= 80) break
+    const label = clean(node.innerText)
+    if (label === '' || label.length > 30) continue
+    if (!visible(node) || node.querySelectorAll('*').length > 4) continue
+    const style = window.getComputedStyle(node)
+    const isClickable = node.matches('button, a, [role=button], [class*="tab"], [class*="nav"], [class*="course"], [class*="item"]') || style.cursor === 'pointer'
+    if (!isClickable) continue
+    if (clickables.some((entry) => entry.label === label)) continue
+    clickables.push({ label, tag: node.tagName.toLowerCase() })
+  }
   return {
     url: location.href,
     title: document.title,
@@ -434,6 +476,7 @@ function summariseDocument() {
     links,
     inputs,
     buttons: [...new Set(buttons)],
+    clickables,
   }
 }
 
@@ -765,6 +808,41 @@ export class PageSession {
     return false
   }
 
+  /**
+   * Wait for an SPA to stop growing.
+   *
+   * `document.readyState` is "complete" long before icourse163's personal center
+   * paints its course cards, and a fixed settle window either misses them or
+   * wastes seconds on every page. Text size stable across a quiet window is the
+   * cheap generic signal; the caller still gets whatever it captured if it never
+   * settles.
+   */
+  async waitForSettled(options = {}) {
+    const timeoutMs = Number(options.timeoutMs) || 8000
+    const quietMs = Number(options.quietMs) || 900
+    const deadline = Date.now() + timeoutMs
+    let lastLength = -1
+    let stableSince = 0
+    while (Date.now() < deadline) {
+      try {
+        const state = await this.evaluate(`(() => ({ ready: document.readyState, length: (document.body ? document.body.innerText : '').length }))()`, { timeoutMs: 3000 })
+        if (state && state.ready === 'complete' && typeof state.length === 'number') {
+          if (state.length === lastLength) {
+            if (stableSince === 0) stableSince = Date.now()
+            if (Date.now() - stableSince >= quietMs) return true
+          } else {
+            lastLength = state.length
+            stableSince = Date.now()
+          }
+        }
+      } catch {
+        /* between documents */
+      }
+      await sleep(250)
+    }
+    return false
+  }
+
   async summary() {
     const data = await this.evaluate(`(${summariseDocument.toString()})()`)
     const summary = data !== null && typeof data === 'object' ? data : {}
@@ -1053,8 +1131,15 @@ export class PageSession {
     )
   }
 
-  async screenshot(path) {
-    try {
+  /** Click a visible control/tab by its text; returns the labels it clicked. */
+  async clickLabel(label, options = {}) {
+    const wanted = String(label ?? '').trim()
+    if (wanted === '') return []
+    const escaped = wanted.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    return this.clickText(`^${escaped}`, options)
+  }
+
+  async screenshot(path) {    try {
       const { data } = await this.browser.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false }, this.id, 20_000)
       writeFileSync(path, Buffer.from(data, 'base64'))
       return path

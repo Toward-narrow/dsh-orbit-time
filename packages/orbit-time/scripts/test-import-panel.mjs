@@ -90,7 +90,7 @@ function makeSnapshot(overrides = {}) {
 
 const GRID_ANALYSIS = {
   mode: 'model',
-  model: { provider: 'deepseek-account', model: 'deepseek-flash' },
+  model: { provider: 'demo-provider', model: 'demo-model' },
   layout: 'matrixDate',
   mapping: {},
   timeRules: [{ match: ['早打卡', '打卡'], start: '07:00', end: '07:30' }],
@@ -185,7 +185,7 @@ if (DUMP) {
   process.exit(0)
 }
 check('the verdict leads with what the model decided', () => {
-  for (const needle of ['AI 读完了这份表', GRID_ANALYSIS.summary, '很有把握 88%', 'deepseek-account · deepseek-flash']) {
+  for (const needle of ['AI 读完了这份表', GRID_ANALYSIS.summary, '很有把握 88%', 'demo-provider · demo-model']) {
     if (!withAnalysis.includes(needle)) throw new Error(`missing ${needle}`)
   }
   return 'summary, confidence pill, and model chip all present'

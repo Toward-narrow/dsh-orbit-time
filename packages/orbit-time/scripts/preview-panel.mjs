@@ -424,7 +424,7 @@ store.set({
      */
     analysis: {
       mode: 'model',
-      model: { provider: 'deepseek-account', model: 'deepseek-flash' },
+      model: { provider: 'demo-provider', model: 'demo-model' },
       layout: 'records',
       mapping: { person: '姓名', date: '日期', start: '开始时间', end: '结束时间', title: '事项', location: '地点' },
       timeRules: [],
@@ -472,7 +472,7 @@ store.set({
     ],
     busy: false,
   },
-  assistant: { mode: 'model', reason: 'ready', detail: 'deepseek-account · deepseek-flash' },
+  assistant: { mode: 'model', reason: 'ready', detail: 'demo-provider · demo-model' },
 })
 
 /**
@@ -503,7 +503,7 @@ if (process.env.OT_PREVIEW_READ === '1') {
       },
       analysis: {
         mode: 'model',
-        model: { provider: 'deepseek-account', model: 'deepseek-flash' },
+        model: { provider: 'demo-provider', model: 'demo-model' },
         events: [],
         excluded: [{ title: '李四交材料', reason: '是 李四 的事，不是你的' }],
         summary: '一份 11 月的值班通知：早打卡两次、晚自习考勤一次。',
