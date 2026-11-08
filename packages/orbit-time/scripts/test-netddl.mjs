@@ -440,6 +440,97 @@ if (browserFound === null) {
       }
     })
 
+    await check('AI 修复台：诊断 → 审查 → 保存配方 → 按配方重试', async () => {
+      const repairDir = mkdtempSync(join(tmpdir(), 'orbit-netddl-repair-'))
+      let repaired = false
+      const repair = createWebDdl({
+        stateDir: repairDir,
+        headless: true,
+        ai: true,
+        ask: async ({ system, prompt }) => {
+          const text = String(system)
+          if (text.includes('审查员')) {
+            return { ok: true, text: JSON.stringify({ verdict: 'accept', issues: [], notes: '入口和按钮都能在证据里找到。' }), provider: 'stub', model: 'stub' }
+          }
+          if (text.includes('修复工程师')) {
+            const data = JSON.parse(prompt)
+            const pages = data.页面证据
+            const home = pages.find((page) => page.url.endsWith('/ai-home'))
+            const course = pages.find((page) => page.url.endsWith('/ai-course'))
+            const courseUrl = course?.url ?? home?.links.find((link) => link.href.endsWith('/ai-course'))?.href ?? ''
+            repaired = true
+            return {
+              ok: true,
+              text: JSON.stringify({
+                diagnosis: '只读了入口页，没有跟进课程页里的作业页签。',
+                cause: 'wrong-entry',
+                recipe: {
+                  startUrl: home?.url ?? `${site.base}/ai-home`,
+                  steps: [
+                    { action: 'open', url: courseUrl, reason: '进入课程页' },
+                    { action: 'click', label: '测验与作业', reason: '这是页签，不是链接' },
+                    { action: 'extract' },
+                  ],
+                  hints: '只提取有截止时间的作业和测验。',
+                  confidence: 0.9,
+                },
+                codePatch: {
+                  needed: true,
+                  summary: '建议给 pageBundle 的 links 增加作业页入口。',
+                  files: ['src/host/netddl/index.js'],
+                  diff: '--- a/src/host/netddl/index.js\n+++ b/src/host/netddl/index.js\n@@\n- old\n+ new\n',
+                  tests: ['修复后 test-netddl 通过'],
+                  risk: '低',
+                },
+              }),
+              provider: 'stub',
+              model: 'stub',
+            }
+          }
+          if (text.includes('侦察员')) {
+            const page = JSON.parse(prompt).页面
+            if (page.url.endsWith('/ai-home')) {
+              const link = page.links.find((entry) => entry.href.endsWith('/ai-course'))
+              return { ok: true, text: JSON.stringify({ action: 'follow', links: [{ href: link?.href, label: '电法勘探' }] }), provider: 'stub', model: 'stub' }
+            }
+            return { ok: true, text: JSON.stringify({ action: 'extract', links: [] }), provider: 'stub', model: 'stub' }
+          }
+          const pages = JSON.parse(prompt).页面
+          const source = pages.find((page) => page.url.endsWith('/ai-assignments'))
+          if (repaired && source) {
+            return {
+              ok: true,
+              text: JSON.stringify({
+                items: [{ title: '第五节课后作业', course: '电法勘探', kind: '作业', dueDate: '2026-11-17', dueTime: '13:00', importance: 'high', evidence: '截止时间：2026-11-17 13:00', sourceUrl: source.url, confidence: 0.95 }],
+              }),
+              provider: 'stub',
+              model: 'stub',
+            }
+          }
+          return { ok: true, text: JSON.stringify({ items: [] }), provider: 'stub', model: 'stub' }
+        },
+      })
+      try {
+        const failed = await repair.readSite({ url: `${site.base}/ai-home`, label: 'AI 测试站', horizonDays: 365 })
+        assert(failed.items.length === 0, `第一次竟然读到了 ${failed.items.length} 条`)
+        assert(failed.repair && failed.repair.suggested === true, '失败结果没有标记可以修复')
+        const diagnosis = await repair.repairSite({ url: `${site.base}/ai-home` })
+        assert(diagnosis.ok === true, diagnosis.error || '诊断失败')
+        assert(diagnosis.recipe && diagnosis.recipe.steps.some((step) => step.action === 'click'), '没有生成可重放配方')
+        assert(diagnosis.verification.verdict === 'accept', `verdict=${diagnosis.verification.verdict}`)
+        assert(diagnosis.codePatch && diagnosis.codePatch.needed === true, '没有代码补丁建议')
+        assert(diagnosis.codePatch.applied === false, '补丁竟然被标记为已应用')
+        assert(existsSync(diagnosis.savedPath), `方案文件没写出来：${diagnosis.savedPath}`)
+        const replay = await repair.replayRecipe({ recipe: diagnosis.recipe, horizonDays: 365 })
+        assert(replay.ok === true && replay.items.length === 1, `重放得到 ${replay.items.length} 条`)
+        assert(replay.items[0].title === '第五节课后作业', `重放标题 ${replay.items[0].title}`)
+        return '诊断 → accept → 配方落盘 → 重放 1 条'
+      } finally {
+        await repair.close().catch(() => {})
+        removeDir(repairDir)
+      }
+    })
+
     await check('没登录过的档案：需要登录的页面读不到日期，也不假装成功', async () => {
       // A second install in its own state directory: nothing here has ever logged
       // in, so this is the "I pasted a URL and forgot to log in" case.

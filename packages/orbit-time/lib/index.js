@@ -422,6 +422,9 @@ function defaultConfig() {
       aiMaxPages: 6,
       aiMaxTokens: 4096,
       aiTimeoutMs: 120_000,
+      /** The repair desk can propose a patch, but never applies one. */
+      repairCode: true,
+      repairMaxTokens: 4096,
     },
     seedDemoData: false,
   }
@@ -4121,6 +4124,8 @@ export function apply(ctx, rawConfig = {}) {
         aiMaxPages: settings.netddl?.aiMaxPages,
         aiMaxTokens: settings.netddl?.aiMaxTokens,
         aiTimeoutMs: settings.netddl?.aiTimeoutMs,
+        repairCode: settings.netddl?.repairCode !== false,
+        repairMaxTokens: settings.netddl?.repairMaxTokens,
         /**
          * The generic reader asks the same model route the companion uses. The
          * profile already points that route at the user's provider; no second
@@ -4338,6 +4343,35 @@ export function apply(ctx, rawConfig = {}) {
         notes: [],
         error: error?.message ?? String(error),
       })
+    }
+  })
+
+  /**
+   * Diagnose the last failed AI read. This is a proposal desk: the model can
+   * suggest a recipe and a code patch, but Orbit Time never edits its own source
+   * from here. A person (or the DSH coding agent) reviews the patch first.
+   */
+  route('/netddl/repair', async (req, res) => {
+    try {
+      const body = req.method === 'POST' ? await readBody(req) : {}
+      sendJson(res, 200, await netReader().repairSite({
+        url: typeof body.url === 'string' ? body.url : '',
+      }))
+    } catch (error) {
+      sendJson(res, 422, { ok: false, error: error?.message ?? String(error) })
+    }
+  })
+
+  route('/netddl/replay', async (req, res) => {
+    try {
+      const body = req.method === 'POST' ? await readBody(req) : {}
+      const result = await netReader().replayRecipe({
+        recipe: isObject(body.recipe) ? body.recipe : null,
+        horizonDays: Number(body.horizonDays) > 0 ? Number(body.horizonDays) : 180,
+      })
+      sendJson(res, 200, { ...result, count: selfMadeCounts().web })
+    } catch (error) {
+      sendJson(res, 422, { ok: false, error: error?.message ?? String(error) })
     }
   })
 

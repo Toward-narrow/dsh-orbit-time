@@ -143,6 +143,8 @@ check('the network reader landed whole', () => {
     ["route('/netddl/pull'", 'the pull route exists'],
     ["route('/netddl/commit'", 'the commit route exists'],
     ["route('/netddl/ai'", 'the generic AI route exists'],
+    ["route('/netddl/repair'", 'the repair desk route exists'],
+    ["route('/netddl/replay'", 'the safe recipe replay route exists'],
     ['createWebDdl', 'the host imports the reader'],
     ['aiMaxPages', 'the AI page budget is wired'],
     ['网络 DDL', 'scraped rows carry their own origin'],
@@ -152,17 +154,25 @@ check('the network reader landed whole', () => {
   const clientNeeded = [
     ['NetDdlView', 'the tab exists'],
     ['AI 智能页', 'the generic AI tab exists'],
+    ['RepairCard', 'the repair desk card exists'],
     ['netDdlLogin', 'the store can open a login window'],
     ['netDdlPull', 'the store can pull deadlines'],
     ['netDdlReadSite', 'the store can ask the AI reader'],
+    ['netDdlRepair', 'the store can ask for a diagnosis'],
+    ['netDdlReplayRecipe', 'the store can replay a recipe'],
     ['网络 DDL', 'the timeline labels scraped rows'],
   ]
   const netNeeded = [
     ['readSite', 'the AI reader exists'],
+    ['repairSite', 'the repair desk exists'],
+    ['replayRecipe', 'the safe recipe replay exists'],
+    ['validateRecipe', 'recipes are validated against page evidence'],
     ['网页结构侦察员', 'the planning prompt exists'],
     ['时间节点提取器', 'the extraction prompt exists'],
+    ['修复工程师', 'the repair prompt exists'],
+    ['审查员', 'the verifier role exists'],
     ['点页签/按钮', 'the planner can choose a real click target'],
-    ['api: 4', 'the host advertises the AI contract'],
+    ['api: 5', 'the host advertises the AI contract'],
   ]
   const missing = hostNeeded
     .filter(([needle]) => !host.includes(needle))

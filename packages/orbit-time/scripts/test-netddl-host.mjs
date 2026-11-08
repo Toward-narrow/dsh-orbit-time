@@ -200,7 +200,7 @@ await check('健康检查列出了这项能力', async () => {
 })
 
 await check('路由表里挂上了 /netddl/*', async () => {
-  const wanted = ['/netddl/status', '/netddl/login', '/netddl/check', '/netddl/courses', '/netddl/pull', '/netddl/page', '/netddl/ai', '/netddl/commit', '/netddl/logout', '/netddl/close']
+  const wanted = ['/netddl/status', '/netddl/login', '/netddl/check', '/netddl/courses', '/netddl/pull', '/netddl/page', '/netddl/ai', '/netddl/repair', '/netddl/replay', '/netddl/commit', '/netddl/logout', '/netddl/close']
   for (const path of wanted) {
     if (!routes.has('/api/orbit-time' + path)) throw new Error(`缺少路由 ${path}`)
   }
@@ -211,11 +211,18 @@ await check('状态接口报出浏览器、档案目录和已入库条数', asyn
   const { payload } = await call('/netddl/status')
   // The page uses this to tell a host that predates the iframe login apart from
   // one that can actually drive it; dropping it turns the fix into a silent no-op.
-  assert(payload.api === 4, `api=${payload.api}`)
+  assert(payload.api === 5, `api=${payload.api}`)
   assert(typeof payload.profileDir === 'string' && payload.profileDir.includes('webddl'), 'profileDir 不对')
   assert(payload.browser !== undefined && payload.browser.found === true, '没找到浏览器')
   assert(payload.count === 0, `初始条数 ${payload.count}`)
   return `api ${payload.api} · ${payload.browser.label} · ${payload.count} 条`
+})
+
+await check('修复路由：没有失败记录时明确说清楚，而不是空结果', async () => {
+  const { payload } = await post('/netddl/repair', {})
+  assert(payload.ok === false, '没有失败记录却 ok=true')
+  assert(String(payload.error).includes('还没有失败记录'), payload.error)
+  return '明确要求先读一次'
 })
 
 await check('AI 路由：模型回调接进通用网页读取', async () => {

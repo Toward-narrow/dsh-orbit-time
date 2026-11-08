@@ -464,6 +464,98 @@ function AiCard(props) {
   )
 }
 
+/** The AI repair desk: diagnosis, a safe recipe, and a patch proposal (never applied). */
+function RepairCard(props) {
+  var net = props.net
+  var repair = net.repair
+  if (!repair) return null
+  var busy = net.busy !== ''
+  var result = repair.result
+  var recipe = result && result.recipe
+  var patch = result && result.codePatch
+  var verification = (result && result.verification) || {}
+  var verdict = verification.verdict || ''
+  var issues = util.safeArray(verification.issues).concat(util.safeArray(result && result.recipeIssues))
+  var canReplay = recipe !== null && recipe !== undefined && verdict !== 'reject'
+  var failed = result && result.ok === false
+  return h(
+    'section',
+    { className: 'ot-card ot-card-pad ot-net-repair' },
+    h('h3', { className: 'ot-card-title' }, h('i', { className: 'ot-dot' }), 'AI 卡住了？让它自己写修复方案'),
+    h(
+      'p',
+      { className: 'ot-sub' },
+      '模型会先诊断这次为什么没读出来，再写一套只含“打开 / 点击 / 等文字 / 提取”的安全配方；它也可以提出代码补丁，但插件绝不会自动应用补丁——补丁只写进 repairs/，交给你或 DSH 开发助手审。',
+    ),
+    !result
+      ? h(
+        'div',
+        { className: 'ot-net-actions' },
+        ui.button({ variant: 'primary', icon: 'spark', disabled: busy, onClick: function () { props.store.netDdlRepair().catch(function () {}) } }, busy && net.busy === 'repair' ? '正在诊断…' : '让 AI 诊断这次失败'),
+      )
+      : h(
+        'div',
+        null,
+        h(
+          'div',
+          { className: 'ot-net-repair-head' },
+          failed ? ui.note({ variant: 'warn' }, result.error || '诊断没完成') : null,
+          result.diagnosis ? h('p', { className: 'ot-sub' }, h('b', null, '诊断：'), result.diagnosis) : null,
+          h(
+            'p',
+            { className: 'ot-sub' },
+            '原因：' + (result.cause || 'other') + ' · 验证：' + (verdict || 'skipped') + ' · 模型：' + ((result.model && result.model.model) || '默认'),
+          ),
+        ),
+        recipe
+          ? h(
+            'div',
+            { className: 'ot-net-recipe' },
+            h('p', { className: 'ot-sub' }, h('b', null, '可重放配方（' + Math.round((recipe.confidence || 0) * 100) + '%）')),
+            h('ol', null, recipe.steps.map(function (step, index) {
+              var text = step.action === 'open'
+                ? '打开 ' + step.url
+                : step.action === 'click'
+                  ? '点击「' + step.label + '」'
+                  : step.action === 'waitFor'
+                    ? '等到文字「' + step.text + '」'
+                    : '提取当前页'
+              return h('li', { key: 's' + index }, text)
+            })),
+            recipe.hints ? h('p', { className: 'ot-sub' }, '提示：' + recipe.hints) : null,
+          )
+          : h('p', { className: 'ot-sub' }, '这次没有形成可执行配方；可以先看诊断和补丁建议。'),
+        patch && patch.needed
+          ? h(
+            'details',
+            { className: 'ot-net-repair-patch' },
+            h('summary', null, '代码补丁建议（不会自动应用）'),
+            patch.summary ? h('p', { className: 'ot-sub' }, patch.summary) : null,
+            patch.files.length > 0 ? h('p', { className: 'ot-sub' }, '文件：' + patch.files.join(', ')) : null,
+            patch.risk ? h('p', { className: 'ot-sub' }, '风险：' + patch.risk) : null,
+            patch.diff ? h('pre', { className: 'ot-net-diff' }, patch.diff) : null,
+            patch.tests.length > 0 ? h('p', { className: 'ot-sub' }, '测试：' + patch.tests.join('；')) : null,
+          )
+          : null,
+        issues.length > 0
+          ? h('div', { className: 'ot-net-notes' }, issues.slice(0, 8).map(function (issue, index) {
+            return h('div', { key: 'i' + index, className: 'ot-sub' }, '· ' + issue)
+          }))
+          : null,
+        result.savedPath
+          ? h('p', { className: 'ot-sub', title: result.savedPath }, '方案已存：' + result.savedPath.replace(/^.*[\\/]/, ''))
+          : null,
+        h(
+          'div',
+          { className: 'ot-net-actions' },
+          canReplay ? ui.button({ variant: 'primary', icon: 'play', disabled: busy, onClick: function () { props.store.netDdlReplayRecipe().catch(function () {}) } }, busy && net.busy === 'replay' ? '正在重试…' : '用这个方案重试') : null,
+          ui.button({ variant: 'ghost', disabled: busy, onClick: function () { props.store.netDdlRepair().catch(function () {}) } }, busy && net.busy === 'repair' ? '正在诊断…' : '重新诊断'),
+          ui.button({ variant: 'ghost', disabled: busy, onClick: function () { props.store.netDdlDismissRepair() } }, '关闭'),
+        ),
+      ),
+  )
+}
+
 function ResultCard(props) {
   var net = props.net
   var items = util.safeArray(net.items)
@@ -595,6 +687,7 @@ function NetDdlView(props) {
         },
       })
       : null,
+    net.platform === 'ai' ? h(RepairCard, { store: props.store, net: net }) : null,
     h(ResultCard, { store: props.store, net: net }),
   )
 }

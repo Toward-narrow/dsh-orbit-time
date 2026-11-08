@@ -87,6 +87,8 @@ var state = {
     items: [],
     notes: [],
     page: null,
+    /** The AI repair desk: a proposal from the last failed read. */
+    repair: null,
   },  /**
    * Whether the *host* half is older than this page.
    *
@@ -920,7 +922,7 @@ async function refreshNetDdl() {
      * imported at app start. If it predates the iframe/saved-account login, the
      * panel must say so: otherwise the fix looks like it did nothing.
      */
-    var hostStale = !(status && Number(status.api) >= 4)
+    var hostStale = !(status && Number(status.api) >= 5)
     netddlPatch({
       status: status,
       hostStale: hostStale,
@@ -951,7 +953,7 @@ async function refreshNetDdl() {
 
 function netDdlSetPlatform(platform) {
   if (platform === state.netddl.platform) return
-  netddlPatch({ platform: platform, courses: [], items: [], notes: [], page: null, message: '', error: '' })
+  netddlPatch({ platform: platform, courses: [], items: [], notes: [], page: null, repair: null, message: '', error: '' })
 }
 
 /**
@@ -1162,6 +1164,7 @@ async function netDdlReadSite(options) {
     items: [],
     notes: [],
     page: null,
+    repair: null,
     courses: [],
   })
   try {
@@ -1191,6 +1194,7 @@ async function netDdlReadSite(options) {
       items: items,
       notes: notes,
       page: payload.page || null,
+      repair: payload.repair || null,
       level: items.length > 0 ? 'ok' : 'warn',
       message:
         payload.mode === 'ai'
@@ -1203,6 +1207,90 @@ async function netDdlReadSite(options) {
     netddlPatch({ busy: '', error: String((error && error.message) || error) })
     throw error
   }
+}
+
+/**
+ * Ask the repair desk to diagnose the last failed read.
+ *
+ * The host returns a recipe proposal and an optional code patch proposal. The
+ * client never writes source and never applies the patch; the patch is for the
+ * person (or the DSH coding agent) to review.
+ */
+async function netDdlRepair() {
+  requireCurrentNetHost()
+  var current = state.netddl.repair || { suggested: true }
+  netddlPatch({
+    busy: 'repair',
+    error: '',
+    message: 'AI 正在诊断上一次失败，先在页面证据里找原因…',
+    repair: Object.assign({}, current, { result: null }),
+  })
+  try {
+    var payload = await request('/netddl/repair', {
+      method: 'POST',
+      body: JSON.stringify({ url: '' }),
+      timeoutMs: 300_000,
+    })
+    var repair = Object.assign({}, current, { suggested: true, result: payload })
+    netddlPatch({
+      busy: '',
+      repair: repair,
+      level: payload.ok ? 'ok' : 'warn',
+      message: payload.ok
+        ? payload.recipe
+          ? '诊断完成，方案已保存；先看一遍，再用它重试。'
+          : '诊断完成，但这次没有形成可执行配方；原因和代码建议在下面。'
+        : '',
+      error: payload.ok ? '' : (payload.error || '诊断失败'),
+    })
+    return payload
+  } catch (error) {
+    netddlPatch({ busy: '', error: String((error && error.message) || error) })
+    throw error
+  }
+}
+
+/** Replay the proposed recipe through the host's safe open/click/waitFor/extract DSL. */
+async function netDdlReplayRecipe() {
+  requireCurrentNetHost()
+  var result = state.netddl.repair && state.netddl.repair.result
+  var recipe = result && result.recipe
+  if (!recipe) throw new Error('这次没有可重放的配方。')
+  netddlPatch({ busy: 'replay', error: '', message: '正在按方案重试：只会打开/点击方案里已验证过的入口…' })
+  try {
+    var payload = await request('/netddl/replay', {
+      method: 'POST',
+      body: JSON.stringify({ recipe: recipe, horizonDays: 180 }),
+      timeoutMs: 300_000,
+    })
+    var nowMs = Date.now()
+    var items = util.safeArray(payload.items).map(function (item, index) {
+      var future = typeof item.dueMs === 'number' ? item.dueMs >= nowMs : true
+      return Object.assign({}, item, { key: item.key || 'r' + index, include: future })
+    })
+    var pages = util.safeArray(payload.pages)
+    var nextRepair = Object.assign({}, state.netddl.repair, {
+      result: Object.assign({}, result, { replayed: true, replayNote: payload.mode === 'ai' ? 'AI 提取' : '本地规则' }),
+    })
+    netddlPatch({
+      busy: '',
+      items: items,
+      notes: util.safeArray(payload.notes),
+      page: pages.length > 0 ? { title: pages[0].title, url: pages[0].url, chars: pages[0].chars, payloads: 0, screenshot: '' } : null,
+      repair: nextRepair,
+      level: items.length > 0 ? 'ok' : 'warn',
+      message: '方案重放完成：' + pages.length + ' 页，' + items.length + ' 个时间节点。',
+      error: '',
+    })
+    return payload
+  } catch (error) {
+    netddlPatch({ busy: '', error: String((error && error.message) || error) })
+    throw error
+  }
+}
+
+function netDdlDismissRepair() {
+  netddlPatch({ repair: null })
 }
 
 function netDdlToggleItem(key) {
@@ -1363,6 +1451,9 @@ exports.store = {
   netDdlPull: netDdlPull,
   netDdlReadPage: netDdlReadPage,
   netDdlReadSite: netDdlReadSite,
+  netDdlRepair: netDdlRepair,
+  netDdlReplayRecipe: netDdlReplayRecipe,
+  netDdlDismissRepair: netDdlDismissRepair,
   netDdlToggleItem: netDdlToggleItem,
   netDdlSelectAll: netDdlSelectAll,
   netDdlCommit: netDdlCommit,

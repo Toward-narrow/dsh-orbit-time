@@ -2872,6 +2872,52 @@
   font-size: 11px;
 }
 
+.ot-net-repair {
+  margin-top: 12px;
+  border-left: 3px solid var(--ot-warn, #d49b3f);
+}
+
+.ot-net-repair .ot-net-actions {
+  margin-top: 10px;
+}
+
+.ot-net-recipe {
+  margin-top: 8px;
+}
+
+.ot-net-recipe ol {
+  margin: 4px 0 8px;
+  padding-left: 22px;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.ot-net-repair-patch {
+  margin-top: 10px;
+  border-top: 1px dashed var(--ot-border);
+  padding-top: 8px;
+}
+
+.ot-net-repair-patch summary {
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--ot-text-dim);
+}
+
+.ot-net-diff {
+  max-height: 320px;
+  overflow: auto;
+  margin: 8px 0 4px;
+  padding: 10px;
+  border-radius: 8px;
+  background: var(--ot-surface-2, rgba(0, 0, 0, 0.25));
+  border: 1px solid var(--ot-border);
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .ot-net-courses {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));

@@ -817,6 +817,19 @@ export class PageSession {
    * cheap generic signal; the caller still gets whatever it captured if it never
    * settles.
    */
+  /**
+   * Wait for a literal string to appear in the visible text. The repair recipe
+   * uses it as a "this tab actually loaded" gate instead of a blind sleep.
+   */
+  async waitForText(text, options = {}) {
+    const wanted = String(text ?? '')
+    if (wanted === '') return false
+    return this.waitFor(`(() => (document.body ? document.body.innerText : '').includes(${JSON.stringify(wanted)}))()`, {
+      timeoutMs: Number(options.timeoutMs) || 8000,
+      intervalMs: Number(options.intervalMs) || 250,
+    })
+  }
+
   async waitForSettled(options = {}) {
     const timeoutMs = Number(options.timeoutMs) || 8000
     const quietMs = Number(options.quietMs) || 900
