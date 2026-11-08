@@ -3436,12 +3436,44 @@ export function apply(ctx, rawConfig = {}) {
   /** UI-side diagnostic reports, keyed by kind. */
   const uiReports = new Map()
 
+  /**
+   * Whether a request came from somewhere other than this page.
+   *
+   * `ctx.webServer.register` passes the request straight through: the harness
+   * does not authenticate plugin routes. Without a check here, a plain
+   * `<img src="…/api/orbit-time/assistant?question=…">` on any page the user
+   * visits would spend a model call, and `GET /settings` would hand the
+   * schedule over. Browsers label their own requests with Fetch metadata, so
+   * refuse what they call cross-site. Requests carrying no such metadata — the
+   * HUD's PowerShell, the CLI scripts on loopback — are local and keep working.
+   */
+  function isCrossSiteRequest(req) {
+    const headers = req.headers ?? {}
+    const site = headers['sec-fetch-site']
+    if (typeof site === 'string' && site !== 'same-origin' && site !== 'none') return true
+    const origin = headers.origin
+    if (typeof origin === 'string' && origin !== '') {
+      const host = headers.host
+      if (origin === 'null' || typeof host !== 'string') return true
+      try {
+        if (new URL(origin).host !== host) return true
+      } catch {
+        return true
+      }
+    }
+    return false
+  }
+
   function route(path, handler) {
     const dispose = ctx.webServer.register({
       kind: 'exact',
       path: `${ROUTE_BASE}${path}`,
       handler: async (req, res) => {
         requestCounts.set(path, (requestCounts.get(path) ?? 0) + 1)
+        if (isCrossSiteRequest(req)) {
+          sendJson(res, 403, { ok: false, error: '跨站请求已被拒绝' })
+          return
+        }
         try {
           await handler(req, res)
         } catch (error) {

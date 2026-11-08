@@ -293,6 +293,24 @@ await check('GET /health reports the boot state', () => {
   return `events=${health.events} workbook=${JSON.stringify(health.workbook)}`
 })
 
+await check('a cross-site request is refused before it can spend a model call', async () => {
+  // The harness hands plugin routes the raw request: without this check a page
+  // the user merely visits could call /assistant through an <img> tag and burn
+  // a model call. Fetch metadata is what the browser adds; a local script that
+  // adds none keeps working.
+  const hostile = await fetchWithRetry('/assistant?question=hi', {
+    headers: { origin: 'https://evil.example', 'sec-fetch-site': 'cross-site' },
+  })
+  if (hostile.status !== 403) throw new Error(`cross-site status=${hostile.status}`)
+  const sameOrigin = await fetchWithRetry('/health', {
+    headers: { origin: new URL(base).origin, 'sec-fetch-site': 'same-origin' },
+  })
+  if (sameOrigin.status !== 200) throw new Error(`same-origin status=${sameOrigin.status}`)
+  const local = await fetchWithRetry('/health')
+  if (local.status !== 200) throw new Error(`headerless status=${local.status}`)
+  return 'cross-site 403 · same-origin 200 · no metadata 200'
+})
+
 const empty = await api('/snapshot')
 await check('an empty snapshot is well formed', () => {
   if (empty.day.events.length !== 0) throw new Error(`expected no events, got ${empty.day.events.length}`)
