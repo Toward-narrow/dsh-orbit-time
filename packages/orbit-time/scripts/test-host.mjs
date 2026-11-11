@@ -605,6 +605,194 @@ await check('POST /events reset restores the row, the time, and clears the snooz
   return `restored ${event.title} at ${event.effectiveStart}`
 })
 
+// ------------------------------------------------------------------ editing
+//
+// The panel lets a row be corrected in place — "it got pushed back", "I typed
+// the wrong room". What makes that more than a text edit is that the correction
+// has to reach the places that act on it: the day totals, the free-slot search,
+// the next-up card, and the reminder ladder. These checks drive the real route.
+
+const edited = await post('/events', { action: 'edit', id: lecture.id, patch: { start: hhmm(new Date(soon.getTime() + 30 * 60_000)), title: '高数课（改到二教）' } })
+await check('POST /events edit corrects the row without touching the roster', async () => {
+  const day = await fixtureDaySnapshot()
+  const event = day.day.events.find((row) => row.id === lecture.id)
+  if (event === undefined) throw new Error(`the edited row vanished from ${soonDay}`)
+  const expected = hhmm(new Date(soon.getTime() + 30 * 60_000))
+  if (event.effectiveStart !== expected) throw new Error(`effectiveStart=${event.effectiveStart}, expected ${expected}`)
+  if (event.effectiveTitle !== '高数课（改到二教）') throw new Error(`effectiveTitle=${event.effectiveTitle}`)
+  // The stored row is the roster's, untouched: the next scan must still find it.
+  if (event.start !== hhmm(soon)) throw new Error(`the stored start was rewritten to ${event.start}`)
+  if (event.title !== '高数课') throw new Error(`the stored title was rewritten to ${event.title}`)
+  if (event.edited !== true) throw new Error('the row is not marked as corrected')
+  return `${event.start} -> ${event.effectiveStart}, roster row intact`
+})
+
+await check('an edit reaches the day stats, not just the label', async () => {
+  // Total booked minutes are computed from the clock times; if the edit only
+  // changed what is printed, the shift would not show up here.
+  const before = await api('/snapshot?day=' + soonDay)
+  const movedStart = hhmm(new Date(soon.getTime() + 4 * 60 * 60_000))
+  await post('/events', { action: 'edit', id: lecture.id, patch: { start: movedStart } })
+  const after = await api('/snapshot?day=' + soonDay)
+  const row = after.day.events.find((event) => event.id === lecture.id)
+  if (row === undefined) throw new Error('the row left the day after being moved')
+  if (row.effectiveStart !== movedStart) throw new Error(`effectiveStart=${row.effectiveStart}`)
+  // Same duration, so the total must be unchanged — but the row has to have
+  // moved in the ordering, which is what proves the sort used the new time.
+  if (before.day.stats.totalMinutes !== after.day.stats.totalMinutes) {
+    throw new Error(`moving a row changed the total: ${before.day.stats.totalMinutes} -> ${after.day.stats.totalMinutes}`)
+  }
+  const order = after.day.events.map((event) => event.id)
+  const movedAt = order.indexOf(lecture.id)
+  if (movedAt === -1) throw new Error('the moved row is not in the day')
+  return `total held at ${after.day.stats.totalMinutes} min, row now #${movedAt + 1}`
+})
+
+await post('/events', { action: 'reset', id: lecture.id })
+
+await check('an edit is refused for a value that would break the row', async () => {
+  const cases = [
+    { patch: { date: 'not-a-date' }, why: 'date' },
+    { patch: { start: '25:99' }, why: 'start' },
+    { patch: { title: '   ' }, why: 'title' },
+    { patch: {}, why: 'empty patch' },
+  ]
+  for (const item of cases) {
+    const answer = await apiAllowFailure('/events', { action: 'edit', id: lecture.id, patch: item.patch })
+    if (answer.ok !== false) throw new Error(`${item.why} was accepted`)
+  }
+  return `${cases.length} invalid patches refused`
+})
+
+// ------------------------------------------------------------------ open rows
+//
+// The second complaint: an end time is often unknowable when the row is created,
+// and the old default (start + 60 min) turned "I don't know when this ends" into
+// "you are busy for exactly an hour, then it is over" — with everything after it
+// hidden behind a current-event card that never let go.
+
+/**
+ * Date and clock come from the same instant, so "started 40 minutes ago" stays
+ * true at any hour — including across midnight, where a separately computed
+ * `todayKey` would place yesterday's 23:20 on today's calendar.
+ */
+const openStart = new Date(Date.now() - 40 * 60_000)
+const openDayKey = dayKeyOf(openStart)
+const openRow = (await post('/events', {
+  action: 'add',
+  event: { title: '提交课程项目中期成果', date: openDayKey, start: hhmm(openStart), end: '', timeShape: 'open' },
+})).event
+
+await check('an open-ended row is stored without an invented end', () => {
+  if (openRow.end !== '') throw new Error(`an end was fabricated: ${openRow.end}`)
+  if (openRow.timeShape !== 'open') throw new Error(`timeShape=${openRow.timeShape}`)
+  return `${openRow.title} @ ${openRow.start}, no end`
+})
+
+const openDay = await api('/snapshot?day=' + openDayKey)
+await check('an open row stays in progress past the hour it did not have', () => {
+  // Started 40 minutes ago. Under the old derived end it would already be over.
+  const row = openDay.day.events.find((event) => event.id === openRow.id)
+  if (row === undefined) throw new Error(`the open row is not on ${openDayKey}`)
+  if (row.phase !== 'current') throw new Error(`phase=${row.phase}, expected current`)
+  if (row.minutesUntilEnd !== null) throw new Error(`a non-existent end was reported as ${row.minutesUntilEnd} minutes away`)
+  return `${row.title} is current with no end`
+})
+
+await check('an open row does not swallow the rest of the day', () => {
+  // This is the visible bug in the screenshot: "10:00 · 剩余 89 分钟 · 提交课程项目…"
+  // while a later appointment existed. `nextEvent` must be that later row, and it
+  // must be reachable even though something is in progress right now.
+  const current = openDay.currentEvent
+  if (current === null) throw new Error('currentEvent is null although a row is in progress')
+  if (current.id !== openRow.id) throw new Error(`currentEvent is ${current.title}, not the open row`)
+  const next = openDay.nextEvent
+  if (next !== null && next.id === openRow.id) {
+    throw new Error('nextEvent is the row that is already running')
+  }
+  // Whenever another row starts later than the open one, it has to be the answer.
+  const laterRow = openDay.upcoming.find((event) => event.id !== openRow.id && event.minutesUntilStart > 0)
+  if (laterRow !== undefined && next === null) {
+    throw new Error(`${laterRow.title} starts later but nextEvent is empty`)
+  }
+  return `current=${current.title}, next=${next === null ? '(nothing later)' : next.title}`
+})
+
+await check('finishing an open row is what ends it', async () => {
+  await post('/events', { action: 'done', id: openRow.id, done: true })
+  const after = await api('/snapshot?day=' + openDayKey)
+  if (after.day.events.some((event) => event.id === openRow.id)) throw new Error('a finished row is still listed')
+  if (after.currentEvent !== null && after.currentEvent.id === openRow.id) {
+    throw new Error('a finished open row is still reported as in progress')
+  }
+  await post('/events', { action: 'remove', id: openRow.id })
+  return 'done removes it'
+})
+
+await check('a shape can be changed back, not only away from a span', async () => {
+  // The subtle direction: `span` is a value, not the absence of one. A change
+  // accepted and then ignored on the next read is the worst kind — the user is
+  // told it saved.
+  const row = (await post('/events', {
+    action: 'add',
+    event: { title: '形式要变回来', date: todayKey, start: '00:01', end: '', timeShape: 'open' },
+  })).event
+  await post('/events', { action: 'edit', id: row.id, patch: { timeShape: 'span', end: '23:59' } })
+  const day = await api('/snapshot?day=' + todayKey)
+  const view = day.day.events.find((event) => event.id === row.id)
+  if (view === undefined) throw new Error('the row vanished')
+  if (view.timeShape !== 'span') throw new Error(`the shape stayed ${view.timeShape}`)
+  if (view.effectiveEnd !== '23:59') throw new Error(`the end did not take: ${view.effectiveEnd}`)
+  await post('/events', { action: 'remove', id: row.id })
+  return 'open -> span, and the end stuck'
+})
+
+await check('an open row left over from another day is over, not still running', async () => {
+  // Left unbounded, "started yesterday, never ticked done" would report itself as
+  // in progress forever — and once it owns `currentEvent`, this morning's real
+  // appointment never becomes the answer.
+  const yesterday999 = new Date()
+  yesterday999.setDate(yesterday999.getDate() - 1)
+  const staleDay = dayKeyOf(yesterday999)
+  const stale = (await post('/events', {
+    action: 'add',
+    event: { title: '昨天没点完成的事', date: staleDay, start: '09:00', end: '', timeShape: 'open' },
+  })).event
+  const today = await api('/snapshot?day=' + todayKey)
+  if (today.currentEvent !== null && today.currentEvent.id === stale.id) {
+    throw new Error('yesterday’s open row is still masking today’s schedule')
+  }
+  const staleView = await api('/snapshot?day=' + staleDay)
+  const row = staleView.day.events.find((event) => event.id === stale.id)
+  if (row !== undefined && row.phase === 'current') throw new Error('a stale open row reports itself as current')
+  await post('/events', { action: 'remove', id: stale.id })
+  return `stale row is ${row === undefined ? 'gone' : row.phase}`
+})
+
+const dueSoon = new Date(Date.now() + 45 * 60_000)
+const dueRow = (await post('/events', {
+  action: 'add',
+  event: { title: '课程项目截止', date: dayKeyOf(dueSoon), start: hhmm(dueSoon), end: '', timeShape: 'due' },
+})).event
+
+await check('a deadline row is never "in progress" and never books the clock', async () => {
+  const day = await api('/snapshot?day=' + dayKeyOf(dueSoon))
+  const row = day.day.events.find((event) => event.id === dueRow.id)
+  if (row === undefined) throw new Error(`the deadline is not on ${dayKeyOf(dueSoon)}`)
+  if (row.phase !== 'upcoming') throw new Error(`phase=${row.phase}, expected upcoming`)
+  if (row.started === true) throw new Error('a deadline was treated as running')
+  // A deadline is an instant: it must not carve a span out of the day the way a
+  // fabricated end did. The row counts as a row, but contributes no booked time.
+  const withoutIt = day.day.stats.totalMinutes
+  await post('/events', { action: 'done', id: dueRow.id, done: true })
+  const after = await api('/snapshot?day=' + dayKeyOf(dueSoon))
+  if (after.day.stats.totalMinutes !== withoutIt) {
+    throw new Error(`the deadline booked ${withoutIt - after.day.stats.totalMinutes} minutes of the day`)
+  }
+  await post('/events', { action: 'remove', id: dueRow.id })
+  return `${row.title} upcoming, no span`
+})
+
 // ------------------------------------------------------------------ timer
 
 const idle = await api('/timer')
@@ -919,10 +1107,10 @@ await check('GET /feed returns newest-first activity', () => {
 
 const exported = await api('/export')
 await check('GET /export returns the durable state', () => {
-  // Counted from the fixtures rather than written down: the probe row added by the
-  // toast check is removed again, so what is left is exactly what this test added.
+  // Counted from the fixtures rather than written down: the probe rows the checks
+  // above add are removed again, so what is left is exactly what this run added.
   if (exported.events.length !== added.length) {
-    throw new Error(`exported ${exported.events.length} events, the run added ${added.length}`)
+    throw new Error(`exported ${exported.events.length} events, the run added ${added.length}: ${exported.events.map((event) => event.title).join(', ')}`)
   }
   if (exported.settings.profile.name !== '张三') throw new Error('settings missing from the export')
   return `${exported.events.length} events, exportedAt=${exported.exportedAt.slice(0, 19)}`

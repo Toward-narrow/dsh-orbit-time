@@ -30,6 +30,11 @@ function EventRow(props) {
   var errorPair = React.useState('')
   var error = errorPair[0]
   var setError = errorPair[1]
+  // Open in place, over the row itself, so the thing being changed is still on
+  // screen while it is changed. A modal would have covered the day behind it.
+  var editPair = React.useState(false)
+  var editing = editPair[0]
+  var setEditing = editPair[1]
 
   function act(action, body) {
     setBusy(true)
@@ -61,14 +66,26 @@ function EventRow(props) {
       })
   }
 
-  var when =
-    event.phase === 'current'
-      ? '剩余 ' + Math.max(0, event.minutesUntilEnd || 0) + ' 分'
-      : event.phase === 'upcoming'
-        ? util.formatRelative(event.minutesUntilStart)
-        : event.phase === 'past'
-          ? '已结束'
-          : ''
+  /**
+   * What this row says about its clock, in the shape it actually has.
+   *
+   * The three shapes are not the same sentence. An open task has no "剩余 N 分"
+   * to report — that number used to come from a fabricated end, and showing it
+   * was the entire "一直显示 0:00" problem: the countdown ran out while the work
+   * was nowhere near done. Now the row says how long it has been running.
+   */
+  var when = ''
+  if (event.phase === 'current') {
+    if (event.timeShape === 'open') {
+      when = '已进行 ' + Math.max(0, -(event.minutesUntilStart || 0)) + ' 分 · 没设结束'
+    } else {
+      when = '剩余 ' + Math.max(0, event.minutesUntilEnd || 0) + ' 分'
+    }
+  } else if (event.phase === 'upcoming') {
+    when = event.timeShape === 'due' ? util.formatRelative(event.minutesUntilStart) + '截止' : util.formatRelative(event.minutesUntilStart)
+  } else if (event.phase === 'past') {
+    when = event.timeShape === 'due' ? '已过截止' : '已结束'
+  }
 
   var tags = []
   if (event.classroom) tags.push(h('span', { className: 'ot-tag', key: 'room' }, ui.glyph('pin', 11), event.classroom))
@@ -90,11 +107,30 @@ function EventRow(props) {
   if (event.source && event.source.sheet === '网络 DDL') {
     tags.push(h('span', { className: 'ot-tag ot-tag-web', key: 'web', title: '从网上（课程平台 / 网页）读到的截止时间' }, '网络 DDL'))
   }
+  // A row the user has corrected says so, and the same badge offers the way back:
+  // the roster's version is still there underneath, and "a change I cannot undo"
+  // is the reason people stop using an edit button.
+  if (event.edited === true) {
+    tags.push(
+      h('span', { className: 'ot-tag ot-tag-edited', key: 'edited', title: '这一条被你改过；Excel 原表没动' }, '已修改'),
+    )
+  }
+  // A shape badge, because "没有结束时间" is a property of the row and not an
+  // accident of the import. Without it the timeline just looks like it lost a value.
+  if (event.timeShape === 'due') tags.push(h('span', { className: 'ot-tag ot-tag-shape', key: 'shape' }, '截止'))
+  else if (event.timeShape === 'open') tags.push(h('span', { className: 'ot-tag ot-tag-shape', key: 'shape' }, '做到完为止'))
   if (util.safeArray(event.warnings).length > 0) {
     tags.push(
       h('span', { className: 'ot-tag ot-tag-warn', key: 'warn', title: util.safeArray(event.warnings).join('\n') }, '⚠ ', util.safeArray(event.warnings)[0]),
     )
   }
+
+  // The second line under the time column: a deadline has no end to print, and
+  // "—" there reads as missing data rather than as a deliberate shape.
+  var endLine = ''
+  if (event.timeShape === 'due') endLine = '截止'
+  else if (event.timeShape === 'open') endLine = '没有结束'
+  else endLine = event.effectiveEnd || event.end || ''
 
   return h(
     'article',
@@ -102,6 +138,8 @@ function EventRow(props) {
       className: util.animationClass('ev:' + event.id, 'ot-ev'),
       'data-phase': phase,
       'data-done': event.done ? 'true' : 'false',
+      'data-shape': event.timeShape || 'span',
+      'data-editing': editing ? 'true' : 'false',
       'data-event-id': event.id,
     },
     h('i', { className: 'ot-ev-node' }),
@@ -109,7 +147,7 @@ function EventRow(props) {
       'div',
       { className: 'ot-ev-time' },
       h('div', { className: 'ot-ev-start' }, event.effectiveStart || event.start || '—'),
-      event.effectiveEnd || event.end ? h('div', { className: 'ot-ev-end' }, (event.effectiveEnd || event.end)) : null,
+      endLine !== '' ? h('div', { className: 'ot-ev-end' }, endLine) : null,
     ),
     h(
       'div',
@@ -117,14 +155,53 @@ function EventRow(props) {
       h(
         'div',
         { className: 'ot-ev-head' },
-        h('span', { className: 'ot-ev-title', title: event.title }, event.title),
+        h('span', { className: 'ot-ev-title', title: event.effectiveTitle || event.title }, event.effectiveTitle || event.title),
         when ? h('span', { className: 'ot-ev-when' }, when) : null,
       ),
-      event.effectiveStart !== event.start && event.start
-        ? h('div', { className: 'ot-sub' }, '原定 ' + event.start + ' → 已顺延到 ' + event.effectiveStart)
+      // Only where the roster and the correction differ: "原定 … → 已顺延" on a row
+      // that was never moved would be noise on every imported line.
+      (event.effectiveStart && event.effectiveStart !== event.start) || (event.effectiveDate && event.effectiveDate !== event.date) || (event.effectiveTitle && event.effectiveTitle !== event.title)
+        ? h(
+            'div',
+            { className: 'ot-sub ot-ev-moved' },
+            '原定 ' +
+              [event.date, event.start].filter(function (value) { return value && value !== '' }).join(' ') +
+              (event.title !== (event.effectiveTitle || event.title) ? ' · ' + event.title : '') +
+              ' → 现在 ' +
+              [event.effectiveDate, event.effectiveStart].filter(function (value) { return value && value !== '' }).join(' '),
+          )
         : null,
       tags.length > 0 ? h('div', { className: 'ot-tags' }, tags) : null,
       event.notes ? h('div', { className: 'ot-ev-notes', title: event.notes }, event.notes) : null,
+      editing
+        ? h(manual.EventEditor, {
+            store: store,
+            event: event,
+            day: props.day,
+            now: props.now,
+            onCancel: function () {
+              setEditing(false)
+            },
+            onSaved: function () {
+              setEditing(false)
+              if (typeof props.onEdited === 'function') props.onEdited(event)
+            },
+            onReset: function () {
+              setBusy(true)
+              setError('')
+              return store
+                .resetEvent(event.id)
+                .then(function () {
+                  setBusy(false)
+                  setEditing(false)
+                })
+                .catch(function (failure) {
+                  setBusy(false)
+                  setError(String((failure && failure.message) || failure))
+                })
+            },
+          })
+        : null,
       h(
         'div',
         { className: 'ot-ev-actions' },
@@ -140,6 +217,23 @@ function EventRow(props) {
           },
           ui.glyph('check', 12),
           event.done ? '取消完成' : '完成',
+        ),
+        // Editing is offered on every row, imported ones included. The importer
+        // owns the *file*; it has never had a claim on what the user means by it.
+        h(
+          'button',
+          {
+            type: 'button',
+            className: 'ot-btn ot-btn-sm ot-btn-ghost',
+            disabled: busy,
+            'aria-expanded': editing ? 'true' : 'false',
+            title: '改这一条的时间、标题、地点（Excel 原表不动）',
+            onClick: function () {
+              setEditing(!editing)
+            },
+          },
+          ui.glyph('pen', 12),
+          editing ? '收起修改' : '改一下',
         ),
         event.phase !== 'past'
           ? h(
@@ -205,7 +299,7 @@ function EventRow(props) {
                 disabled: busy,
                 title: '用这条日程开始一个番茄',
                 onClick: function () {
-                  props.onFocus(event.title)
+                  props.onFocus(event.effectiveTitle || event.title)
                 },
               },
               ui.glyph('play', 12),
@@ -218,10 +312,32 @@ function EventRow(props) {
   )
 }
 
+/**
+ * The one card at the top of the day: what is happening, and what is next.
+ *
+ * It used to answer one question with one row, and the row it picked was
+ * whichever came first — so a long class, or a task with no end, occupied the
+ * card for its whole duration and the appointment after it was invisible. That is
+ * the "看不到之后的状态" complaint, and it was the card's shape that caused it, not
+ * the data.
+ *
+ * Two lanes now, and neither can hide the other:
+ *
+ *   top     what the clock is inside — with a countdown if it has an end, and
+ *           "已进行 42 分" if it does not, because an open task has no finish line
+ *           to count down to
+ *   bottom  what starts next, with its own countdown
+ *
+ * When only one of them exists the other lane is simply absent rather than
+ * filled with an empty placeholder: a card that says "no next up" in a slot that
+ * looks like data is worse than a shorter card.
+ */
 function NextCard(props) {
   var next = props.next
+  var current = props.current
   var now = props.now
-  if (!next) {
+
+  if (!next && !current) {
     return h(
       'div',
       { className: 'ot-card ot-next' },
@@ -235,48 +351,110 @@ function NextCard(props) {
     )
   }
 
-  var startMs = next.startMs
-  var remainingMs = startMs === null ? 0 : Math.max(0, startMs - now)
-  var isCurrent = next.phase === 'current'
-  var meta = [
-    next.effectiveStart && next.effectiveEnd ? next.effectiveStart + '–' + next.effectiveEnd : next.effectiveStart || '全天',
-    next.classroom || next.location,
-    next.course,
-    next.teacher,
-  ]
-    .filter(function (value) {
-      return value && value !== ''
-    })
-    .join(' · ')
+  /** One lane: a title, a line of detail, and a number on the right. */
+  function lane(event, kind) {
+    if (!event) return null
+    var isCurrent = kind === 'current'
+    var openEnded = isCurrent && (event.timeShape === 'open' || event.minutesUntilEnd === null)
+    var startMs = event.startMs
+    var remainingMs = startMs === null ? 0 : Math.max(0, startMs - now)
+    /**
+     * The place line: where it is, and nothing about when.
+     *
+     * It used to open with `15:30–17:00` while the line above it already said
+     * `15:30 → 17:00` — the same range twice, in two formats, on one card. The
+     * clock belongs to the header, which is the part that is meant to be read.
+     */
+    var meta = [event.classroom || event.location, event.course, event.teacher]
+      .filter(function (value) {
+        return value && value !== ''
+      })
+      .join(' · ')
 
+    var big
+    var label
+    if (openEnded) {
+      // Elapsed, not remaining: an open task has no finish line, and a countdown
+      // to a number that does not exist is exactly what used to read "0 分钟".
+      var elapsed = Math.max(0, -(event.minutesUntilStart || 0))
+      big = String(elapsed)
+      label = elapsed < 1 ? '刚开始' : '分钟前开始'
+    } else if (isCurrent) {
+      big = String(Math.max(0, event.minutesUntilEnd || 0))
+      label = '分钟后结束'
+    } else {
+      big = util.formatCountdown(remainingMs)
+      label = event.timeShape === 'due' ? '后截止' : '后开始'
+    }
+
+    /**
+     * The status word beside the clock, and the rule it follows.
+     *
+     * For the running lane it says what the clock cannot: that this is happening
+     * now. For the next lane it says nothing at all, because the only thing left
+     * to say would be "in 1 day 5 hours" — which is exactly what the big number
+     * on the right already is. Putting both on one card is what made the header
+     * read `15:30 →17:00 1 天 5 小时后` with a second `1 天 5 小时` filling the
+     * right half of the card.
+     */
+    var status = ''
+    if (openEnded) status = '进行中 · 没有结束时间'
+    else if (isCurrent) status = '进行中'
+    else if (event.timeShape === 'due') status = event.effectiveEnd ? '' : '截止'
+
+    return h(
+      'div',
+      { className: 'ot-next-lane', 'data-kind': kind },
+      h(
+        'div',
+        { className: 'ot-next-main' },
+        h(
+          'div',
+          { className: 'ot-next-time' },
+          h('span', { className: 'ot-next-start' }, event.effectiveStart || '全天'),
+          event.effectiveEnd
+            ? h('span', { className: 'ot-next-sep' }, '→ ' + event.effectiveEnd)
+            : null,
+          status !== '' ? h('span', { className: 'ot-next-count' }, status) : null,
+          event.edited === true ? h('span', { className: 'ot-next-edited', title: '这一条被你改过' }, '已修改') : null,
+        ),
+        h('div', { className: 'ot-next-title', title: event.effectiveTitle || event.title }, event.effectiveTitle || event.title),
+        meta !== '' ? h('div', { className: 'ot-next-meta' }, meta) : null,
+        /**
+         * A bar only where it measures something.
+         *
+         * An open task has no length, so a bar would be decoration. A row that has
+         * not started is at 0% by definition, so its bar is a permanently empty
+         * track — which on a card this sparse reads as a broken element rather
+         * than as "not begun".
+         */
+        isCurrent && !openEnded
+          ? h('div', { className: 'ot-progress' }, h('i', { style: { width: Math.round((event.progress || 0) * 100) + '%' } }))
+          : null,
+      ),
+      h(
+        'div',
+        {
+          className:
+            'ot-countdown' +
+            (openEnded ? ' ot-countdown-open' : '') +
+            // "1 天 5 小时" is a phrase, not a clock: it needs its own size or it
+            // outshouts the event it describes.
+            (big.indexOf('天') !== -1 ? ' ot-countdown-long' : ''),
+        },
+        h('div', { className: 'ot-countdown-value' }, big),
+        h('div', { className: 'ot-countdown-label' }, label),
+      ),
+    )
+  }
+
+  var hasBoth = Boolean(next && current)
   return h(
     'div',
-    { className: 'ot-card ot-next' },
-    h(
-      'div',
-      { className: 'ot-next-main' },
-      h(
-        'div',
-        { className: 'ot-next-time' },
-        h('span', { className: 'ot-next-start' }, next.effectiveStart || '全天'),
-        h('span', { className: 'ot-next-count' }, isCurrent ? '进行中 · 剩余 ' + Math.max(0, next.minutesUntilEnd || 0) + ' 分钟' : util.formatRelative(next.minutesUntilStart)),
-      ),
-      h('div', { className: 'ot-next-title', title: next.title }, next.title),
-      h('div', { className: 'ot-next-meta' }, meta || '未填写地点'),
-      h(
-        'div',
-        { className: 'ot-progress' },
-        h('i', { style: { width: Math.round((isCurrent ? next.progress : 0) * 100) + '%' } }),
-      ),
-    ),
-    h(
-      'div',
-      { className: 'ot-countdown' },
-      isCurrent
-        ? h('div', { className: 'ot-countdown-value' }, String(Math.max(0, next.minutesUntilEnd || 0)))
-        : h('div', { className: 'ot-countdown-value' }, util.formatCountdown(remainingMs)),
-      h('div', { className: 'ot-countdown-label' }, isCurrent ? '分钟后结束' : '后开始'),
-    ),
+    { className: 'ot-card ot-next' + (hasBoth ? ' ot-next-both' : '') },
+    lane(current, 'current'),
+    hasBoth ? h('div', { className: 'ot-next-divide' }, h('span', null, '然后')) : null,
+    lane(next, 'next'),
   )
 }
 
@@ -417,13 +595,22 @@ function TimelineView(props) {
           },
         })
       : null,
-    h(NextCard, { next: snapshot && snapshot.nextEvent, now: now }),
+    h(NextCard, { next: snapshot && snapshot.nextEvent, current: snapshot && snapshot.currentEvent, now: now }),
     h('div', { style: { height: 12 } }),
     h(
       'div',
       { className: 'ot-grid ot-grid-4' },
       ui.stat({ animKey: 'tl-count', icon: 'calendar', label: dayLabel(day) + '日程', value: String(stats.eventCount || events.length), foot: stats.label ? stats.label : '' }),
-      ui.stat({ animKey: 'tl-total', icon: 'clock', label: '总时长', value: Math.round(((stats.totalMinutes || 0) / 60) * 10) / 10 + ' h', foot: '含休息间隙' }),
+      ui.stat({
+        animKey: 'tl-total',
+        icon: 'clock',
+        label: '总时长',
+        value: Math.round(((stats.totalMinutes || 0) / 60) * 10) / 10 + ' h',
+        // "含休息间隙" stopped being true once open tasks stopped inventing an
+        // end: the number is now only the time rows actually account for, and
+        // saying why it looks small is better than letting it look wrong.
+        foot: (stats.openCount || 0) > 0 ? '不含没有结束的 ' + stats.openCount + ' 条' : (stats.dueCount || 0) > 0 ? '不含截止时刻' : '含休息间隙',
+      }),
       ui.stat({ animKey: 'tl-done', icon: 'check', label: '已完成', value: Math.round(((stats.doneMinutes || 0) / 60) * 10) / 10 + ' h', foot: (stats.totalMinutes ? Math.round((stats.doneMinutes / stats.totalMinutes) * 100) : 0) + '% 的日程时间' }),
       ui.stat({
         animKey: 'tl-free',
@@ -484,6 +671,7 @@ function TimelineView(props) {
               key: event.id,
               event: event,
               store: store,
+              day: day,
               now: now,
               showOwner: true,
               snoozeMinutes: util.safeArray(snapshot && snapshot.settings.reminders.snoozeMinutes)[0] || 5,
@@ -492,6 +680,12 @@ function TimelineView(props) {
               // deleted row disappearing is the success message.
               onDelete: function (event) {
                 return store.removeEvent(event.id)
+              },
+              onEdited: function () {
+                // The reply already carried a fresh snapshot, but a row moved to
+                // another date has to leave this list too, and only a re-read is
+                // guaranteed to reflect that.
+                void store.refresh(day).catch(function () {})
               },
             })
           }),
@@ -506,7 +700,7 @@ function TimelineView(props) {
               'div',
               { className: 'ot-tl' },
               props.undated.map(function (event) {
-                return h(EventRow, { key: event.id, event: event, store: store, now: now, onFocus: props.onFocus })
+                return h(EventRow, { key: event.id, event: event, store: store, day: day, now: now, onFocus: props.onFocus })
               }),
             ),
           }),

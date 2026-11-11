@@ -121,7 +121,48 @@ const DRIVER = [
   '  day: { dayKey: dayKey(0), events: [mk({ id: "e1", date: dayKey(0), start: "19:30", end: "20:50", title: "示例部门晚自习考勤" })], stats: { dayKey: dayKey(0), label: "周二", eventCount: 1, totalMinutes: 80, doneMinutes: 0, remainingMinutes: 80, freeSlots: [], completedRounds: 0, focusGoalRounds: 8, focusMinutesToday: 0 }, undated: [] },',
   '  nextEvent: null, upcoming: [],',
   '  week: [-2, -1, 0, 1, 2, 3, 4].map((o) => ({ dayKey: dayKey(o), label: "周" + "日一二三四五六"[new Date(now + o * 864e5).getDay()], dayOfMonth: new Date(now + o * 864e5).getDate(), isToday: o === 0, count: o === 0 ? 1 : 0, firstStart: "", titles: [] })),',
-  '  month: { monthKey: dayKey(0).slice(0, 7), year: new Date(now).getFullYear(), month: new Date(now).getMonth() + 1, title: "本月", prevMonth: dayKey(-28).slice(0, 7), nextMonth: dayKey(28).slice(0, 7), grid: [], dayCount: 0, eventCount: 0, items: [] },',
+  // A real grid, not an empty one: the calendar's own note is the "host has no
+  // month" fallback, and a fixture that always takes it never renders a single
+  // cell — so the day click and the month flip would silently skip themselves.
+  '  month: (() => {',
+  '    const base = new Date(now)',
+  '    const year = base.getFullYear()',
+  '    const month = base.getMonth() + 1',
+  '    const daysInMonth = new Date(year, month, 0).getDate()',
+  '    const lead = (new Date(year, month - 1, 1).getDay() + 6) % 7',
+  '    const cells = lead + daysInMonth <= 35 ? 35 : 42',
+  '    const grid = []',
+  '    for (let i = 0; i < cells; i += 1) {',
+  '      const d = new Date(year, month - 1, 1 - lead + i)',
+  '      const key = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0")',
+  '      const marked = i === lead',
+  '      grid.push({',
+  '        dayKey: key,',
+  '        label: "周" + "日一二三四五六"[d.getDay()],',
+  '        dayOfMonth: d.getDate(),',
+  '        isToday: key === dayKey(0),',
+  '        count: marked ? 1 : 0,',
+  '        hasEvents: marked,',
+  '        firstStart: marked ? "19:30" : "",',
+  '        titles: marked ? ["示例部门晚自习考勤"] : [],',
+  '        inMonth: key.slice(0, 7) === dayKey(0).slice(0, 7),',
+  '        monthDay: d.getDate(),',
+  '      })',
+  '    }',
+  '    const mk2 = (dayKeyText) => ({',
+  '      monthKey: dayKeyText.slice(0, 7),',
+  '      year: Number(dayKeyText.slice(0, 4)),',
+  '      month: Number(dayKeyText.slice(5, 7)),',
+  '      title: dayKeyText.slice(0, 7),',
+  '      prevMonth: dayKeyText.slice(0, 7),',
+  '      nextMonth: dayKeyText.slice(0, 7),',
+  '      grid: grid,',
+  '      dayCount: 1,',
+  '      eventCount: 1,',
+  '      items: [{ id: "e1", title: "示例部门晚自习考勤", start: "19:30", end: "20:50", place: "", done: false, manual: false, origin: "import" }],',
+  '    })',
+  '    return mk2(dayKey(0))',
+  '  })(),',
   '  timer: { phase: "idle", running: false, remainingMs: 0, round: 0, completedToday: 0, dayKey: dayKey(0), subject: "", history: [], config: { focusMinutes: 25, shortBreakMinutes: 5, longBreakMinutes: 15, roundsBeforeLongBreak: 4, autoStartBreak: true, autoStartFocus: false, dailyGoalRounds: 8, tickingSound: false } },',
   '  feed: [], generatedAt: new Date(now).toISOString(),',
   '}',
@@ -452,6 +493,169 @@ const DRIVER = [
   '  }, 2600)',
   '})()',
   '</script>',
+  // The surface-level sweep. The add flow above proves one button; this walks the
+  // rest of the things a person clicks, because the failure that mattered was not
+  // "the wrong value" — it was the whole panel going blank when a dialog opened
+  // against data it did not expect. Each step reports whether the dashboard is
+  // still a dashboard (`crashCard=no`) after the click, so a single broken
+  // surface cannot hide behind the others passing.
+  '<script>',
+  '(function () {',
+  '  function byClass(selector, text) {',
+  '    const nodes = Array.from(document.querySelectorAll(selector))',
+  '    return text === undefined ? nodes[0] : nodes.find((n) => (n.textContent || "").indexOf(text) >= 0)',
+  '  }',
+  '  // Tabs carry a live badge inside the same button, so the rendered text is',
+  '  // "日程时间轴1" on some days and "日程时间轴" on others. Matching the start of',
+  '  // the label is what the user is aiming at; an exact match is a test that fails',
+  '  // on a Tuesday because a count reached one digit.',
+  '  function clickTab(label) {',
+  '    const node = Array.from(document.querySelectorAll(".ot-tab")).find((n) => (n.textContent || "").trim().indexOf(label) === 0)',
+  '    if (!node) { say("no tab " + label, "err"); return false }',
+  '    node.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }))',
+  '    return true',
+  '  }',
+  '  function flip(direction) {',
+  '    const want = direction < 0 ? "上一个月" : "下一个月"',
+  '    const node = Array.from(document.querySelectorAll(".ot-cal-flip")).find((n) => (n.getAttribute("title") || "") === want)',
+  '    if (!node) { say("no month flip " + want, "err"); return false }',
+  '    node.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }))',
+  '    return true',
+  '  }',
+  '  const steps = []',
+  '  function step(label, run, check) { steps.push({ label: label, run: run, check: check }) }',
+  '',
+  '  step("打开日历", () => {',
+  '    // Idempotent on purpose: submitting the add form already opens the calendar',
+  '    // (that is how the new row stays visible), so an unconditional click here',
+  '    // would close the very thing the next steps need.',
+  '    if (document.querySelector(".ot-cal-grid")) return',
+  '    if (!click("日历")) throw new Error("the 日历 button was not found")',
+  '  }, () => {',
+  '    const grid = document.querySelector(".ot-cal-grid")',
+  '    if (!grid) throw new Error("the calendar did not open")',
+  '    return grid.querySelectorAll(".ot-cal-cell").length + " cells"',
+  '  })',
+  '  step("点一个日期", () => {',
+  '    const cell = byClass(".ot-cal-cell[data-outside=\\"false\\"]")',
+  '    if (!cell) throw new Error("no day cell to click")',
+  '    cell.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }))',
+  '  })',
+  '  step("翻到下个月", () => flip(1))',
+  '  step("翻回上个月", () => flip(-1))',
+  '  step("筛选未完成", () => click("未完成"))',
+  '  step("筛选已完成", () => click("已完成"))',
+  '  step("筛选全部", () => click("全部"))',
+  '  step("改一条", () => click("改一下"), () => {',
+  '    const form = document.querySelector(".ot-add-edit")',
+  '    if (!form) throw new Error("the edit form did not open")',
+  '    // The form must open on the row it belongs to, not on a blank draft.',
+  '    const title = form.querySelector("input[type=text]")',
+  '    if (!title || title.value === "") throw new Error("the edit form opened empty")',
+  '    return "opened on \\"" + title.value + "\\""',
+  '  })',
+  '  step("收起修改", () => {',
+  '    const form = document.querySelector(".ot-add-edit")',
+  '    if (!form) throw new Error("the edit form vanished before it could be closed")',
+  '    const close = Array.from(form.querySelectorAll("button")).find((b) => (b.textContent || "").indexOf("收起") >= 0)',
+  '    if (!close) throw new Error("the edit form has no collapse control")',
+  '    close.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }))',
+  '  }, () => {',
+  '    if (document.querySelector(".ot-add-edit")) throw new Error("the edit form did not close")',
+  '    return "closed"',
+  '  })',
+  '  step("完成一条", () => click("完成"))',
+  '  step("切到番茄专注", () => clickTab("番茄专注"), () => {',
+  '    if (!document.querySelector(".ot-ring")) throw new Error("the pomodoro tab has no ring")',
+  '    return "ring up"',
+  '  })',
+  '  step("开始专注", () => {',
+  '    const labels = ["开始专注", "继续", "暂停"]',
+  '    const node = Array.from(document.querySelectorAll("button")).find((b) => labels.indexOf((b.textContent || "").trim()) >= 0)',
+  '    if (!node) throw new Error("no start control on the pomodoro tab")',
+  '    node.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }))',
+  '  }, () => {',
+  '    if (!document.querySelector(".ot-view")) throw new Error("the pomodoro view disappeared")',
+  '    return "timer accepted the click"',
+  '  })',
+  '  step("打开设置页", () => clickTab("设置"), () => {',
+  '    if (!document.querySelector(".ot-view")) throw new Error("the settings view is empty")',
+  '    return "settings rendered"',
+  '  })',
+  '  step("切回日程时间轴", () => clickTab("日程时间轴"))',
+  '',
+  '  let index = 0',
+  '  function next() {',
+  '    if (index >= steps.length) { say("--- sweep done ---", "ok"); return }',
+  '    const item = steps[index]',
+  '    index += 1',
+  '    let note = ""',
+  '    try {',
+  '      const started = item.run()',
+  '      if (started === false) throw new Error("the control was not found")',
+  '    } catch (error) {',
+  '      say("sweep " + item.label + " threw: " + error.message, "err")',
+  '      setTimeout(next, 260)',
+  '      return',
+  '    }',
+  '    setTimeout(() => {',
+  '      const crash = document.querySelector(".ot-crash-card")',
+  '      const host = document.getElementById("host")',
+  '      if (crash) {',
+  '        const msg = crash.querySelector(".ot-crash-msg")',
+  '        say("sweep " + item.label + ": CRASH — " + (msg ? msg.textContent : ""), "err")',
+  '        return',
+  '      }',
+  '      if (!host || host.innerHTML.length < 1000) {',
+  '        say("sweep " + item.label + ": the panel went blank (" + (host ? host.innerHTML.length : -1) + " chars)", "err")',
+  '        return',
+  '      }',
+  '      try {',
+  '        note = item.check ? item.check() : ""',
+  '      } catch (error) {',
+  '        say("sweep " + item.label + ": " + error.message, "err")',
+  '        setTimeout(next, 260)',
+  '        return',
+  '      }',
+  '      say("sweep " + item.label + ": ok" + (note ? " — " + note : ""), "ok")',
+  '      setTimeout(next, 260)',
+  '    }, 320)',
+  '  }',
+  '  setTimeout(next, 3400)',
+  '})()',
+  '</script>',
+  // The reminder card, driven exactly as the report showed it: a due reminder
+  // appears in the shell overlay and the user presses 已完成 on it. That click
+  // re-renders a different React root and writes through the store, so it is the
+  // one interaction where a failure shows up as "the page went white but the
+  // toast stayed" — the symptom this file exists to catch.
+  '<script>',
+  '(function () {',
+  '  function noticeRootNode() { return document.querySelector(".ot-notice") }',
+  '  setTimeout(() => {',
+  '    const live = exports_["./store.js"].store',
+  '    live.set({ notices: [{ id: "probe-1", level: "urgent", title: "现在开始 · q", body: "00:20–01:20", eventId: "e1" }] })',
+  '    setTimeout(() => {',
+  '      const card = noticeRootNode()',
+  '      if (!card) { say("notice probe: the reminder card did not render", "err"); return }',
+  '      const done = Array.from(card.querySelectorAll("button")).find((b) => (b.textContent || "").indexOf("已完成") >= 0)',
+  '      if (!done) {',
+  '        say("notice probe: no 已完成 button (have: " + Array.from(card.querySelectorAll("button")).map((b) => b.textContent).join(" | ") + ")", "err")',
+  '        return',
+  '      }',
+  '      done.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }))',
+  '      setTimeout(() => {',
+  '        const stillOpen = noticeRootNode()',
+  '        const crash = document.querySelector(".ot-crash-card")',
+  '        const host = document.getElementById("host")',
+  '        if (crash) { say("notice probe: CRASH after 已完成", "err"); return }',
+  '        if (!host || host.innerHTML.length < 1000) { say("notice probe: the panel went blank after 已完成", "err"); return }',
+  '        say("notice probe: 已完成 dismissed the card=" + (stillOpen === null) + ", panel intact=" + (host.innerHTML.length > 1000), "ok")',
+  '      }, 400)',
+  '    }, 300)',
+  '  }, 3300)',
+  '})()',
+  '</script>',
   '</body></html>',
 ].join('\n')
 
@@ -470,7 +674,11 @@ if (process.argv.includes('--run')) {
     console.log('no Edge/Chrome found')
     process.exit(0)
   }
-  const dump = spawnSync(browser, ['--headless=new', '--disable-gpu', '--virtual-time-budget=8000', '--dump-dom', pathToFileURL(out).href], {
+  // 20 s of virtual time: the add flow, the two overlay mounts, and the surface
+  // sweep each wait for React to settle, and a budget that expires mid-sweep
+  // reports the remaining steps as "never ran" — which reads exactly like a
+  // failure and hides whichever step genuinely broke.
+  const dump = spawnSync(browser, ['--headless=new', '--disable-gpu', '--virtual-time-budget=20000', '--dump-dom', pathToFileURL(out).href], {
     encoding: 'utf8',
     windowsHide: true,
     timeout: 90_000,
@@ -478,14 +686,22 @@ if (process.argv.includes('--run')) {
   const match = /<pre id="log">([\s\S]*?)<\/pre>/.exec(dump.stdout || '')
   if (match === null) {
     console.log('(no log found; stderr: ' + String(dump.stderr || '').slice(0, 400) + ')')
+    process.exitCode = 1
   } else {
-    console.log(
-      match[1]
-        .replace(/<[^>]+>/g, '')
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&quot;/g, '"')
-        .replace(/&amp;/g, '&'),
-    )
+    const log = match[1]
+      .replace(/<[^>]+>/g, '')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&amp;/g, '&')
+    console.log(log)
+    // A sweep that never started is not a pass. The marker is printed by the last
+    // step, so requiring it distinguishes "everything ran" from "the page died
+    // early and the harness had nothing to print".
+    if (log.indexOf('--- sweep done ---') === -1) {
+      console.log('\n(sweep did not finish — see the log above)')
+      process.exitCode = 1
+    }
+    if (/FAIL|CRASH|went blank|threw:/.test(log)) process.exitCode = 1
   }
 }

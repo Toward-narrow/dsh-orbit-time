@@ -126,8 +126,18 @@ function CompanionView(props) {
   }
 
   var next = props.snapshot && props.snapshot.nextEvent
+  var current = props.snapshot && props.snapshot.currentEvent
   var assistant = props.assistant || { mode: 'unknown', detail: '' }
   var usingModel = assistant.mode === 'model'
+
+  // Both, because "下一个" answered with the thing already running was the same
+  // confusion the timeline's card had.
+  var statusLine
+  if (companion.busy) statusLine = '正在读你的日程…'
+  else if (current && next) statusLine = '正在进行：' + (current.effectiveTitle || current.title) + ' · 接着 ' + (next.effectiveTitle || next.title)
+  else if (current) statusLine = '正在进行：' + (current.effectiveTitle || current.title) + (current.minutesUntilEnd === null ? '（没有结束时间）' : '')
+  else if (next) statusLine = '下一个：' + (next.effectiveTitle || next.title) + ' · ' + util.formatRelative(next.minutesUntilStart)
+  else statusLine = '待命中'
 
   React.useEffect(
     function () {
@@ -159,7 +169,7 @@ function CompanionView(props) {
             usingModel ? '模型在线' : '内置规则',
           ),
         ),
-        h('div', { className: 'ot-comp-state' }, companion.busy ? '正在读你的日程…' : next ? '下一个：' + next.title + ' · ' + util.formatRelative(next.minutesUntilStart) : '待命中'),
+        h('div', { className: 'ot-comp-state' }, statusLine),
       ),
       h('div', { className: 'ot-headspace' }),
       h(

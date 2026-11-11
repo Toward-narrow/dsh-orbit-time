@@ -9,6 +9,67 @@ var h = util.h
 /** Client services this plugin uses. Kept minimal: slots + layout + remote. */
 var inject = ['slots', 'layout', 'remote']
 
+/**
+ * Record a client-side failure where it can still be read later.
+ *
+ * A blank window has no console and no stack: by the time the user reports it,
+ * the only evidence left is "it was white". The host already had a route for
+ * diagnostics the page can describe (`/debug/client`), so every uncaught error
+ * and every render the boundary caught is written there too — `~/.dsh/storages/
+ * orbit-time/runtime.json` then says what actually broke, in the words React
+ * used, long after the page that produced it was reloaded away.
+ *
+ * Never throws and never retries: a diagnostic that can break the page it is
+ * diagnosing is worse than no diagnostic.
+ */
+var REPORTED = typeof Set === 'function' ? new Set() : null
+
+function reportClientError(source, message, stack) {
+  try {
+    var text = String(message === undefined || message === null ? '未知错误' : message)
+    // One line per distinct failure per page load: a render loop can throw the
+    // same error hundreds of times and would otherwise flush the whole record.
+    if (REPORTED !== null) {
+      if (REPORTED.has(text)) return
+      if (REPORTED.size > 20) return
+      REPORTED.add(text)
+    }
+    var store = require('./store.js').store
+    if (!store || typeof store.reportUiEvent !== 'function') return
+    void store.reportUiEvent('crash:' + source + ': ' + text.slice(0, 160), {
+      message: text.slice(0, 600),
+      stack: String(stack || '').slice(0, 1800),
+    })
+  } catch (error) {
+    /* diagnostics only */
+  }
+}
+
+/**
+ * Catch what React cannot.
+ *
+ * The boundary below only sees errors thrown while rendering *this* plugin's
+ * surfaces. An error thrown from an event handler, a timer, or a promise that
+ * nothing awaits lands outside it — and a promise rejection during a refresh is
+ * exactly the shape of "I clicked, and then the page was gone". These two
+ * listeners are the only place such a thing can be seen.
+ */
+function installErrorReporting() {
+  if (typeof window === 'undefined') return
+  if (window.__otErrorReporting === true) return
+  window.__otErrorReporting = true
+  window.addEventListener('error', function (event) {
+    // A failed <img>/<script> load has no `error` object; it is not worth a line.
+    if (!event || !event.error) return
+    reportClientError('window', event.message || event.error.message, event.error.stack)
+  })
+  window.addEventListener('unhandledrejection', function (event) {
+    var reason = event && event.reason
+    if (reason === undefined || reason === null) return
+    reportClientError('rejection', reason.message || reason, reason.stack)
+  })
+}
+
 /** Sidebar glyph — a small orbit mark, drawn inline. */
 function OrbitGlyph(props) {
   var size = (props && props.size) || 16
@@ -90,6 +151,10 @@ class Catch extends React.Component {
   }
 
   componentDidCatch(error) {
+    // The card on screen is for the person looking at it; this line is for the
+    // person trying to fix it after the page has been reloaded and the console
+    // cleared.
+    reportClientError('render', error && (error.message || error), error && error.stack)
     // eslint-disable-next-line no-console -- the console is the durable record
     console.error('[orbit-time] render failed:', error)
   }
@@ -112,6 +177,11 @@ function guarded(component) {
 }
 
 function apply(ctx) {
+  // Installed before anything renders, so a failure during the first paint is
+  // recorded too — that is the case where there is no boundary yet and the page
+  // simply stays empty.
+  installErrorReporting()
+
   // Main panel: the dashboard itself.
   ctx.slots.inject('main', function () {
     return ctx.slots.register({ name: 'main', key: 'orbit-time' }, guarded(panel.Dashboard))
@@ -161,6 +231,8 @@ function apply(ctx) {
 exports.apply = apply
 exports.inject = inject
 exports.Catch = Catch
+exports.reportClientError = reportClientError
+exports.installErrorReporting = installErrorReporting
 exports.Dashboard = panel.Dashboard
 exports.Notices = panel.Notices
 exports.FloatingWidget = panel.FloatingWidget

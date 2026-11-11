@@ -67,6 +67,18 @@ function glyph(name, size) {
       h('path', { key: 'p', d: 'M4 17.2 9 12.6l3.8 3.4 2.8-2.4 4.4 3.8' }),
     ],
     close: [h('path', { key: 'p', d: 'M6.5 6.5 17.5 17.5M17.5 6.5 6.5 17.5' })],
+    // A pen for "correct this row". Distinct from `refresh` (re-read the file),
+    // which is a different promise: this one changes one line, that one redoes all.
+    pen: [
+      h('path', { key: 'p', d: 'M15.5 4.6 19.4 8.5 9 18.9l-4.8 1 1-4.8z' }),
+      h('path', { key: 'q', d: 'M13.6 6.5 17.5 10.4' }),
+    ],
+    // "This one has no end and is still running" — an open bracket, not a clock,
+    // because a clock face means a number is being counted somewhere.
+    ongoing: [
+      h('path', { key: 'p', d: 'M12 4.5a7.5 7.5 0 1 0 7.5 7.5' }),
+      h('circle', { key: 'c', cx: 12, cy: 12, r: 2, fill: 'currentColor', stroke: 'none' }),
+    ],
     expand: [h('path', { key: 'p', d: 'M14 4.5h5.5V10M10 19.5H4.5V14M19.5 4.5 13 11M4.5 19.5 11 13' })],
     minus: [h('path', { key: 'p', d: 'M6 12h12' })],
     plus: [h('path', { key: 'p', d: 'M12 6v12M6 12h12' })],
@@ -277,15 +289,42 @@ function textField(props) {
 }
 
 /**
+ * Whether a value can be handed to React as children.
+ *
+ * This exists because of a trap that cost the whole page: React calls a function
+ * component as `Component(props, legacyContext)`, where the second argument is an
+ * *empty object* when the legacy context API is not in use. `note` takes an
+ * optional second argument as a convenience, so under `h(ui.note, props, text)`
+ * it read that context object as the message and rendered `{}` — and React
+ * answers "Objects are not valid as a React child" by unmounting the tree. The
+ * panel went blank, the calendar being opened was all it took.
+ *
+ * So the second argument only counts when it is actually something React can
+ * render: a string, a number, a real element, or an array of them.
+ */
+function isRenderable(value) {
+  if (value === null || value === undefined) return false
+  var kind = typeof value
+  if (kind === 'string' || kind === 'number') return true
+  if (kind !== 'object') return false
+  if (Array.isArray(value)) return true
+  // React elements carry `$$typeof`; the context object React passes does not.
+  return value.$$typeof !== undefined
+}
+
+/**
  * A neutral block for a message that belongs in the page.
  *
  * Two call shapes exist in this codebase — `note({ variant, children })` and
  * `note({ variant }, text)` — and the second one used to render an empty box,
  * which is exactly how a failed action came to look like a no-op. Accepting both
  * is cheaper than auditing every call site, and it cannot regress the first.
+ *
+ * The second argument is filtered through `isRenderable` rather than a plain
+ * `undefined` test: see there for the `{}` that React passes in its place.
  */
 function note(props, children) {
-  var content = children === undefined ? props.children : children
+  var content = isRenderable(children) ? children : props.children
   return h('div', { className: util.cx('ot-note', props.variant ? 'ot-note-' + props.variant : null) }, content)
 }
 

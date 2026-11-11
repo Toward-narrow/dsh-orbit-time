@@ -846,12 +846,30 @@ export function apply(ctx, rawConfig = {}) {
     if (start === '' && date !== '' && /[ T]\d{1,2}[:：.]\d{2}/.test(String(raw.start_raw ?? ''))) {
       start = ''
     }
+    /**
+     * What kind of clock time this row has.
+     *
+     * A roster always knows both ends — a class is 40 minutes long whether or not
+     * anyone wrote it down. A thing the user typed themselves often does not:
+     * "提交课程立项" is worked on until it is done, and "23:59 前交" has no start
+     * at all. Forcing those into a made-up span made the app claim the user was
+     * busy for thirteen hours and hide everything that came after, so the shape
+     * is part of the row instead of being guessed here.
+     *
+     *   span  start–end, both real
+     *   open  starts at `start`, no end until the user says it is done
+     *   due   one instant, a deadline; never "in progress"
+     *
+     * `open` and `due` keep `end` empty rather than inventing one.
+     */
+    const timeShape = raw.timeShape === 'open' || raw.timeShape === 'due' ? raw.timeShape : 'span'
     const durationMinutes = Number.isFinite(raw.durationMinutes) ? raw.durationMinutes : null
     let endTime = end
+    if (timeShape !== 'span') endTime = ''
     if (endTime === '' && start !== '' && durationMinutes !== null && durationMinutes > 0) {
       endTime = addMinutes(start, durationMinutes)
     }
-    if (endTime === '' && start !== '') endTime = addMinutes(start, 60)
+    if (timeShape === 'span' && endTime === '' && start !== '') endTime = addMinutes(start, 60)
 
     const title =
       String(raw.title ?? '').trim() ||
@@ -879,6 +897,7 @@ export function apply(ctx, rawConfig = {}) {
       date,
       start,
       end: endTime,
+      timeShape,
       title,
       course: String(raw.course ?? '').trim(),
       classroom: String(raw.classroom ?? '').trim(),
@@ -907,23 +926,126 @@ export function apply(ctx, rawConfig = {}) {
 
   // ---- derived event views -------------------------------------------------
 
+  /**
+   * Fields a user may correct on any row.
+   *
+   * Deliberately not the whole event: `id`, `source`, and `owner` are what tie a
+   * row to its roster and to the import that produced it, and rewriting them
+   * from the panel would either detach the row from its file or make the next
+   * scan resurrect it alongside its own copy.
+   */
+  const CORRECTABLE = ['date', 'start', 'end', 'title', 'location', 'notes', 'timeShape']
+
+  /**
+   * The values that are really in force for a row.
+   *
+   * `runtime.overrides[id]` already carried the user's corrections (`shift`,
+   * `done`, `snoozedUntil`) but only `viewEvent` ever read them: the day's
+   * statistics, the free-slot search, the reminder rungs and the "next up" card
+   * all worked from `event.start`, so moving a row by ten minutes moved one line
+   * of text and nothing else. Everything below reads through this instead, which
+   * is what makes an edit mean the same thing everywhere.
+   *
+   * Only non-empty strings count as a correction. An empty override is how a
+   * cleared field is expressed, and `''` there has to fall back to the row rather
+   * than blank the value for every consumer.
+   */
+  function effectiveOf(event) {
+    const override = overrideOf(event)
+    const pick = (key) => {
+      const value = override[key]
+      return typeof value === 'string' && value !== '' ? value : event[key]
+    }
+    return {
+      date: pick('date'),
+      start: pick('start'),
+      end: pick('end'),
+      title: pick('title'),
+      location: pick('location'),
+      notes: pick('notes'),
+      /**
+       * The shape is a three-way choice, and `span` is one of the three answers.
+       *
+       * Any of the three on the override wins, including `span`: switching a row
+       * from "only a start" back to "start and end" stores `timeShape: 'span'`, and
+       * testing only for the two end-less shapes would let the old `open` value on
+       * the row win — the change would be accepted, saved, and then silently undone
+       * on the next read.
+       */
+      timeShape: override.timeShape === 'span' || override.timeShape === 'open' || override.timeShape === 'due' ? override.timeShape : event.timeShape ?? 'span',
+      done: override.done === true,
+      edited: Object.keys(override).some((key) => CORRECTABLE.includes(key)),
+    }
+  }
+
+  /**
+   * One line describing when a row happens, in the shape it actually has.
+   *
+   * The three shapes read differently to a person: a span is a range, an open
+   * task is "started, not finished", and a deadline is a single moment. Sharing
+   * one format across all three is what produced "10:00–23:00" for a task with no
+   * end, which was the visible half of the problem.
+   */
+  function describeWhen(effective) {
+    if (effective.start === '') return '全天'
+    if (effective.timeShape === 'due') return `${effective.start} 截止`
+    if (effective.timeShape === 'open') return `${effective.start} 起 · 没有结束时间`
+    return effective.end === '' ? `${effective.start} 起` : `${effective.start}–${effective.end}`
+  }
+
   function startMsOf(event) {
-    if (event.date === '' || event.start === '') return null
-    const parsed = new Date(`${event.date}T${event.start}:00`)
+    const effective = effectiveOf(event)
+    if (effective.date === '' || effective.start === '') return null
+    const parsed = new Date(`${effective.date}T${effective.start}:00`)
     return Number.isNaN(parsed.getTime()) ? null : parsed.getTime()
   }
 
+  /**
+   * When a row is over, or `null` when it has no end.
+   *
+   * `open` rows (started, no end yet) used to borrow a fabricated 60-minute span
+   * here. That is what made an unfinished task look finished an hour in, and what
+   * let a made-up end hide the rest of the day behind it. The end now exists only
+   * when someone said so — see `isOverNow` for how "still running" is decided.
+   */
   function endMsOf(event) {
     const startMs = startMsOf(event)
     if (startMs === null) return null
-    if (event.end !== '') {
-      const parsed = new Date(`${event.date}T${event.end}:00`)
-      if (!Number.isNaN(parsed.getTime())) {
-        // An end before the start means the event crosses midnight.
-        return parsed.getTime() >= startMs ? parsed.getTime() : parsed.getTime() + 86_400_000
-      }
+    const effective = effectiveOf(event)
+    if (effective.end === '') return null
+    const parsed = new Date(`${effective.date}T${effective.end}:00`)
+    if (Number.isNaN(parsed.getTime())) return null
+    // An end before the start means the event crosses midnight.
+    return parsed.getTime() >= startMs ? parsed.getTime() : parsed.getTime() + 86_400_000
+  }
+
+  /**
+   * Whether the row is finished, and what that means for its phase.
+   *
+   * A `due` row is an instant: it goes from upcoming straight to past, because a
+   * deadline is never "in progress". An `open` row stays current from its start
+   * until it is ticked done, however long that takes — which is the whole point
+   * of the shape. A `span` row is current while the clock is inside it.
+   *
+   * An open row that is still open when its own day ends is over. Left unbounded
+   * it would report "进行中" for a task from last Tuesday forever, and `currentEvent`
+   * — which exists to answer "what am I doing now" — would answer with it. The day
+   * boundary is the honest cut: nobody is still in yesterday's session.
+   */
+  function phaseOf(event, nowMs) {
+    const effective = effectiveOf(event)
+    const startMs = startMsOf(event)
+    if (startMs === null) return 'undated'
+    if (effective.timeShape === 'due') return nowMs >= startMs ? 'past' : 'upcoming'
+    if (effective.timeShape === 'open') {
+      if (effective.done === true) return 'past'
+      if (nowMs < startMs) return 'upcoming'
+      return localDayKey(new Date(nowMs)) === effective.date ? 'current' : 'past'
     }
-    return startMs + 60 * 60 * 1000
+    const endMs = endMsOf(event)
+    const end = endMs === null ? startMs : endMs
+    if (nowMs >= end) return 'past'
+    return nowMs >= startMs ? 'current' : 'upcoming'
   }
 
   function overrideOf(event) {
@@ -932,18 +1054,21 @@ export function apply(ctx, rawConfig = {}) {
 
   function viewEvent(event, now) {
     const override = overrideOf(event)
+    const effective = effectiveOf(event)
     const startMs = startMsOf(event)
     const endMs = endMsOf(event)
     const nowMs = now.getTime()
-    let phase = 'upcoming'
-    if (startMs === null) phase = 'undated'
-    else if (nowMs >= endMs) phase = 'past'
-    else if (nowMs >= startMs) phase = 'current'
+    const phase = phaseOf(event, nowMs)
     const isCurrent = phase === 'current'
+    const done = override.done === true
     return {
       ...event,
-      effectiveStart: override.start ?? event.start,
-      effectiveEnd: override.end ?? event.end,
+      effectiveStart: effective.start,
+      effectiveEnd: effective.end,
+      effectiveDate: effective.date,
+      effectiveTitle: effective.title,
+      timeShape: effective.timeShape,
+      edited: effective.edited,
       startMs,
       endMs,
       phase,
@@ -953,20 +1078,32 @@ export function apply(ctx, rawConfig = {}) {
        * thing starting" produced nonsense like "已过 5 分钟开始".
        */
       isCurrent,
-      done: override.done === true,
+      isOpen: effective.timeShape === 'open' && phase === 'current',
+      done,
       snoozedUntil: override.snoozedUntil ?? null,
       minutesUntilStart: startMs === null ? null : Math.round((startMs - nowMs) / 60_000),
+      // Null, not a fabricated number: a row with no end has no "minutes left",
+      // and the panel says so instead of counting down to nothing.
       minutesUntilEnd: endMs === null ? null : Math.round((endMs - nowMs) / 60_000),
       progress:
         startMs !== null && endMs !== null && endMs > startMs
           ? clamp((nowMs - startMs) / (endMs - startMs), 0, 1)
-          : 0,
+          : isCurrent && effective.timeShape === 'open'
+            ? 1
+            : 0,
     }
   }
 
+  /**
+   * The rows that belong to one calendar day.
+   *
+   * Filtered on the *effective* date, not the stored one: correcting a row from
+   * the 15th to the 16th has to move it, or the edit reads as "the row vanished
+   * from today and a duplicate appeared tomorrow".
+   */
   function eventsForDay(dayKey) {
     return runtime.events
-      .filter((event) => event.date === dayKey && !(overrideOf(event).done === true))
+      .filter((event) => effectiveOf(event).date === dayKey && !(overrideOf(event).done === true))
       .sort((left, right) => {
         const leftMs = startMsOf(left)
         const rightMs = startMsOf(right)
@@ -977,39 +1114,87 @@ export function apply(ctx, rawConfig = {}) {
       })
   }
 
+  /**
+   * The next thing that *starts*, and the thing that is happening right now.
+   *
+   * These used to be one value. `nextEventOf` returned the in-flight event when
+   * there was one, so a row that runs for hours — or an open-ended task you are
+   * still working on — took the card over completely and everything after it was
+   * invisible. That is exactly the "看不到之后的状态" complaint: the panel answered
+   * "what is next" with "what is now", and there was only ever room for one.
+   *
+   * They are now two answers, and the caller shows both: `currentEvent` is what
+   * the clock is inside, `nextEvent` is the first row whose start is still in the
+   * future. Neither can hide the other.
+   */
   function upcomingEvents(now, limit = 8) {
     const nowMs = now.getTime()
     return runtime.events
       .map((event) => ({ event, startMs: startMsOf(event) }))
-      .filter((row) => row.startMs !== null && row.startMs >= nowMs)
+      .filter((row) => row.startMs !== null && row.startMs >= nowMs && overrideOf(row.event).done !== true)
       .sort((left, right) => left.startMs - right.startMs)
       .slice(0, limit)
       .map((row) => viewEvent(row.event, now))
   }
 
+  /** The row the clock is inside, if any. An open-ended task qualifies for hours. */
+  function currentEventOf(now) {
+    const nowMs = now.getTime()
+    const live = runtime.events
+      .map((event) => ({ event, phase: phaseOf(event, nowMs) }))
+      .filter((row) => row.phase === 'current')
+      .map((row) => row.event)
+    if (live.length === 0) return null
+    // A closed span wins over an open task: if you are inside a lecture, that is
+    // the appointment, not the essay you happen to have open beside it.
+    const bounded = live.find((event) => effectiveOf(event).timeShape !== 'open')
+    if (bounded !== undefined) return viewEvent(bounded, now)
+    return viewEvent(live[0], now)
+  }
+
+  /** The first row that has not started yet. Never one already in flight. */
   function nextEventOf(now) {
     const nowMs = now.getTime()
-    const candidates = runtime.events
-      .map((event) => ({ event, startMs: startMsOf(event), endMs: endMsOf(event) }))
-      .filter((row) => row.startMs !== null && row.endMs !== null && row.endMs >= nowMs)
+    const upcoming = runtime.events
+      .filter((event) => overrideOf(event).done !== true)
+      .map((event) => ({ event, startMs: startMsOf(event) }))
+      .filter((row) => row.startMs !== null && row.startMs > nowMs)
       .sort((left, right) => left.startMs - right.startMs)
-    if (candidates.length === 0) return null
-    const current = candidates.find((row) => row.startMs <= nowMs && nowMs < row.endMs)
-    const chosen = current ?? candidates[0]
-    return viewEvent(chosen.event, now)
+    if (upcoming.length === 0) return null
+    return viewEvent(upcoming[0].event, now)
+  }
+
+  /**
+   * The busy stretches of a day, as minute ranges.
+   *
+   * `due` rows are instants: a deadline does not occupy the hours before it, so
+   * it must not carve the afternoon out of the free-slot search. `open` rows have
+   * no end, so they block only up to now — what they leave behind is genuinely
+   * unbooked, and pretending otherwise would answer "今天排满了" for a whole day
+   * because one task has no end time.
+   */
+  function busyRanges(dayKey, nowMinutes) {
+    return eventsForDay(dayKey)
+      .map((event) => {
+        const effective = effectiveOf(event)
+        const start = toMinutes(effective.start)
+        if (start === null) return null
+        if (effective.timeShape === 'due') return null
+        if (effective.timeShape === 'open') {
+          const until = Math.max(start, nowMinutes)
+          return until > start ? [start, until] : null
+        }
+        const end = toMinutes(effective.end)
+        return [start, (end === null || end === start ? start + 60 : end <= start ? end + 1440 : end)]
+      })
+      .filter((value) => value !== null)
+      .sort((left, right) => left[0] - right[0])
   }
 
   function freeSlots(now, windowMinutes = 480, minGapMinutes = 20) {
     const base = localMinutes(now)
     const dayKey = localDayKey(now)
-    const busy = eventsForDay(dayKey)
-      .map((event) => {
-        const start = toMinutes(overrideOf(event).start ?? event.start)
-        const end = toMinutes(overrideOf(event).end ?? event.end) ?? (start === null ? null : start + 60)
-        return start === null || end === null ? null : [start, end <= start ? end + 1440 : end]
-      })
-      .filter((value) => value !== null)
-      .sort((left, right) => left[0] - right[0])
+    const busy = busyRanges(dayKey, base)
 
     const slots = []
     let cursor = Math.max(base, ...(busy.length > 0 ? [Math.min(...busy.map((row) => row[0]))] : [base]))
@@ -3291,14 +3476,18 @@ export function apply(ctx, rawConfig = {}) {
 
   function fireReminder(event, offset, now, extra = {}) {
     const late = extra.late === true
+    const effective = effectiveOf(event)
     const label =
       extra.snoozed === true
         ? '稍后提醒'
         : offset < 0 || late
           ? '现在开始'
           : (OFFSET_LABELS.get(offset) ?? `${offset} 分钟后开始`)
-    const timeText = event.start === '' ? '全天' : event.start
-    const where = event.location || event.classroom || event.teacher || ''
+    // The reminder quotes the time the user will actually arrive at, not the one
+    // the roster originally said: after an edit those differ, and quoting the
+    // stale value sends them at the wrong moment.
+    const timeText = effective.start === '' ? '全天' : describeWhen(effective)
+    const where = effective.location || event.classroom || event.teacher || ''
     const body = [timeText, where, event.course].filter((value) => value && value !== '').join(' · ')
     const urgency = offset <= 5 || offset < 0 ? 'urgent' : offset <= 30 ? 'soon' : 'info'
     const title = offset <= 5 || offset < 0 ? `⏰ ${label}` : `🔔 ${label}`
@@ -3306,20 +3495,20 @@ export function apply(ctx, rawConfig = {}) {
     pushFeed({
       kind: 'reminder',
       level: urgency === 'urgent' ? 'urgent' : 'info',
-      title: `${title} · ${event.title}`,
+      title: `${title} · ${effective.title}`,
       body,
       eventId: event.id,
       offsetMinutes: offset,
       late,
       actions: ['snooze', 'done', 'open'],
-      meta: { start: event.start, end: event.end, date: event.date },
+      meta: { start: effective.start, end: effective.end, date: effective.date },
     })
     void notify(
-      `${title} · ${event.title}`,
+      `${title} · ${effective.title}`,
       `${body || '即将开始'}${offset > 0 && !late ? `（还有 ${formatDuration(offset * 60_000)}）` : ''}`,
       urgency === 'urgent',
     )
-    broadcast({ type: 'reminder', eventId: event.id, offsetMinutes: offset, title: event.title })
+    broadcast({ type: 'reminder', eventId: event.id, offsetMinutes: offset, title: effective.title })
   }
 
   const TOAST_SCRIPT = [
@@ -3489,21 +3678,41 @@ export function apply(ctx, rawConfig = {}) {
 
   // ---- derived payloads ----------------------------------------------------
 
+  /**
+   * A day's totals, from the same values the timeline shows.
+   *
+   * The bookkeeping mirrors `busyRanges`: a `due` row contributes nothing (a
+   * deadline is not time spent), and an `open` row counts only the time already
+   * elapsed — so the "总时长 13 h" that came from one open-ended task with a
+   * fabricated end can no longer appear.
+   */
   function statsFor(dayKey) {
     const dayEvents = eventsForDay(dayKey)
     const now = new Date()
     const isToday = dayKey === localDayKey(now)
+    const nowMin = localMinutes(now)
     let totalMinutes = 0
     let doneMinutes = 0
     let remainingMinutes = 0
+    let openCount = 0
+    let dueCount = 0
     for (const event of dayEvents) {
-      const start = toMinutes(overrideOf(event).start ?? event.start)
-      const end = toMinutes(overrideOf(event).end ?? event.end) ?? (start === null ? null : start + 60)
-      if (start === null || end === null) continue
+      const effective = effectiveOf(event)
+      const start = toMinutes(effective.start)
+      if (start === null) continue
+      if (effective.timeShape === 'due') {
+        dueCount += 1
+        continue
+      }
+      let end = toMinutes(effective.end)
+      if (effective.timeShape === 'open') {
+        openCount += 1
+        if (end === null) end = isToday ? Math.max(start, nowMin) : start
+      }
+      if (end === null || end === start) end = start + 60
       const span = end > start ? end - start : end + 1440 - start
       totalMinutes += span
       if (isToday) {
-        const nowMin = localMinutes(now)
         if (nowMin >= end) doneMinutes += span
         else if (nowMin > start) doneMinutes += nowMin - start
         if (nowMin < end) remainingMinutes += end - Math.max(nowMin, start)
@@ -3517,6 +3726,9 @@ export function apply(ctx, rawConfig = {}) {
       totalMinutes,
       doneMinutes,
       remainingMinutes,
+      /** Named so the panel can explain a short "总时长" instead of looking wrong. */
+      openCount,
+      dueCount,
       freeSlots: isToday ? freeSlots(now) : [],
       completedRounds: timer.dayKey === dayKey ? timer.completedToday : 0,
       focusGoalRounds: focusGoal,
@@ -3529,7 +3741,7 @@ export function apply(ctx, rawConfig = {}) {
     const dayKey = typeof dayKeyInput === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dayKeyInput) ? dayKeyInput : localDayKey(now)
     const dayEvents = eventsForDay(dayKey).map((event) => viewEvent(event, now))
     const undated = runtime.events
-      .filter((event) => event.date === '')
+      .filter((event) => effectiveOf(event).date === '')
       .map((event) => viewEvent(event, now))
     return {
       ok: true,
@@ -3561,7 +3773,17 @@ export function apply(ctx, rawConfig = {}) {
       /** What the last scrape found, so the panel can say "12 条 · 14:03" without asking. */
       webddl: runtime.webddl ?? null,
       day: { dayKey, events: dayEvents, stats: statsFor(dayKey), undated },
+      /**
+       * Two separate answers, because one value could only ever be one of them.
+       *
+       * `nextEvent` is the first row whose start is still ahead — what the next
+       * card counts down to. `currentEvent` is whatever the clock is inside right
+       * now, including an open-ended task that has no end in sight. The panel,
+       * the floating widget and Orbyt all read both, so a long or open block can
+       * no longer blank out the rest of the day.
+       */
       nextEvent: nextEventOf(now),
+      currentEvent: currentEventOf(now),
       upcoming: upcomingEvents(now, 8),
       week: buildWeek(now),
       month: buildMonth(now, monthKeyInput, dayKey),
@@ -3589,7 +3811,8 @@ export function apply(ctx, rawConfig = {}) {
   function daySummary(date, todayKey) {
     const dayKey = localDayKey(date)
     const list = eventsForDay(dayKey)
-    const scheduled = runtime.events.some((event) => event.date === dayKey)
+    // Counted through the effective date so a row edited onto this day marks it.
+    const scheduled = runtime.events.some((event) => effectiveOf(event).date === dayKey)
     return {
       dayKey,
       label: WEEKDAY_LABELS[date.getDay()] ?? '',
@@ -3597,8 +3820,8 @@ export function apply(ctx, rawConfig = {}) {
       isToday: dayKey === todayKey,
       count: list.length,
       hasEvents: scheduled,
-      firstStart: list.length > 0 ? (overrideOf(list[0]).start ?? list[0].start) : '',
-      titles: list.slice(0, 4).map((event) => event.title),
+      firstStart: list.length > 0 ? effectiveOf(list[0]).start : '',
+      titles: list.slice(0, 4).map((event) => effectiveOf(event).title),
     }
   }
 
@@ -3612,7 +3835,7 @@ export function apply(ctx, rawConfig = {}) {
    */
   function itemsForDay(dayKey, limit = 8) {
     return runtime.events
-      .filter((event) => event.date === dayKey)
+      .filter((event) => effectiveOf(event).date === dayKey)
       // Same order as the timeline itself: by clock time, timeless rows last.
       // Sorting on the raw instant instead put a row that starts now in among
       // rows from earlier in the day.
@@ -3625,16 +3848,22 @@ export function apply(ctx, rawConfig = {}) {
         return leftMs - rightMs
       })
       .slice(0, limit)
-      .map((event) => ({
-        id: event.id,
-        title: event.title,
-        start: overrideOf(event).start ?? event.start ?? '',
-        end: overrideOf(event).end ?? event.end ?? '',
-        place: event.classroom || event.location || '',
-        done: overrideOf(event).done === true,
-        manual: isManualEvent(event),
-        origin: event.source?.sheet === AI_SHEET ? 'ai' : isManualEvent(event) ? 'manual' : 'import',
-      }))
+      .map((event) => {
+        const effective = effectiveOf(event)
+        const nowMs = Date.now()
+        return {
+          id: event.id,
+          title: effective.title,
+          start: effective.start,
+          end: effective.end,
+          timeShape: effective.timeShape,
+          phase: phaseOf(event, nowMs),
+          place: event.classroom || effective.location || '',
+          done: effective.done,
+          manual: isManualEvent(event),
+          origin: event.source?.sheet === AI_SHEET ? 'ai' : isManualEvent(event) ? 'manual' : 'import',
+        }
+      })
   }
 
   function buildWeek(now) {
@@ -4443,6 +4672,15 @@ export function apply(ctx, rawConfig = {}) {
       // empty keeps it in the undated bucket instead of silently scheduling it
       // at midnight.
       if (created.date === '' && created.start !== '') created.date = localDayKey(new Date())
+      /**
+       * A new row may deliberately have no end.
+       *
+       * `timeShape` is what says so — `open` for "started, finish when done",
+       * `due` for a single deadline. Without this a hand-added task got a
+       * fabricated hour, sat in the timeline as "in progress" for exactly that
+       * hour, and then quietly turned into "already over" while the user was
+       * still working on it.
+       */
       runtime.events.push(created)
       // The same decision as above: a row created by hand (the panel's default)
       // is kept in its own list so the next import cannot erase it. A caller that
@@ -4453,7 +4691,7 @@ export function apply(ctx, rawConfig = {}) {
         kind: 'event',
         level: 'success',
         title: `＋ 已添加 · ${created.title}`,
-        body: [created.date, created.start === '' ? '全天' : `${created.start}${created.end ? '–' + created.end : ''}`, created.location]
+        body: [created.date, describeWhen(created), created.location]
           .filter((value) => value && value !== '')
           .join(' · '),
       })
@@ -4467,6 +4705,109 @@ export function apply(ctx, rawConfig = {}) {
       return
     }
     switch (action) {
+      /**
+       * Correct one row in place.
+       *
+       * The values live in `runtime.overrides` rather than on the row itself. An
+       * imported row is *owned by its file*: writing to it directly would be
+       * undone by the next scan, and a file watcher can fire at any moment, so an
+       * edit that lived on the row would disappear minutes after it was made.
+       * An override is a layer the import never touches, and it survives a
+       * restart because it is persisted.
+       *
+       * Blank fields are dropped rather than stored as `''`: an empty string is
+       * how "no end" is expressed (see `timeShape`), not how "use the original"
+       * is, and `effectiveOf` is what distinguishes the two.
+       */
+      case 'edit': {
+        const patch = isObject(body.patch) ? body.patch : {}
+        const cleaned = {}
+        for (const key of CORRECTABLE) {
+          if (!(key in patch)) continue
+          const value = patch[key]
+          if (key === 'timeShape') {
+            if (value === 'span' || value === 'open' || value === 'due') cleaned.timeShape = value
+            continue
+          }
+          const text = String(value ?? '').trim()
+          if (key === 'date') {
+            // A dated row has to keep a usable date; clearing it would move the
+            // row to the undated bucket as a side effect of a typo.
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) {
+              sendJson(res, 400, { ok: false, error: '日期要写成 2026-03-02 这样' })
+              return
+            }
+            cleaned.date = text
+            continue
+          }
+          if (key === 'start' || key === 'end') {
+            if (text !== '' && toMinutes(text) === null) {
+              sendJson(res, 400, { ok: false, error: `${key === 'start' ? '开始' : '结束'}时间要写成 09:30 这样` })
+              return
+            }
+            cleaned[key] = text
+            continue
+          }
+          // An empty title would turn the row into "未命名日程" on the next read,
+          // so a cleared one is refused instead of silently accepted.
+          if (key === 'title' && text === '') {
+            sendJson(res, 400, { ok: false, error: '标题不能是空的' })
+            return
+          }
+          cleaned[key] = text
+        }
+        if (Object.keys(cleaned).length === 0) {
+          sendJson(res, 400, { ok: false, error: '没有要修改的内容' })
+          return
+        }
+        /**
+         * Moving the start carries the length with it.
+         *
+         * Dragging a 40-minute class from 09:00 to 14:00 means "the same class,
+         * at two". Leaving the end where it was turns it into a 22-hour block
+         * (an end before the start is read as crossing midnight), which then
+         * swallows the whole day on the timeline. Only when the caller did not
+         * say what the new end should be — an explicit `end` always wins, and a
+         * row with no end at all keeps having none.
+         */
+        if ('start' in cleaned && !('end' in cleaned) && cleaned.timeShape === undefined) {
+          const before = effectiveOf(event)
+          if (before.timeShape === 'span' && before.end !== '' && toMinutes(cleaned.start) !== null) {
+            const from = toMinutes(before.start)
+            const to = toMinutes(before.end)
+            if (from !== null && to !== null) {
+              const span = to > from ? to - from : to + 1440 - from
+              cleaned.end = fromMinutes(toMinutes(cleaned.start) + span)
+            }
+          }
+        }
+        /**
+         * Anything the user corrects stops being a roster fact.
+         *
+         * The next rung of a reminder ladder is keyed on the start that was in
+         * force when it fired, so a moved row must be allowed to ring again — the
+         * same reason `shift` clears them below.
+         */
+        const timeMoved = 'start' in cleaned || 'date' in cleaned
+        runtime.overrides[event.id] = {
+          ...overrideOf(event),
+          ...cleaned,
+          editedAt: new Date().toISOString(),
+        }
+        if (timeMoved) {
+          for (const key of [...fired.keys()]) {
+            if (key.startsWith(`${event.id}:`)) fired.delete(key)
+          }
+        }
+        const effective = effectiveOf(event)
+        pushFeed({
+          kind: 'event',
+          level: 'info',
+          title: `✎ 已修改 · ${effective.title}`,
+          body: describeWhen(effective),
+        })
+        break
+      }
       case 'done': {
         runtime.overrides[event.id] = { ...overrideOf(event), done: body.done !== false }
         if (body.done !== false) {
@@ -4486,16 +4827,20 @@ export function apply(ctx, rawConfig = {}) {
       case 'shift': {
         const delta = Number(body.minutes) || 0
         const override = overrideOf(event)
-        const baseStart = override.start ?? event.start
+        // Shifting reads the time actually in force, so "+10" applied twice to a
+        // row that was already corrected moves from where it really is.
+        const baseStart = effectiveOf(event).start
         if (baseStart === '') {
           sendJson(res, 400, { ok: false, error: '该日程没有时间，无法顺延' })
           return
         }
-        const baseEnd = override.end ?? event.end
+        const effectiveNow = effectiveOf(event)
         runtime.overrides[event.id] = {
           ...override,
           start: addMinutes(baseStart, delta),
-          end: baseEnd === '' ? '' : addMinutes(baseEnd, delta),
+          // A row with no end keeps having no end: inventing one here would undo
+          // the whole reason it was left open.
+          end: effectiveNow.end === '' ? '' : addMinutes(effectiveNow.end, delta),
           shiftedMinutes: (Number(override.shiftedMinutes) || 0) + delta,
         }
         for (const key of [...fired.keys()]) {
@@ -4700,15 +5045,18 @@ export function apply(ctx, rawConfig = {}) {
       focusMinutes: Number(timer.config?.focusMinutes) || 25,
     }
     const shrink = (event) => ({
-      title: event.title,
-      date: event.date,
+      title: event.effectiveTitle || event.title,
+      date: event.effectiveDate || event.date,
       start: event.effectiveStart || event.start,
-      end: event.effectiveEnd || event.end,
+      // Kept apart from `start` so the model can tell an open task from a block:
+      // "no end" is information, and an invented one would be a lie it repeats.
+      end: event.effectiveEnd || event.end || undefined,
+      无结束时间: event.minutesUntilEnd === null && event.effectiveStart !== '' ? true : undefined,
       phase: event.phase,
       done: event.done,
       inMinutes: event.minutesUntilStart,
-      minutesLeft: event.phase === 'current' ? event.minutesUntilEnd : undefined,
-      place: event.classroom || event.location || undefined,
+      minutesLeft: event.phase === 'current' ? event.minutesUntilEnd ?? undefined : undefined,
+      place: event.classroom || event.effectiveLocation || event.location || undefined,
       teacher: event.teacher || undefined,
       course: event.course || undefined,
       notes: event.notes ? String(event.notes).slice(0, 120) : undefined,
@@ -4723,6 +5071,12 @@ export function apply(ctx, rawConfig = {}) {
         关注的人: snapshot.ownerNames,
         今日日程: day.events.map(shrink),
         未定时间: day.undated.map(shrink),
+        /**
+         * Both, and named for what they are. The model was previously handed one
+         * "next" that might already be running, so a question like "接下来是什么"
+         * could be answered with the thing the user is already doing.
+         */
+        正在进行: snapshot.currentEvent ? shrink(snapshot.currentEvent) : null,
         接下来的日程: snapshot.upcoming.map(shrink),
         统计: {
           条数: day.stats.eventCount,
@@ -4922,7 +5276,7 @@ export function apply(ctx, rawConfig = {}) {
     const question = String(body.question ?? '').trim()
     const names = snapshot.ownerNames
     const next = snapshot.nextEvent
-    const currentEvent = snapshot.day.events.find((event) => event.phase === 'current')
+    const currentEvent = snapshot.currentEvent ?? snapshot.day.events.find((event) => event.phase === 'current') ?? null
     const day = snapshot.day
     const stats = day.stats
 
@@ -4947,7 +5301,7 @@ export function apply(ctx, rawConfig = {}) {
 
     const detailOf = (event) => {
       if (event === null || event === undefined) return ''
-      return [event.start && event.end ? `${event.start}–${event.end}` : event.start || '全天', event.location || event.classroom, event.course, event.teacher]
+      return [describeWhen(event), event.location || event.classroom, event.course, event.teacher]
         .filter((value) => value && value !== '')
         .join(' · ')
     }
@@ -4955,7 +5309,18 @@ export function apply(ctx, rawConfig = {}) {
     if (action === 'brief') {
       const lines = []
       lines.push(`${greeting()}。今天你有 ${stats.eventCount} 条日程，共 ${Math.round(stats.totalMinutes / 60 * 10) / 10} 小时，已完成约 ${Math.round(stats.doneMinutes / 60 * 10) / 10} 小时。`)
-      if (currentEvent) lines.push(`正在进行：${currentEvent.title}（${detailOf(currentEvent)}），还剩 ${relative(-currentEvent.minutesUntilEnd).replace('已过 ', '')}。`)
+      if (currentEvent) {
+        // A row with no end has no "还剩多少分钟"; saying so is better than
+        // dividing by a number that does not exist.
+        const left = currentEvent.minutesUntilEnd
+        lines.push(
+          left !== null
+            ? `正在进行：${currentEvent.title}（${detailOf(currentEvent)}），还剩 ${Math.max(0, left)} 分钟。`
+            : `正在进行：${currentEvent.title}（${detailOf(currentEvent)}），没有结束时间，做完为止。`,
+        )
+      }
+      // `next` never equals `current` any more, so this line is always about what
+      // comes *after* whatever is running — the case that used to be unreachable.
       if (next) lines.push(`接下来：${next.title}，${relative(next.minutesUntilStart)}开始。`)
       else if (!currentEvent) lines.push('今天已经没有后续日程了，可以留给自己。')
       if (stats.freeSlots.length > 0) {
@@ -4969,12 +5334,13 @@ export function apply(ctx, rawConfig = {}) {
     }
 
     if (action === 'prep') {
-      // `nextEvent` is whichever event is in flight, which may already have
-      // started. Preparing for something you are already inside is not useful, so
-      // an in-flight event is answered as "you are in it, here is the wrap-up"
-      // and a genuinely upcoming one gets the full lead-in checklist.
-      const inFlight = next !== null && next !== undefined && next.isCurrent === true ? next : currentEvent
-      const upcoming = next !== null && next !== undefined && next.isCurrent === false ? next : null
+      // `nextEvent` is now always genuinely ahead, so "preparing" has one meaning
+      // again: an in-flight row gets the wrap-up, and the upcoming one gets the
+      // lead-in checklist. When both exist, both are mentioned — the old code
+      // dropped the upcoming event entirely whenever something was in flight,
+      // which is how a long block hid the appointment after it.
+      const inFlight = currentEvent
+      const upcoming = next
       const target = upcoming ?? inFlight
       if (!target) {
         return { speak: '接下来没有日程，先给自己倒杯水吧。', detail: '', chips: ['生成今日简报'] }
@@ -4989,6 +5355,9 @@ export function apply(ctx, rawConfig = {}) {
           checklist.push(`还有 ${relative(until)}，可以先做半个番茄（${snapshot.settings.pomodoro.focusMinutes} 分钟）`)
         }
         if (until !== null && until <= 10) checklist.push('立刻收尾手头的事，别再开新坑')
+        if (inFlight !== null) {
+          checklist.push(`手头还有「${inFlight.title}」在进行，到点先放下它`)
+        }
         return {
           speak: `${upcoming.title} ${relative(until)}开始，准备清单我列好了。`,
           detail: checklist.map((line, index) => `${index + 1}. ${line}`).join('\n'),
@@ -4996,12 +5365,12 @@ export function apply(ctx, rawConfig = {}) {
         }
       }
       const left = inFlight.minutesUntilEnd
-      checklist.push(`结束时间：${inFlight.effectiveEnd || '未填写'}`)
+      checklist.push(left !== null ? `结束时间：${inFlight.effectiveEnd || '未填写'}` : '这条没有设结束时间，做完再点完成')
       if (left !== null && left <= 15) checklist.push(`还剩 ${left} 分钟，可以开始收尾了`)
       if (inFlight.notes) checklist.push(`别忘了：${inFlight.notes.slice(0, 60)}`)
-      if (upcoming === null) checklist.push('之后没有其他日程，结束后可以留给自己')
+      checklist.push('之后没有其他日程，结束后可以留给自己')
       return {
-        speak: `${inFlight.title} 正在进行${left !== null ? `，还剩 ${left} 分钟` : ''}。`,
+        speak: `${inFlight.title} 正在进行${left !== null ? `，还剩 ${left} 分钟` : '，没有结束时间'}。`,
         detail: checklist.map((line, index) => `${index + 1}. ${line}`).join('\n'),
         chips: ['现在开一个番茄', '生成今日简报'],
       }
@@ -5009,8 +5378,7 @@ export function apply(ctx, rawConfig = {}) {
 
     if (action === 'focus') {
       const minutes = Number(body.minutes) || Number(snapshot.settings.pomodoro.focusMinutes) || 25
-      // Prefer a genuinely upcoming event over one that is already running.
-      const upcoming = next !== null && next !== undefined && next.isCurrent === false ? next : null
+      const upcoming = next
       const subject = upcoming?.title ?? currentEvent?.title ?? '当前任务'
       const conflict = snapshot.day.events.find(
         (event) => event.phase === 'upcoming' && event.minutesUntilStart !== null && event.minutesUntilStart < minutes,
@@ -5089,7 +5457,7 @@ export function apply(ctx, rawConfig = {}) {
       if (hits.length > 0) {
         return {
           speak: `找到 ${hits.length} 条相关日程。`,
-          detail: hits.map((event) => `• ${event.start || '全天'} ${event.title} ${detailOf(event)}`).join('\n'),
+          detail: hits.map((event) => `• ${describeWhen(event)} ${event.title} ${detailOf(event)}`).join('\n'),
           chips: ['生成今日简报', '帮我找个专注时段'],
         }
       }
@@ -5125,9 +5493,19 @@ export function apply(ctx, rawConfig = {}) {
     const remainingMs = timer.running ? Math.max(0, (timer.endsAt ?? Date.now()) - Date.now()) : timer.remainingMs
     const totalMinutes = phaseMinutes(timer.phase)
     const next = snapshot.nextEvent
+    const current = snapshot.currentEvent
     const nextMeta = next
-      ? [next.effectiveStart || '全天', next.classroom || next.location].filter((value) => value && value !== '').join(' · ')
+      ? [describeWhen(next), next.classroom || next.location].filter((value) => value && value !== '').join(' · ')
       : ''
+    /**
+     * `currentTitle` / `nextTitle` are two fields, not one.
+     *
+     * The capsule shows the second line from `subject` when the pomodoro is
+     * running and from `nextTitle` when it is not. An open-ended task used to be
+     * reported as "next" for as long as it had not finished, which pushed every
+     * later appointment out of the widget entirely. The running row and the next
+     * row now travel separately, so the widget can show "doing this, then that".
+     */
     return {
       publishedAt: now.toISOString(),
       phase: timer.phase,
@@ -5136,16 +5514,29 @@ export function apply(ctx, rawConfig = {}) {
       totalSeconds: Math.round(totalMinutes * 60),
       subject: timer.subject || '',
       completedToday: timer.completedToday,
-      nextTitle: next ? next.title : '今天没有日程',
+      currentTitle: current ? current.effectiveTitle : '',
+      currentMeta: current
+        ? [current.minutesUntilEnd === null ? '没有结束时间' : `还剩 ${Math.max(0, current.minutesUntilEnd)} 分`, current.classroom || current.location]
+            .filter((value) => value && value !== '')
+            .join(' · ')
+        : '',
+      currentOpen: current ? current.minutesUntilEnd === null : false,
+      nextTitle: next ? next.effectiveTitle : current ? '' : '今天没有日程',
       nextMeta,
-      nextMinutes: next && next.isCurrent !== true && next.minutesUntilStart !== null ? next.minutesUntilStart : null,
+      nextMinutes: next && next.minutesUntilStart !== null ? next.minutesUntilStart : null,
       nextPhase: next ? next.phase : null,
-      nextIsCurrent: next ? next.isCurrent === true : false,
+      // Kept for the existing widget build, which reads this to decide whether
+      // the title it is holding is already happening. `nextEvent` no longer maps
+      // to an in-flight row, so this is now always false — and that is correct:
+      // "next" means ahead.
+      nextIsCurrent: false,
       dayLabel: `${snapshot.day.dayKey} ${snapshot.day.stats.label}`,
       eventCount: snapshot.day.events.length,
       eventsToday: snapshot.day.events.slice(0, 12).map((event) => ({
-        start: event.effectiveStart || event.start || '',
-        title: event.title,
+        start: event.effectiveStart || '',
+        end: event.effectiveEnd || '',
+        timeShape: event.timeShape,
+        title: event.effectiveTitle,
         phase: event.phase,
         done: event.done,
         classroom: event.classroom || event.location || '',

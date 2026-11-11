@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env node
+#!/usr/bin/env node
 /**
  * Render the dashboard to a static HTML preview and (optionally) a PNG.
  *
@@ -112,13 +112,33 @@ function atToday(hour, minute) {
 
 function makeEvent(spec) {
   const startMs = spec.startOffsetMinutes === null ? null : base + spec.startOffsetMinutes * 60_000
-  const endMs = startMs === null ? null : startMs + (spec.minutes || 60) * 60_000
-  const phase = spec.phase || (startMs === null ? 'undated' : endMs <= base ? 'past' : startMs <= base ? 'current' : 'upcoming')
+  // An open or deadline row has no end at all — the fixture must not invent one,
+  // or the screenshot would agree with the code instead of with the app.
+  const shape = spec.timeShape || 'span'
+  const endMs = startMs === null || shape !== 'span' ? null : startMs + (spec.minutes || 60) * 60_000
+  const phase =
+    spec.phase ||
+    (startMs === null
+      ? 'undated'
+      : shape === 'due'
+        ? startMs > base
+          ? 'upcoming'
+          : 'past'
+        : shape === 'open'
+          ? startMs <= base
+            ? 'current'
+            : 'upcoming'
+          : endMs <= base
+            ? 'past'
+            : startMs <= base
+              ? 'current'
+              : 'upcoming')
   return {
     id: 'ev_' + spec.title.replace(/\W/g, ''),
     date: spec.date,
     start: startMs === null ? '' : clock(spec.startOffsetMinutes),
     end: endMs === null ? '' : clock(spec.startOffsetMinutes + (spec.minutes || 60)),
+    timeShape: shape,
     title: spec.title,
     course: spec.course || '',
     classroom: spec.classroom || '',
@@ -134,10 +154,14 @@ function makeEvent(spec) {
     matchedBy: '张三',
     weekday: spec.weekday || '',
     extras: {},
-    source: { sheet: '总课表', row: spec.row || 4 },
+    source: spec.manual ? { sheet: '手动添加', path: '', row: null } : { sheet: '总课表', row: spec.row || 4 },
     warnings: spec.warnings || [],
     effectiveStart: startMs === null ? '' : clock(spec.startOffsetMinutes),
     effectiveEnd: endMs === null ? '' : clock(spec.startOffsetMinutes + (spec.minutes || 60)),
+    effectiveDate: spec.date,
+    effectiveTitle: spec.title,
+    edited: spec.edited === true,
+    isOpen: shape === 'open' && phase === 'current',
     startMs,
     endMs,
     phase,
@@ -145,7 +169,7 @@ function makeEvent(spec) {
     snoozedUntil: null,
     minutesUntilStart: startMs === null ? null : Math.round((startMs - nowMinute.getTime()) / 60_000),
     minutesUntilEnd: endMs === null ? null : Math.round((endMs - nowMinute.getTime()) / 60_000),
-    progress: startMs !== null && endMs !== null && endMs > startMs ? Math.min(1, Math.max(0, (nowMinute.getTime() - startMs) / (endMs - startMs))) : 0,
+    progress: startMs !== null && endMs !== null && endMs > startMs ? Math.min(1, Math.max(0, (nowMinute.getTime() - startMs) / (endMs - startMs))) : shape === 'open' && phase === 'current' ? 1 : 0,
   }
 }
 
@@ -155,6 +179,10 @@ const events = [
   makeEvent({ title: '项目周会', date: dayKey(0), startOffsetMinutes: atToday(19, 30), minutes: 60, location: '线上腾讯会议', category: '会议', notes: '同步本周进度与风险', phase: 'current', row: 6 }),
   makeEvent({ title: '数据结构实验', date: dayKey(0), startOffsetMinutes: atToday(21, 0), minutes: 110, course: '计算机', classroom: '实验楼 B210', teacher: '陈老师', notes: '提前装好环境', row: 7 }),
   makeEvent({ title: '1:1 沟通', date: dayKey(0), startOffsetMinutes: atToday(23, 0), minutes: 30, location: '会议室 A', category: '沟通', row: 8 }),
+  // The two shapes that have no end, so the preview shows what they look like
+  // rather than only the tidy span rows.
+  makeEvent({ title: '提交课程项目中期成果', date: dayKey(0), startOffsetMinutes: atToday(17, 30), timeShape: 'open', phase: 'current', manual: true }),
+  makeEvent({ title: '课程项目系统关闭', date: dayKey(0), startOffsetMinutes: atToday(23, 55), timeShape: 'due', manual: true }),
   makeEvent({ title: '教研活动', date: dayKey(1), startOffsetMinutes: atToday(9, 0) + 1440, minutes: 90, location: '阶梯教室', category: '教研', warnings: ['日期沿用上一行'], row: 9 }),
   makeEvent({ title: '客户拜访', date: dayKey(1), startOffsetMinutes: atToday(15, 0) + 1440, minutes: 60, location: '客户现场', category: '外勤', row: 10 }),
 ]
@@ -196,9 +224,12 @@ events.push(manualEvent)
 const currentEvent = events[2]
 const nextEvent = byTitle('数据结构实验')
 const dutyEvent = byTitle('示例部门晚自习考勤点名')
-const totalMinutes = events.reduce((sum, event) => sum + (event.endMs - event.startMs) / 60_000, 0)
+// Only rows that actually span time contribute: an open task and a deadline have
+// no `endMs`, and adding `null - startMs` produced a negative total of absurd size
+// — the fixture bug that made the preview show "-996829.2 h".
+const totalMinutes = events.reduce((sum, event) => (event.endMs === null ? sum : sum + (event.endMs - event.startMs) / 60_000), 0)
 const doneMinutes = events
-  .filter((event) => event.startMs !== null && event.startMs < nowMinute.getTime())
+  .filter((event) => event.startMs !== null && event.endMs !== null && event.startMs < nowMinute.getTime())
   .reduce((sum, event) => sum + Math.min(nowMinute.getTime(), event.endMs) - event.startMs, 0) / 60_000
 
 const snapshot = {
@@ -255,6 +286,10 @@ const snapshot = {
       totalMinutes,
       doneMinutes,
       remainingMinutes: totalMinutes - doneMinutes,
+      // Counted the same way the host does: rows with no end contribute no bookable
+      // span, and the panel says so instead of showing a total that looks wrong.
+      openCount: events.filter((event) => event.date === dayKey(0) && event.timeShape === 'open').length,
+      dueCount: events.filter((event) => event.date === dayKey(0) && event.timeShape === 'due').length,
       freeSlots: [{ from: clock(35), to: clock(180), minutes: 145 }],
       completedRounds: 3,
       focusGoalRounds: 8,
@@ -262,8 +297,14 @@ const snapshot = {
     },
     undated: [makeEvent({ title: '待定：补交材料', date: '', startOffsetMinutes: null, row: 12 })],
   },
+  /**
+   * The two answers the card draws. They point at different rows on purpose: the
+   * open-ended task is running, the 数据结构实验 is next, and the preview shows
+   * both lanes at once instead of only whichever event happens to come first.
+   */
+  currentEvent: byTitle('提交课程项目中期成果'),
   nextEvent,
-  upcoming: events.filter((event) => event.startMs !== null && event.startMs > nowMinute.getTime()).slice(0, 4),
+  upcoming: events.filter((event) => event.startMs !== null && event.startMs > nowMinute.getTime() && event.timeShape !== 'open').slice(0, 4),
   week: [-2, -1, 0, 1, 2, 3, 4].map((offset) => {
     const key = dayKey(offset)
     const onDay = events.filter((event) => event.date === key)
@@ -537,7 +578,7 @@ if (process.env.OT_PREVIEW_READ === '1') {
 // ------------------------------------------------------------------ markup
 
 const activeTab = process.argv.find((arg) => arg.startsWith('--tab='))?.slice(6) || 'timeline'
-const tabLabels = { timeline: '日程时间轴', calendar: '日程时间轴 · 日历', add: '日程时间轴 · 加一条', pomodoro: '番茄专注', companion: 'AI 助手', netddl: '网络 DDL', settings: '设置 / 导入' }
+const tabLabels = { timeline: '日程时间轴', calendar: '日程时间轴 · 日历', add: '日程时间轴 · 加一条', edit: '日程时间轴 · 改一条', faraway: '日程时间轴 · 放在明天', pomodoro: '番茄专注', companion: 'AI 助手', netddl: '网络 DDL', settings: '设置 / 导入' }
 
 /**
  * The calendar as the user reaches it: inside the timeline, under the day strip,
@@ -613,6 +654,43 @@ function renderTab(tab) {
       })
       return React.createElement('div', {
         dangerouslySetInnerHTML: { __html: dayStrip() + renderToStaticMarkup(form) + renderToStaticMarkup(calendar) },
+      })
+    },
+    /**
+     * The correction surface, opened on a row that came from the roster.
+     *
+     * Worth its own screenshot rather than a bool on the add tab: editing is the
+     * feature, and what has to be seen is that the form opens *on the event's own
+     * values* and stays inside the row rather than replacing the page.
+     */
+    edit: () => {
+      const form = React.createElement(exports_['./manual.js'].ManualEventForm, {
+        store,
+        day: snapshot.day.dayKey,
+        now: new Date(now),
+        event: byTitle('数据结构实验'),
+        onCancel: () => {},
+        onSaved: () => {},
+        onReset: () => {},
+      })
+      return React.createElement('div', {
+        dangerouslySetInnerHTML: { __html: dayStrip() + renderToStaticMarkup(form) },
+      })
+    },
+    /**
+     * The exact card from the report: one row, a day and a half away.
+     *
+     * The relative phrase used to appear twice — once in the header, once as the
+     * big number — which is what made `15:30 → 17:00 1 天 5 小时后 1 天 5 小时`
+     * read as a layout accident rather than a schedule.
+     */
+    faraway: () => {
+      const far = makeEvent({ title: '学院交流', date: dayKey(1), startOffsetMinutes: atToday(15, 30) + 1440, minutes: 90, location: '会议室 A', category: '交流', row: 21 })
+      // A clock well short of the row so the countdown shows the day form that
+      // the screenshot was taken with.
+      const card = React.createElement(exports_['./timeline.js'].NextCard, { next: far, current: null, now: far.startMs - (29 * 60 + 40) * 60_000 })
+      return React.createElement('div', {
+        dangerouslySetInnerHTML: { __html: dayStrip() + renderToStaticMarkup(card) },
       })
     },
     pomodoro: () => React.createElement(exports_['./pomodoro.js'].PomodoroView, {

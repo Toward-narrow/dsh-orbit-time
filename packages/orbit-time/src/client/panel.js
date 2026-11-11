@@ -647,8 +647,12 @@ function FloatingWidget() {
 
   var timer = store.store.currentTimer(now)
   var next = snapshot.nextEvent
+  // Kept apart so a class in progress no longer blanks out the appointment after
+  // it. `upcoming` starts from the next row's own position, not from "anything
+  // not past", so the two lanes cannot list the same thing twice.
+  var current = snapshot.currentEvent
   var upcoming = util.safeArray(snapshot.day.events).filter(function (event) {
-    return event.phase !== 'past' && !event.done
+    return event.phase === 'upcoming' && !event.done
   })
 
   var remainingMs = next && next.startMs !== null ? Math.max(0, next.startMs - now) : 0
@@ -699,8 +703,12 @@ function FloatingWidget() {
       h(
         'div',
         { className: 'ot-float-mini-body' },
-        h('div', { className: 'ot-float-mini-time' }, next ? util.formatCountdownShort(remainingMs) : '--:--'),
-        h('div', { className: 'ot-float-mini-meta', title: next ? next.title : '今天没有日程' }, next ? next.title : '今天没有日程'),
+        h('div', { className: 'ot-float-mini-time' }, next ? util.formatCountdownShort(remainingMs) : current ? '进行中' : '--:--'),
+        h(
+          'div',
+          { className: 'ot-float-mini-meta', title: next ? next.effectiveTitle || next.title : current ? current.effectiveTitle || current.title : '今天没有日程' },
+          next ? next.effectiveTitle || next.title : current ? current.effectiveTitle || current.title : '今天没有日程',
+        ),
       ),
       h(
         'div',
@@ -775,14 +783,36 @@ function FloatingWidget() {
       : null,
     h(
       'div',
-      { className: 'ot-float-next' },
-      h('div', { className: 'ot-float-next-title' }, next ? next.title : '接下来没有日程'),
+      { className: 'ot-float-next' + (current ? ' ot-float-now' : '') },
+      // The in-page card shows what is running *and* what is next; this widget is
+      // the same two answers in less room. Without the first line an open task
+      // read as "next" for hours and the actual next row never appeared at all.
+      current
+        ? h(
+            'div',
+            { className: 'ot-float-now-line' },
+            h('span', { className: 'ot-float-now-dot' }),
+            h('span', { className: 'ot-float-now-title', title: current.effectiveTitle || current.title }, current.effectiveTitle || current.title),
+            h(
+              'span',
+              { className: 'ot-sub', style: { fontSize: 10.5, flex: 'none' } },
+              current.minutesUntilEnd === null ? '进行中' : '剩余 ' + Math.max(0, current.minutesUntilEnd) + ' 分',
+            ),
+          )
+        : null,
+      h('div', { className: 'ot-float-next-title' }, next ? next.effectiveTitle || next.title : current ? '之后没有日程了' : '接下来没有日程'),
       h(
         'div',
         { className: 'ot-float-next-meta' },
         next
-          ? (next.effectiveStart || '全天') + ' · ' + util.formatRelative(next.minutesUntilStart) + (next.classroom ? ' · ' + next.classroom : '')
-          : '享受空白时间',
+          ? (next.effectiveStart || '全天') +
+            (next.effectiveEnd ? '–' + next.effectiveEnd : next.timeShape === 'due' ? ' 截止' : '') +
+            ' · ' +
+            util.formatRelative(next.minutesUntilStart) +
+            (next.classroom ? ' · ' + next.classroom : '')
+          : current
+            ? '做完手头这个，今天就空了'
+            : '享受空白时间',
       ),
     ),
     h(
@@ -791,12 +821,14 @@ function FloatingWidget() {
       upcoming.slice(0, 8).map(function (event) {
         return h(
           'div',
-          { key: event.id, className: 'ot-float-row', 'data-phase': event.phase },
+          { key: event.id, className: 'ot-float-row', 'data-phase': event.phase, 'data-shape': event.timeShape || 'span' },
           h('span', { className: 'ot-float-row-time' }, event.effectiveStart || '—'),
-          h('span', { className: 'ot-float-row-title', title: event.title }, event.title),
-          event.phase === 'current'
-            ? h('span', { className: 'ot-badge' }, '进行中')
-            : h('span', { className: 'ot-sub', style: { fontSize: 10.5 } }, util.formatRelative(event.minutesUntilStart)),
+          h('span', { className: 'ot-float-row-title', title: event.effectiveTitle || event.title }, event.effectiveTitle || event.title),
+          h(
+            'span',
+            { className: 'ot-sub', style: { fontSize: 10.5 } },
+            event.timeShape === 'due' ? util.formatRelative(event.minutesUntilStart) + '截止' : util.formatRelative(event.minutesUntilStart),
+          ),
         )
       }),
     ),

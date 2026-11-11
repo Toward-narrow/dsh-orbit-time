@@ -253,6 +253,11 @@ function event(overrides) {
     warnings: [],
     effectiveStart: '09:00',
     effectiveEnd: '10:30',
+    effectiveDate: '2026-03-02',
+    effectiveTitle: overrides && overrides.title ? overrides.title : '高等数学 A',
+    timeShape: 'span',
+    edited: false,
+    isOpen: false,
     startMs: now + 12 * 60_000,
     endMs: now + 102 * 60_000,
     phase: 'upcoming',
@@ -268,6 +273,46 @@ function event(overrides) {
 const currentEvent = event({ id: 'now', title: '项目例会', phase: 'current', startMs: now - 20 * 60_000, endMs: now + 25 * 60_000, minutesUntilStart: -20, minutesUntilEnd: 25, progress: 0.44, start: '13:00', end: '14:00' })
 const pastEvent = event({ id: 'past', title: '英语听力', phase: 'past', startMs: now - 200 * 60_000, endMs: now - 120 * 60_000, minutesUntilStart: -200, minutesUntilEnd: -120, progress: 1, start: '07:00', end: '08:00' })
 const nextEvent = event({ id: 'next', title: '数据结构实验', phase: 'upcoming', minutesUntilStart: 12, startMs: now + 12 * 60_000, endMs: now + 95 * 60_000 })
+
+/**
+ * The row from the screenshot: a task with no end, running for 40 minutes.
+ *
+ * It exists in the fixture set because it is the case that used to break the whole
+ * page — it took the "next up" card hostage for the hour its fabricated end
+ * lasted, and everything after it was unreachable.
+ */
+const openEvent = event({
+  id: 'open',
+  title: '提交课程项目中期成果',
+  phase: 'current',
+  timeShape: 'open',
+  isOpen: true,
+  start: '10:00',
+  end: '',
+  effectiveStart: '10:00',
+  effectiveEnd: '',
+  startMs: now - 40 * 60_000,
+  endMs: null,
+  minutesUntilStart: -40,
+  minutesUntilEnd: null,
+  progress: 1,
+  source: { sheet: '手动添加', row: null },
+})
+
+const dueEvent = event({
+  id: 'due',
+  title: '课程项目提交截止',
+  phase: 'upcoming',
+  timeShape: 'due',
+  start: '23:59',
+  end: '',
+  effectiveStart: '23:59',
+  effectiveEnd: '',
+  startMs: now + 300 * 60_000,
+  endMs: null,
+  minutesUntilStart: 300,
+  minutesUntilEnd: null,
+})
 
 /**
  * The month payload the calendar draws: a Monday-first grid wide enough for the
@@ -360,14 +405,19 @@ const snapshot = {
   },
   day: {
     dayKey: '2026-03-02',
-    events: [pastEvent, currentEvent, event({ id: 'a' }), nextEvent],
+    // The open-ended row and the deadline travel with the day: they are the two
+    // shapes the panel used to render as fake spans, so every render check below
+    // exercises them rather than a fixture that only has tidy rows.
+    events: [pastEvent, openEvent, currentEvent, event({ id: 'a' }), nextEvent, dueEvent],
     stats: {
       dayKey: '2026-03-02',
       label: '周一',
-      eventCount: 4,
+      eventCount: 6,
       totalMinutes: 330,
       doneMinutes: 140,
       remainingMinutes: 190,
+      openCount: 1,
+      dueCount: 1,
       freeSlots: [{ from: '11:45', to: '13:00', minutes: 75 }],
       completedRounds: 3,
       focusGoalRounds: 8,
@@ -375,8 +425,14 @@ const snapshot = {
     },
     undated: [event({ id: 'u', date: '', start: '', end: '', phase: 'undated', effectiveStart: '', effectiveEnd: '', startMs: null, endMs: null, minutesUntilStart: null, minutesUntilEnd: null, title: '待定：补交材料' })],
   },
+  /**
+   * Both answers, as the host now sends them. The open row is "current" and the
+   * appointment after it is "next" — the pair one `nextEvent` could not express
+   * at the same time, which is what hid everything after a long block.
+   */
+  currentEvent: openEvent,
   nextEvent,
-  upcoming: [nextEvent, event({ id: 'b' })],
+  upcoming: [nextEvent, event({ id: 'b' }), dueEvent],
   week: [
     { dayKey: '2026-02-28', label: '周六', dayOfMonth: 28, isToday: false, count: 0, firstStart: '', titles: [] },
     { dayKey: '2026-03-02', label: '周一', dayOfMonth: 2, isToday: true, count: 4, firstStart: '07:00', titles: ['英语听力', '高等数学 A'] },
@@ -954,6 +1010,280 @@ check('the add-event form renders, and adding one sends the date it was opened o
   if (day !== '2026-03-19') throw new Error(`adding for the 19th left the panel on ${day}`)
   await realStore.setDay(snapshot.day.dayKey)
   return 'fields, defaults, request shape, and the day it opens'
+})
+
+check('a client-side failure is written where it can be read afterwards', async () => {
+  // A blank window leaves nothing behind: no console, no stack, just "it was
+  // white". The diagnostics route is the only durable record, so the reporting
+  // path itself is worth a test — silently broken diagnostics look exactly like
+  // a page that never failed.
+  const app = exports_['./index.js'] || exports_
+  if (typeof app.reportClientError !== 'function') throw new Error('reportClientError is not exported')
+
+  const sent = []
+  fetchImpl = (url, init) => {
+    sent.push({ url: String(url), body: JSON.parse(String(init?.body ?? '{}')) })
+    return Promise.resolve({ ok: true, status: 200, text: () => Promise.resolve(JSON.stringify({ ok: true })) })
+  }
+  app.reportClientError('render', 'Objects are not valid as a React child', 'Error: boom\n    at note')
+  await new Promise((done) => setTimeout(done, 30))
+  const first = sent.filter((entry) => String(entry.url).includes('/debug/client'))
+  if (first.length !== 1) throw new Error(`the failure was reported ${first.length} times`)
+  const payload = first[0].body
+  if (payload.kind !== 'event') throw new Error(`kind=${payload.kind}`)
+  if (!String(payload.name).startsWith('crash:render:')) throw new Error(`name=${payload.name}`)
+  if (!String(payload.card && payload.card.stack).includes('at note')) throw new Error('the stack was dropped')
+
+  // The same failure twice must not flush the record: a render loop throws on
+  // every frame, and forty copies of one message push out the interesting one.
+  app.reportClientError('render', 'Objects are not valid as a React child', 'Error: boom')
+  await new Promise((done) => setTimeout(done, 30))
+  const again = sent.filter((entry) => String(entry.url).includes('/debug/client'))
+  if (again.length !== 1) throw new Error(`a duplicate was reported: ${again.length} requests`)
+  return 'one report, deduped'
+})
+
+/* ------------------------------------------- the blank page, as a test */
+
+check('a helper used as a component survives React\'s second argument', () => {
+  const ui = exports_['./ui.js']
+  // The bug that blanked the page: React calls a function component as
+  // `Component(props, legacyContext)` and passes `{}` as the second argument.
+  // `note(props, children)` treated that object as the message and rendered it,
+  // and React answers an object child by unmounting the tree.
+  const asComponent = renderToStaticMarkup(h(ui.note, { variant: 'warn' }, '宿主没有月份数据'))
+  if (!asComponent.includes('宿主没有月份数据')) throw new Error(`the message was lost: ${asComponent}`)
+  if (asComponent.includes('object')) throw new Error(`the context object leaked into the markup: ${asComponent}`)
+  // Both call shapes have to keep working — this is the whole reason `note` takes
+  // a positional argument in the first place.
+  const positional = renderToStaticMarkup(ui.note({ variant: 'error' }, '直接调用'))
+  if (!positional.includes('直接调用')) throw new Error(`the positional shape broke: ${positional}`)
+  const propsShape = renderToStaticMarkup(ui.note({ variant: 'ok', children: 'props 形状' }))
+  if (!propsShape.includes('props 形状')) throw new Error(`the props shape broke: ${propsShape}`)
+  return 'component + positional + props'
+})
+
+check('the calendar explains a missing month instead of taking the panel down', () => {
+  // This is the state a page is in for a second after a host restart, or when a
+  // stale host answers without a month. It must be a sentence, not a crash.
+  const calendar = exports_['./calendar.js']
+  const snapshots = [
+    { month: undefined, serverTime: { dayKey: '2026-03-02' } },
+    { month: null, serverTime: { dayKey: '2026-03-02' } },
+    { month: { monthKey: '2026-03', grid: [] }, serverTime: { dayKey: '2026-03-02' } },
+  ]
+  for (const partial of snapshots) {
+    const html = renderToStaticMarkup(
+      h(calendar.CalendarView, {
+        snapshot: partial,
+        day: '2026-03-02',
+        onPickDay: () => {},
+        onMonth: () => {},
+        onAdd: () => {},
+        onClose: () => {},
+      }),
+    )
+    if (!html.includes('ot-note')) throw new Error(`no explanation rendered for ${JSON.stringify(partial.month)}`)
+  }
+  return 'three degenerate months, three explanations'
+})
+
+check('the dashboard renders against a host that predates the current fields', () => {
+  // A page reload after a host-half change talks to the OLD host for as long as
+  // the app has not been restarted. The panel has to survive a snapshot that has
+  // none of the newer keys — every optional value is read through a guard, and
+  // this is the test that notices when one of them stops being one.
+  const old = JSON.parse(JSON.stringify(snapshot))
+  delete old.currentEvent
+  delete old.month
+  for (const item of old.day.events) {
+    delete item.timeShape
+    delete item.effectiveTitle
+    delete item.effectiveDate
+    delete item.edited
+  }
+  const html = renderToStaticMarkup(
+    h(exports_['./timeline.js'].TimelineView, {
+      store: realStore,
+      snapshot: old,
+      day: old.day.dayKey,
+      events: old.day.events,
+      stats: old.day.stats,
+      undated: old.day.undated,
+      now: Date.now(),
+      onFocus: () => {},
+    }),
+  )
+  if (!html.includes('ot-tl')) throw new Error('the timeline did not render for an older host')
+  return `${html.length} chars against a pre-change host`
+})
+
+/* ------------------------------------------------ the two complaints, as markup */
+
+check('the next-up card shows the running row and the next row at the same time', () => {
+  const html = renderToStaticMarkup(h(exports_['./timeline.js'].NextCard, { next: nextEvent, current: openEvent, now }))
+  // Both lanes, in one card. This is the whole fix for "看不到之后的状态": before
+  // it, the card held one row and `nextEvent` could only be one of them.
+  if (!html.includes('ot-next-both')) throw new Error('the card rendered a single lane')
+  if (!html.includes(openEvent.title)) throw new Error('the running row is not on the card')
+  if (!html.includes(nextEvent.title)) throw new Error('the row after it is not on the card')
+  // An open row must state that it has no end instead of a number it made up.
+  if (!html.includes('没有结束时间')) throw new Error('the open row does not say it has no end')
+  return 'current + next, with the open row labelled'
+})
+
+check('a card with only one answer renders one lane, not an empty slot', () => {
+  const onlyNext = renderToStaticMarkup(h(exports_['./timeline.js'].NextCard, { next: nextEvent, current: null, now }))
+  if (onlyNext.includes('ot-next-both')) throw new Error('a single answer produced two lanes')
+  if (!onlyNext.includes(nextEvent.title)) throw new Error('the next row is missing')
+  if (onlyNext.includes('然后')) throw new Error('the divider rendered with nothing to divide')
+  const neither = renderToStaticMarkup(h(exports_['./timeline.js'].NextCard, { next: null, current: null, now }))
+  if (!neither.includes('接下来没有日程了')) throw new Error('the empty card lost its message')
+  return 'one lane or none'
+})
+
+check('the card states the countdown once, not three times', () => {
+  // The reported bug: `15:30 → 17:00 1 天 5 小时后` in the header, then `1 天 5 小时`
+  // again as the big number. Same fact, two sizes, one card — it read as a layout
+  // accident. The countdown keeps the big number and the header keeps the clock.
+  const far = event({
+    id: 'far',
+    title: '学院交流',
+    start: '15:30',
+    end: '17:00',
+    effectiveStart: '15:30',
+    effectiveEnd: '17:00',
+    startMs: now + (29 * 60 + 40) * 60_000,
+    minutesUntilStart: 29 * 60 + 40,
+  })
+  const html = renderToStaticMarkup(h(exports_['./timeline.js'].NextCard, { next: far, current: null, now }))
+  const countdowns = (html.match(/1 天 5 小时/g) ?? []).length
+  if (countdowns !== 1) throw new Error(`the countdown is stated ${countdowns} times`)
+  // The clock range survives: it is the one thing the number cannot say.
+  if (!html.includes('15:30') || !html.includes('17:00')) throw new Error('the clock range was dropped')
+  // And it is not repeated in the place line either.
+  const meta = html.match(/class="ot-next-meta"[^>]*>([^<]*)</)
+  if (meta !== null && /15:30|17:00/.test(meta[1])) throw new Error(`the range is repeated in the place line: ${meta[1]}`)
+  return 'one countdown, one range'
+})
+
+check('a long countdown gets its own size and a fixed column', () => {
+  const far = event({
+    id: 'far2',
+    title: '学院交流',
+    start: '15:30',
+    end: '17:00',
+    effectiveStart: '15:30',
+    effectiveEnd: '17:00',
+    startMs: now + (29 * 60 + 40) * 60_000,
+    minutesUntilStart: 29 * 60 + 40,
+  })
+  const html = renderToStaticMarkup(h(exports_['./timeline.js'].NextCard, { next: far, current: null, now }))
+  // A day-scale phrase needs its own class: at the clock's 26 px it outshouted the
+  // event title and pushed it into an ellipsis.
+  if (!html.includes('ot-countdown-long')) throw new Error('the day-scale countdown kept the clock size')
+  const short = event({ id: 'short', title: '项目例会', start: '13:00', end: '14:00', startMs: now + 25 * 60_000, minutesUntilStart: 25 })
+  const shortHtml = renderToStaticMarkup(h(exports_['./timeline.js'].NextCard, { next: short, current: null, now }))
+  if (shortHtml.includes('ot-countdown-long')) throw new Error('a minutes-scale countdown was sized as a day-scale one')
+  return 'day-scale steps down, clock-scale does not'
+})
+
+check('a bar is only drawn where it measures something', () => {
+  // 0% for a row that has not begun is a permanently empty track, which reads as
+  // a broken element on a card this sparse.
+  const upcoming = event({ id: 'u1', title: '还没开始', startMs: now + 30 * 60_000, minutesUntilStart: 30, progress: 0 })
+  const upcomingHtml = renderToStaticMarkup(h(exports_['./timeline.js'].NextCard, { next: upcoming, current: null, now }))
+  if (upcomingHtml.includes('ot-progress')) throw new Error('a not-yet-started row drew a progress bar')
+  const running = event({ id: 'r1', title: '正在进行', phase: 'current', startMs: now - 10 * 60_000, endMs: now + 20 * 60_000, minutesUntilStart: -10, minutesUntilEnd: 20, progress: 0.33 })
+  const runningHtml = renderToStaticMarkup(h(exports_['./timeline.js'].NextCard, { next: null, current: running, now }))
+  if (!runningHtml.includes('ot-progress')) throw new Error('a running row lost its progress bar')
+  return 'running yes, upcoming no'
+})
+
+check('an open-ended row reports elapsed time, not a countdown to a fake end', () => {
+  const html = renderToStaticMarkup(
+    h(exports_['./timeline.js'].EventRow, { event: openEvent, store: realStore, day: '2026-03-02', now, onFocus: () => {} }),
+  )
+  if (!html.includes('data-shape="open"')) throw new Error('the row does not carry its shape')
+  if (!html.includes('已进行')) throw new Error('the running row does not say how long it has been going')
+  if (!html.includes('没设结束')) throw new Error('the row does not say it has no end')
+  if (html.includes('剩余 0 分')) throw new Error('the row still counts down to a fabricated end')
+  return 'elapsed + "no end"'
+})
+
+check('a deadline row is drawn as an instant, not a span', () => {
+  const html = renderToStaticMarkup(
+    h(exports_['./timeline.js'].EventRow, { event: dueEvent, store: realStore, day: '2026-03-02', now, onFocus: () => {} }),
+  )
+  if (!html.includes('data-shape="due"')) throw new Error('the row does not carry its shape')
+  if (!html.includes('截止')) throw new Error('the deadline is not labelled')
+  // A deadline has no duration, so printing an end time would invent one.
+  if (html.includes('–')) throw new Error('the deadline was rendered as a range')
+  return 'dashed instant'
+})
+
+check('every row offers a way to be corrected', () => {
+  const html = renderToStaticMarkup(
+    h(exports_['./timeline.js'].TimelineView, {
+      store: realStore,
+      snapshot,
+      day: snapshot.day.dayKey,
+      events: snapshot.day.events,
+      stats: snapshot.day.stats,
+      undated: snapshot.day.undated,
+      now,
+      onFocus: () => {},
+    }),
+  )
+  const rows = (html.match(/data-event-id="/g) ?? []).length
+  const editors = (html.match(/改一下/g) ?? []).length
+  if (rows === 0) throw new Error('the timeline rendered no rows')
+  if (editors !== rows) throw new Error(`${rows} rows but ${editors} edit buttons`)
+  // Imported rows are editable too: the file owns the roster, not the user's day.
+  const imported = snapshot.day.events.filter((item) => item.source.sheet !== '手动添加')
+  if (imported.length === 0) throw new Error('the fixture has no imported row to check')
+  return `${editors} edit affordances across imported and typed rows`
+})
+
+check('the edit form opens on the row values and sends only what changed', async () => {
+  const form = exports_['./manual.js']
+  const target = event({ id: 'edit-me', title: '项目例会', start: '13:00', end: '14:00', effectiveStart: '14:15', effectiveEnd: '15:15' })
+  const draft = form.draftFromEvent(target)
+  // Opens on the *effective* values, so saving again cannot silently revert an
+  // earlier correction back to what the roster said.
+  if (draft.start !== '14:15' || draft.end !== '15:15') throw new Error(`the form opened on ${draft.start}-${draft.end}`)
+  if (draft.timeShape !== 'span') throw new Error(`the shape came through as ${draft.timeShape}`)
+
+  const rewritten = form.draftFromEvent(event({ id: 'o2', title: '开着的活', start: '10:00', end: '', timeShape: 'open', effectiveStart: '10:00', effectiveEnd: '', minutesUntilEnd: null }))
+  if (rewritten.timeShape !== 'open') throw new Error('an open row reopened as a span')
+  if (rewritten.end !== '') throw new Error(`an open row came back with an end: ${rewritten.end}`)
+
+  const sent = []
+  fetchImpl = (url, init) => {
+    sent.push({ url: String(url), body: JSON.parse(String(init?.body ?? '{}')) })
+    return Promise.resolve({ ok: true, status: 200, text: () => Promise.resolve(JSON.stringify(snapshot)) })
+  }
+  await realStore.updateEvent('edit-me', { title: '项目例会（改）' })
+  const edit = sent.find((entry) => entry.body.action === 'edit')
+  if (edit === undefined) throw new Error(`no edit request was sent: ${JSON.stringify(sent)}`)
+  if (edit.body.id !== 'edit-me') throw new Error(`the edit targeted ${edit.body.id}`)
+  if (edit.body.patch.title !== '项目例会（改）') throw new Error(`the patch carried ${JSON.stringify(edit.body.patch)}`)
+  // The patch is a patch: an untouched field must not travel, or correcting the
+  // time would also pin the title to whatever the panel happened to show.
+  if ('start' in edit.body.patch || 'end' in edit.body.patch) {
+    throw new Error(`the patch rewrote untouched fields: ${JSON.stringify(edit.body.patch)}`)
+  }
+  return 'effective values in, changed fields out'
+})
+
+check('the shape picker offers the three answers to "when does it end"', () => {
+  const form = exports_['./manual.js']
+  const html = renderToStaticMarkup(h(form.ManualEventForm, { store: realStore, day: '2026-03-17', now: Date.parse('2026-03-17T14:37:00'), onCancel: () => {}, onSaved: () => {} }))
+  for (const needle of ['有起止时间', '只有开始', '只要截止', 'ot-add-shapes']) {
+    if (!html.includes(needle)) throw new Error(`the shape picker is missing ${needle}`)
+  }
+  if (!html.includes('再加一条') && !html.includes('直接加一条')) throw new Error('the add form lost its heading')
+  return form.SHAPES.map((shape) => shape.key).join(' / ')
 })
 
 check('companion view renders the transcript', () => {

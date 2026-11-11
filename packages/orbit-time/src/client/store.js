@@ -573,6 +573,35 @@ async function removeEvent(id) {
   return payload
 }
 
+/**
+ * Correct one row in place.
+ *
+ * The patch is merged into an override on the host rather than written onto the
+ * row, so an imported row stays owned by its file: the next scan of the roster
+ * still finds it exactly where the roster put it, and the correction rides on top.
+ *
+ * The day is re-read even when the reply carries a snapshot, because moving a row
+ * to another date changes which day it belongs to — and if that day is the one on
+ * screen, the row has to appear there immediately.
+ */
+async function updateEvent(id, patch) {
+  var payload = await request('/events', {
+    method: 'POST',
+    body: JSON.stringify({ action: 'edit', id: id, patch: patch }),
+  })
+  if (payload.snapshot) set({ snapshot: payload.snapshot })
+  else await refresh(state.day)
+  return payload
+}
+
+/** Drop every correction on a row, putting it back to what its source said. */
+async function resetEvent(id) {
+  var payload = await request('/events', { method: 'POST', body: JSON.stringify({ action: 'reset', id: id }) })
+  if (payload.snapshot) set({ snapshot: payload.snapshot })
+  else await refresh(state.day)
+  return payload
+}
+
 async function timerAction(action, body) {
   var payload = await request('/timer', {
     method: 'POST',
@@ -1424,6 +1453,8 @@ exports.store = {
   commitExtraction: commitExtraction,
   eventAction: eventAction,
   addEvent: addEvent,
+  updateEvent: updateEvent,
+  resetEvent: resetEvent,
   removeEvent: removeEvent,
   timerAction: timerAction,
   askCompanion: askCompanion,

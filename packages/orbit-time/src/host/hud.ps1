@@ -1153,6 +1153,9 @@ function Get-StateValues {
   $subject = ''
   $nextTitle = ''
   $completed = 0
+  $currentTitle = ''
+  $currentMeta = ''
+  $currentOpen = $false
   if ($script:state -ne $null) {
     if ($script:state.phase -ne $null) { $phase = [string]$script:state.phase }
     if ($script:state.running -ne $null) { $running = [bool]$script:state.running }
@@ -1161,10 +1164,17 @@ function Get-StateValues {
     if ($script:state.subject -ne $null) { $subject = [string]$script:state.subject }
     if ($script:state.nextTitle -ne $null) { $nextTitle = [string]$script:state.nextTitle }
     if ($script:state.completedToday -ne $null) { $completed = [int]$script:state.completedToday }
+    # The row the clock is inside, reported apart from the row that comes next.
+    # One field used to carry both meanings, so whatever was currently happening
+    # owned the widget and the next thing never appeared.
+    if ($script:state.currentTitle -ne $null) { $currentTitle = [string]$script:state.currentTitle }
+    if ($script:state.currentMeta -ne $null) { $currentMeta = [string]$script:state.currentMeta }
+    if ($script:state.currentOpen -ne $null) { $currentOpen = [bool]$script:state.currentOpen }
   }
   return @{
     phase = $phase; running = $running; remaining = $remaining; total = $total
     subject = $subject; nextTitle = $nextTitle; completed = $completed
+    currentTitle = $currentTitle; currentMeta = $currentMeta; currentOpen = $currentOpen
   }
 }
 
@@ -1434,39 +1444,80 @@ $pill.add_Paint({
   if ($values.running -and $script:colonPhase -eq 1) { $colonAlpha = 95 }
   Draw-Clock $g $clock $textX $script:clockY $colonAlpha | Out-Null
 
-  $line = $values.subject
-  if ([string]::IsNullOrWhiteSpace($line)) {
-    if (-not [string]::IsNullOrWhiteSpace($values.nextTitle)) {
-      $line = '接下来 ' + $values.nextTitle
-    } else {
-      $line = '点圆环开始专注'
-    }
+  <#
+  The second line: what the user should read as "the schedule right now".
+
+  Priority, highest first:
+
+    current row      what the clock is inside — an open task included, marked
+                     with a running dot so it does not read as an appointment
+    next row         "接下来 …" when nothing is happening
+    pomodoro subject when neither exists but a focus session is running
+    placeholder      nothing to say
+
+  It used to be "the pomodoro subject, else nextTitle" and `nextTitle` was
+  whichever row came first even if it was already in progress, so an appointment
+  in progress looked like it started later, and everything after it was gone.
+  #>
+  $line = ''
+  $lineIsLive = $false
+  if (-not [string]::IsNullOrWhiteSpace($values.currentTitle)) {
+    $line = $values.currentTitle
+    $lineIsLive = $true
+  } elseif (-not [string]::IsNullOrWhiteSpace($values.subject)) {
+    $line = $values.subject
+  } elseif (-not [string]::IsNullOrWhiteSpace($values.nextTitle)) {
+    $line = '接下来 ' + $values.nextTitle
+  } else {
+    $line = '点圆环开始专注'
   }
   # Truncate to the space the window controls leave behind. A fixed character
   # count does not work: the subject is Chinese and proportional, so twelve
   # characters can run under the minimise button and hide it.
   $columnRight = $script:hitMin.X - $script:textGap
   $available = $columnRight - $textX
+  # A running row carries a dot before its title, and the dot eats width.
+  $dotSpace = 0.0
+  if ($lineIsLive) { $dotSpace = $script:textGap * 0.55 }
+  $available = $available - $dotSpace
+  $fullLength = $line.Length
   if ($available -gt 10) {
     while ($line.Length -gt 1 -and $g.MeasureString($line, $script:fontSubject).Width -gt $available) {
       $line = $line.Substring(0, $line.Length - 1)
     }
-    if ($line.Length -lt $values.subject.Length -and $line.Length -gt 1) {
+    if ($line.Length -lt $fullLength -and $line.Length -gt 1) {
       $line = $line.Substring(0, $line.Length - 1) + '…'
     }
   } elseif ($line.Length -gt 8) {
     $line = $line.Substring(0, 8) + '…'
   }
+  $textLeft = $textX
+  if ($lineIsLive) {
+    # A filled dot in the accent colour: "this one is happening", the same signal
+    # the timeline uses for a current row. Drawn rather than typed because a
+    # bullet glyph drifts with the font's own baseline.
+    $dotBrush = New-Object System.Drawing.SolidBrush $accent
+    $dotY = $script:subjectY + ($g.MeasureString('x', $script:fontSubject).Height / 2.0)
+    $g.FillEllipse($dotBrush, [float]$textX, [float]($dotY - 3.0), 6.0, 6.0)
+    $dotBrush.Dispose()
+    $textLeft = $textX + $dotSpace
+  }
   $dimBrush = New-Object System.Drawing.SolidBrush $colDim
   $lineSize = $g.MeasureString($line, $script:fontSubject)
-  $g.DrawString($line, $script:fontSubject, $dimBrush, [float]$textX, [float]$script:subjectY)
+  $g.DrawString($line, $script:fontSubject, $dimBrush, [float]$textLeft, [float]$script:subjectY)
   $dimBrush.Dispose()
 
   $accentBrush = New-Object System.Drawing.SolidBrush $accent
-  $phaseText = (Get-PhaseLabel $values.phase) + ' · ' + [string]$values.completed
-  $phaseX = $textX + $lineSize.Width + $script:textGap * 0.6
+  # Beside a live row the badge says the next thing instead of the pomodoro phase:
+  # "专注 · 3" next to a schedule row is two unrelated facts on one line.
+  if ($lineIsLive -and -not [string]::IsNullOrWhiteSpace($values.nextTitle)) {
+    $phaseText = '→ ' + $values.nextTitle
+  } else {
+    $phaseText = (Get-PhaseLabel $values.phase) + ' · ' + [string]$values.completed
+  }
+  $phaseX = $textLeft + $lineSize.Width + $script:textGap * 0.6
   $phaseSize = $g.MeasureString($phaseText, $script:fontMeta)
-  # Only draw the phase when it genuinely fits before the button column.
+  # Only draw the badge when it genuinely fits before the button column.
   if (($phaseX + $phaseSize.Width) -lt $columnRight) {
     $g.DrawString($phaseText, $script:fontMeta, $accentBrush, [float]$phaseX, [float]($script:subjectY + 1))
   }
